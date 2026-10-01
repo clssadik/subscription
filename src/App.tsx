@@ -48,7 +48,6 @@ function Main({ user }: { user: User | null }) {
   const [sheet, setSheet] = useState<SheetTarget>(null)
   // Girişsiz ekleme denenince hatırlanır; giriş yapılınca form kendiliğinden açılır
   const pending = useRef<{ sheet: NonNullable<SheetTarget>; tab: Tab } | null>(null)
-  const [loginReason, setLoginReason] = useState<string>()
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -68,7 +67,6 @@ function Main({ user }: { user: User | null }) {
   function openSheet(target: NonNullable<SheetTarget>) {
     if (user) return setSheet(target)
     pending.current = { sheet: target, tab }
-    setLoginReason(`${target.kind === 'card' ? 'Kart' : 'Abonelik'} eklemek için giriş yap. Hesabın yoksa ilk girişte kendiliğinden açılır.`)
     setDetailId(null)
     setTab('account')
     toast('Eklemek için önce giriş yap')
@@ -98,7 +96,7 @@ function Main({ user }: { user: User | null }) {
           <>
             {tab === 'home' && <HomeScreen nav={nav} />}
             {tab === 'subscriptions' && <SubscriptionsScreen nav={nav} />}
-            {tab === 'account' && (user ? <AccountScreen user={user} /> : <LoginScreen reason={loginReason} />)}
+            {tab === 'account' && (user ? <AccountScreen user={user} /> : <LoginScreen />)}
             {tab === 'cards' && <CardsScreen nav={nav} selectedId={cardId} onSelect={setCardId} />}
             {tab === 'history' && <HistoryScreen />}
           </>
@@ -110,10 +108,7 @@ function Main({ user }: { user: User | null }) {
         onTab={(t) => {
           setTab(t)
           setDetailId(null)
-          if (t !== 'account') {
-            pending.current = null
-            setLoginReason(undefined)
-          }
+          if (t !== 'account') pending.current = null
         }}
       />
       <AddSheet target={sheet} onClose={() => setSheet(null)} />
