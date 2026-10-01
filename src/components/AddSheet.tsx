@@ -125,7 +125,7 @@ function SubscriptionFields({ id, onDone }: { id?: string; onDone: () => void })
   }
 
   return (
-    <form onSubmit={submit} className="mt-4 grid gap-3">
+    <form onSubmit={submit} className="mt-4 grid grid-cols-1 gap-3">
       <div>
         <div className="mb-2 flex items-center justify-between px-1">
           <span className="label text-subtle">Hızlı seç</span>
@@ -246,7 +246,7 @@ function CardFields({ id, onDone }: { id?: string; onDone: () => void }) {
   const digits = (v: string, max: number) => v.replace(/\D/g, '').slice(0, max)
 
   return (
-    <form onSubmit={submit} className="mt-4 grid gap-3">
+    <form onSubmit={submit} className="mt-4 grid grid-cols-1 gap-3">
       <div>
         <span className="label mb-2 block px-1 text-subtle">Banka</span>
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
@@ -284,7 +284,7 @@ function CardFields({ id, onDone }: { id?: string; onDone: () => void }) {
         <Field label="Limit (₺)" htmlFor="c-limit">
           <input id="c-limit" className={cn(inputClass, 'num')} inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="İsteğe bağlı" />
         </Field>
-        <Field label="Kart ağı">
+        <Field label="Kart ağı" stacked>
           <Segmented
             className="w-full"
             value={network ?? ('none' as const)}

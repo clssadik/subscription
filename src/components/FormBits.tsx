@@ -6,7 +6,15 @@ export function FieldGroup({ children }: { children: ReactNode }) {
   return <div className="divide-y divide-line overflow-hidden rounded-[18px] bg-surface">{children}</div>
 }
 
-export function Field({ label, htmlFor, children }: { label: string; htmlFor?: string; children: ReactNode }) {
+export function Field({ label, htmlFor, stacked, children }: { label: string; htmlFor?: string; stacked?: boolean; children: ReactNode }) {
+  if (stacked) {
+    return (
+      <div className="grid gap-2 px-3.5 py-3">
+        <label htmlFor={htmlFor} className="label text-subtle">{label}</label>
+        {children}
+      </div>
+    )
+  }
   return (
     <div className="flex min-h-12 items-center gap-3 px-3.5 py-1.5">
       <label htmlFor={htmlFor} className="label w-24 shrink-0 text-subtle">{label}</label>
