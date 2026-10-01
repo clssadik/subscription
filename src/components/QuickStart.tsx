@@ -1,46 +1,17 @@
-import { CreditCardIcon, PlusIcon, SearchIcon } from 'lucide-react'
+import { CreditCardIcon, MoreHorizontalIcon, PlusIcon, SearchIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { BANKS } from '@/lib/banks'
+import { luminance } from '@/lib/color'
 import { SERVICES, getService, normalize, serviceColor } from '@/lib/services'
 import { cn } from '@/lib/utils'
 import type { Nav } from '@/App'
 
 // Boş ekranlardaki "hızlı başlangıç": servis ya da bankaya dokununca form onunla dolu açılır.
 
-const SHAPES = [
-  'rounded-[50px_50px_14px_14px]',
-  'rounded-[14px]',
-  'rounded-[14px_50px_14px_14px]',
-  'rounded-full',
-  'rounded-[14px_14px_14px_50px]',
-  'rounded-[14px]',
-  'rounded-[50px_14px_14px_14px]',
-  'rounded-[14px_14px_50px_14px]',
-  'rounded-[14px]',
-]
-const INK_TILE = 'bg-[#141414] dark:bg-surface dark:ring-1 dark:ring-white/10'
-// Mozaikte ilk görünenler: Türkiye'de en yaygın, logosu olan servisler
+// İlk görünenler: Türkiye'de en yaygın, logosu olan servisler
 const POPULAR = ['netflix', 'spotify', 'youtube', 'icloud', 'hbomax', 'playstation', 'claude', 'gemini', 'duolingo']
   .map((k) => SERVICES.find((s) => s.key === k)!)
-
-/** Logolu servislerden Bauhaus şekilli 3×3 mozaik */
-export function ServiceMosaic({ nav, services = POPULAR }: { nav: Nav; services?: typeof SERVICES }) {
-  return (
-    <div className="grid grid-cols-3 gap-2">
-      {services.map((s, i) => (
-        <button
-          key={s.key}
-          onClick={() => nav.add({ serviceKey: s.key })}
-          aria-label={`${s.name} ekle`}
-          className={cn('pressable flex aspect-square items-center justify-center', INK_TILE, SHAPES[i % SHAPES.length])}
-        >
-          <Logo serviceKey={s.key} name={s.name} size={62} className="bg-transparent" />
-        </button>
-      ))}
-    </div>
-  )
-}
 
 // Özet ekranındaki bento: kutular farklı boyda ve her biri servisin kendi renginde
 const BENTO: { key: string; cls: string; glyph: number; fg: string; name?: boolean }[] = [
@@ -89,16 +60,30 @@ export function HomeQuickStart({ nav }: { nav: Nav }) {
   )
 }
 
-/** Abonelikler ekranı boşken: arama + mozaik; aranan listede yoksa adıyla eklenir */
+/** "YouTube Premium" → "YouTube", "Google Gemini" → "Gemini": ızgara altındaki kısa isim */
+function shortName(name: string) {
+  return name.replace(/^Google /, '').replace(/ (Premium|Plus|Nitro|Game Pass|Creative Cloud)$/, '')
+}
+
+/** iPhone ana ekranı gibi küçük logo + kısa isim */
+function AppIcon({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button onClick={onClick} aria-label={`${label} ekle`} className="pressable flex min-w-0 flex-col items-center gap-1.5">
+      <span className="flex size-[58px] items-center justify-center rounded-[16px] bg-surface">{children}</span>
+      <span className="w-full truncate text-center text-[11px] text-subtle">{label}</span>
+    </button>
+  )
+}
+
+/** Abonelikler ekranı boşken: arama + iki satırlık ızgara; aranan listede yoksa adıyla eklenir */
 export function SubscriptionQuickStart({ nav }: { nav: Nav }) {
   const [query, setQuery] = useState('')
-  const [all, setAll] = useState(false)
   const q = normalize(query)
-  const list = q ? SERVICES.filter((s) => normalize(s.name).includes(q)) : all ? [...POPULAR, ...SERVICES.filter((s) => !POPULAR.includes(s))] : POPULAR
+  const list = q ? SERVICES.filter((s) => normalize(s.name).includes(q)) : POPULAR.slice(0, 7)
 
   return (
     <>
-      <label className="mb-2.5 flex min-h-11 items-center gap-2 rounded-[14px] bg-surface px-3 text-subtle">
+      <label className="mb-3 flex min-h-11 items-center gap-2 rounded-[14px] bg-surface px-3 text-subtle">
         <SearchIcon className="size-4 shrink-0" />
         <input
           value={query}
@@ -108,17 +93,35 @@ export function SubscriptionQuickStart({ nav }: { nav: Nav }) {
           className="w-full bg-transparent text-base text-ink outline-none placeholder:text-subtle"
         />
       </label>
-      <ServiceMosaic nav={nav} services={list} />
+      {!q && <p className="label mb-2.5 px-1 text-subtle">Popüler</p>}
+      <div className="grid grid-cols-4 gap-x-2 gap-y-3.5">
+        {list.map((s) => {
+          const dark = luminance(serviceColor(s.key, s.name)) < 0.2 || s.icon?.hex === '000000'
+          return (
+            <AppIcon key={s.key} label={shortName(s.name)} onClick={() => nav.add({ serviceKey: s.key })}>
+              <Logo
+                serviceKey={s.key}
+                name={s.name}
+                size={56}
+                className={cn('bg-transparent', dark && 'text-ink')}
+                color={dark ? 'currentColor' : undefined}
+              />
+            </AppIcon>
+          )
+        })}
+        {!q && (
+          <AppIcon label="Diğer" onClick={() => nav.add()}>
+            <MoreHorizontalIcon className="size-6 text-subtle" />
+          </AppIcon>
+        )}
+      </div>
       {q && (
         <button
           onClick={() => nav.add({ name: query.trim() })}
-          className="pressable mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-bh-yellow font-medium text-[#141414]"
+          className="pressable mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-bh-yellow font-medium text-[#141414]"
         >
           <PlusIcon className="size-4" /> “{query.trim()}” ekle
         </button>
-      )}
-      {!q && !all && (
-        <button onClick={() => setAll(true)} className="mt-2 min-h-11 w-full font-medium text-bh-yellow">Tümünü gör</button>
       )}
     </>
   )
