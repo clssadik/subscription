@@ -37,3 +37,8 @@ export function dayOf(n: number) {
   const suffix = n % 10 === 0 ? tens[n] : ones[n % 10]
   return `${n}'${suffix}`
 }
+
+/** E-postanın baş harfi: hesap butonu için */
+export function initial(email: string) {
+  return (email.trim()[0] ?? '?').toLocaleUpperCase('tr')
+}

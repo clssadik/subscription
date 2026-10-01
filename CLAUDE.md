@@ -11,11 +11,11 @@ Vite + React + TypeScript + Tailwind v4 + shadcn/ui. Kullanıcı yeni başlıyor
 
 ## Her oturumun başında: eksik logolar
 
-Logosu olmayan bir servis eklendiğinde uygulama bunu `missingLogos` listesine not alır
-(`src/lib/store.tsx`). Supabase bağlanana kadar bu liste sadece kullanıcının telefonunda
-(localStorage) durur ve Supabase bağlandığı gün oraya gönderilecek.
+Logosu olmayan bir servis eklendiğinde uygulama bunu Supabase'deki `missing_logos` tablosuna yazar
+(`src/lib/store.tsx` → `src/lib/db.ts`).
 
-- Supabase bağlıysa: oturumun başında `missing_logos` tablosunu kontrol et.
+- Oturumun başında kullanıcıdan Supabase SQL Editor'da şunu çalıştırıp sonucu paylaşmasını iste:
+  `select name, count(*) from missing_logos group by name order by 2 desc;`
 - Her eksik logo için: önce `simple-icons` paketinde var mı bak (`node -e "console.log(!!require('simple-icons').siXxx)"`).
   Varsa `src/lib/services.ts` içindeki servise `icon` olarak ekle. Yoksa resmî SVG'yi
   `src/assets/logos/<servis-anahtarı>.svg` olarak ekle (dosya adı = `SERVICES` içindeki `key`).

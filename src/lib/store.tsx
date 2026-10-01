@@ -1,13 +1,16 @@
 import { format } from 'date-fns'
-import { createContext, useContext, useEffect, useReducer, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useReducer, useRef, useState, type ReactNode } from 'react'
+import { toast } from 'sonner'
 import { bankColor } from './banks'
+import { loadAll, pushChanges } from './db'
 import { hasLogo, matchService, normalize } from './services'
 import type { CreditCard, MissingLogo, Payment, Subscription } from './types'
 
-// Şimdilik tüm veriler tarayıcının localStorage'ında (yani bu cihazda) duruyor.
-// Supabase aşamasında bu dosyayı veritabanına bağlayacağız; ekranlar değişmeyecek.
+// Veriler Supabase'de, kullanıcının hesabında duruyor. Ekran her değişikliği hemen gösterir,
+// arkada da farkı veritabanına yazar. Son görülen veriler internetsiz açılış için cihazda saklanır.
 
-const STORAGE_KEY = 'abonelik-takip:v1'
+const cacheKey = (userId: string) => `abonelik-takip:cache:${userId}`
+const EMPTY: State = { cards: [], subscriptions: [], payments: [], missingLogos: [] }
 
 export interface State {
   cards: CreditCard[]
@@ -24,6 +27,7 @@ type Action =
   | { type: 'subscription/delete'; id: string }
   | { type: 'payment/toggle'; kind: Payment['kind']; refId: string; dueDate: string; amount?: number; currency?: Payment['currency'] }
   | { type: 'state/restore'; state: State }
+  | { type: 'state/load'; state: State }
 
 function upsert<T extends { id: string }>(list: T[], item: T) {
   return list.some((x) => x.id === item.id)
@@ -79,6 +83,7 @@ function reducer(state: State, action: Action): State {
       return { ...state, payments: [...state.payments, payment] }
     }
     case 'state/restore':
+    case 'state/load':
       return action.state
   }
 }
@@ -99,30 +104,82 @@ function migrate(raw: Partial<State>): State {
   return { cards, subscriptions, payments: raw.payments ?? [], missingLogos }
 }
 
-function load(): State {
+function readCache(userId: string): State | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return migrate(JSON.parse(raw) as Partial<State>)
+    const raw = localStorage.getItem(cacheKey(userId))
+    return raw ? migrate(JSON.parse(raw) as Partial<State>) : null
   } catch {
-    // bozuk veya erişilemeyen kayıt: boş başla
+    return null
   }
-  return { cards: [], subscriptions: [], payments: [], missingLogos: [] }
 }
 
-const StoreContext = createContext<{ state: State; dispatch: React.Dispatch<Action> } | null>(null)
+// eslint-disable-next-line react/only-export-components
+export function clearCache(userId: string) {
+  try {
+    localStorage.removeItem(cacheKey(userId))
+  } catch {
+    // erişilemiyorsa yapacak bir şey yok
+  }
+}
 
-export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, load)
+const StoreContext = createContext<{ state: State; dispatch: React.Dispatch<Action>; ready: boolean } | null>(null)
+
+/** userId null ise (giriş yok) veriler boş kalır ve hiçbir yere yazılmaz. */
+export function StoreProvider({ userId, children }: { userId: string | null; children: ReactNode }) {
+  const [cached] = useState(() => (userId ? readCache(userId) : null))
+  const [state, dispatch] = useReducer(reducer, cached ?? EMPTY)
+  const [ready, setReady] = useState(!userId || !!cached)
+  // Veritabanında olduğunu bildiğimiz son durum; yeni durumla farkı gönderilir
+  const server = useRef<State>(cached ?? EMPTY)
+  // Yazmalar sırayla gitsin diye zincir (hızlı iki dokunuş birbirini ezmesin)
+  const queue = useRef<Promise<void>>(Promise.resolve())
 
   useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+    loadAll()
+      .then((data) => {
+        if (cancelled) return
+        const fresh = migrate(data)
+        // Logosu artık olan notlar migrate'te düşer; bu fark veritabanına silme olarak gider
+        server.current = { ...fresh, missingLogos: data.missingLogos }
+        dispatch({ type: 'state/load', state: fresh })
+        setReady(true)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setReady(true)
+        toast.error('Veriler yüklenemedi. İnternet bağlantını kontrol et.')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
+
+  useEffect(() => {
+    if (!userId) return
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+      localStorage.setItem(cacheKey(userId), JSON.stringify(state))
     } catch {
       // depolama doluysa veya kapalıysa yapacak bir şey yok
     }
-  }, [state])
+    if (state === server.current) return
+    const before = server.current
+    server.current = state
+    queue.current = queue.current.then(() =>
+      pushChanges(before, state).catch(() => {
+        toast.error('Değişiklik kaydedilemedi. İnternet bağlantını kontrol et.')
+        // Ekranı veritabanındaki gerçek durumla eşitle
+        return loadAll().then((data) => {
+          const fresh = migrate(data)
+          server.current = fresh
+          dispatch({ type: 'state/load', state: fresh })
+        }).catch(() => {})
+      }),
+    )
+  }, [state, userId])
 
-  return <StoreContext value={{ state, dispatch }}>{children}</StoreContext>
+  return <StoreContext value={{ state, dispatch, ready }}>{children}</StoreContext>
 }
 
 // eslint-disable-next-line react/only-export-components
@@ -132,9 +189,13 @@ export function useStore() {
   return ctx
 }
 
-/** crypto.randomUUID sadece https/localhost'ta var; telefondan yerel ağ ile açınca yedek yöntem. */
+/** crypto.randomUUID sadece https/localhost'ta var; telefondan yerel ağ ile açınca aynı biçimde (UUID v4) üret. */
 // eslint-disable-next-line react/only-export-components
 export function newId() {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
-  return Date.now().toString(36) + Math.random().toString(36).slice(2)
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+  const b = crypto.getRandomValues(new Uint8Array(16))
+  b[6] = (b[6] & 0x0f) | 0x40
+  b[8] = (b[8] & 0x3f) | 0x80
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('')
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
 }

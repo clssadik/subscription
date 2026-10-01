@@ -1,7 +1,7 @@
 import { CheckIcon } from 'lucide-react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
-import { EmptyState, ScreenHeader } from '@/components/ScreenHeader'
+import { AddButton, EmptyState, ScreenHeader } from '@/components/ScreenHeader'
 import { ShareBar } from '@/components/ShareBar'
 import { daysUntil, dueLabel, monthItems, nextCardDue, nextRenewal, type MonthItem } from '@/lib/dates'
 import { formatDate, formatMoney } from '@/lib/format'
@@ -44,7 +44,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   if (subscriptions.length === 0 && cards.length === 0) {
     return (
       <>
-        <ScreenHeader title={formatDate(new Date(), 'LLLL')} />
+        <ScreenHeader title={formatDate(new Date(), 'LLLL')} action={<AddButton label="Yeni ekle" onClick={nav.add} />} />
         <EmptyState
           title="İlk aboneliğini ekle"
           text="Netflix, Spotify ya da kredi kartın; eklediğin her şey burada ay ay görünür."
@@ -56,7 +56,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
 
   return (
     <>
-      <ScreenHeader title={formatDate(new Date(), 'LLLL')} />
+      <ScreenHeader title={formatDate(new Date(), 'LLLL')} action={<AddButton label="Yeni ekle" onClick={nav.add} />} />
       <div className="grid grid-cols-2 gap-2">
         {/* Bu ayın toplamı */}
         <section className="col-span-2 flex h-32 flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg">
