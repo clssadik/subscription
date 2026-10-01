@@ -1,14 +1,27 @@
 import type { User } from '@supabase/supabase-js'
-import { LogOutIcon } from 'lucide-react'
+import { FlaskConicalIcon, LogOutIcon, Trash2Icon } from 'lucide-react'
+import { toast } from 'sonner'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { formatDate, initial } from '@/lib/format'
 import { clearCache, useStore } from '@/lib/store'
 import { DEMO_ID, demoSignOut } from '@/lib/demo'
+import { randomCards, randomSubscriptions } from '@/lib/seed'
+import { useUndoable } from '@/lib/undo'
 import { supabase } from '@/lib/supabase'
 
 export function AccountScreen({ user }: { user: User }) {
-  const { state } = useStore()
+  const { state, dispatch } = useStore()
+  const undoable = useUndoable()
   const email = user.email ?? ''
+  const demo = user.id === DEMO_ID
+
+  function addTestData() {
+    const cards = randomCards(10)
+    const subscriptions = randomSubscriptions([...state.cards, ...cards], 10)
+    cards.forEach((card) => dispatch({ type: 'card/save', card }))
+    subscriptions.forEach((subscription) => dispatch({ type: 'subscription/save', subscription }))
+    toast.success('10 abonelik ve 10 kart eklendi')
+  }
 
   async function signOut() {
     // Test hesabının verileri cihazda kalsın; gerçek hesapta çıkarken temizlenir
@@ -34,8 +47,25 @@ export function AccountScreen({ user }: { user: User }) {
       </div>
 
       <p className="mt-4 px-1 text-sm text-subtle">
-        Verilerin hesabında saklanıyor. Aynı e-postayla başka bir cihazdan girdiğinde hepsi orada olur.
+        {demo
+          ? 'Test hesabı: veriler sadece bu cihazda saklanıyor.'
+          : 'Verilerin hesabında saklanıyor. Aynı e-postayla başka bir cihazdan girdiğinde hepsi orada olur.'}
       </p>
+
+      {/* Sadece test hesabında: hızlı deneme için örnek veri */}
+      {demo && (
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button onClick={addTestData} className="pressable flex min-h-12 items-center justify-center gap-2 rounded-[18px] bg-surface font-medium">
+            <FlaskConicalIcon className="size-[18px] text-bh-blue" /> Test verisi ekle
+          </button>
+          <button
+            onClick={() => undoable('Tüm veriler silindi', () => dispatch({ type: 'state/restore', state: { cards: [], subscriptions: [], payments: [], missingLogos: [] } }))}
+            className="pressable flex min-h-12 items-center justify-center gap-2 rounded-[18px] bg-surface font-medium"
+          >
+            <Trash2Icon className="size-[18px] text-bh-red" /> Tüm verileri sil
+          </button>
+        </div>
+      )}
 
       <button onClick={signOut} className="pressable mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-surface font-medium text-bh-red">
         <LogOutIcon className="size-[18px]" /> Çıkış yap
