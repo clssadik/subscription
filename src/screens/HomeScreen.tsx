@@ -71,11 +71,11 @@ export function HomeScreen({ nav }: { nav: Nav }) {
           </div>
         </section>
 
-        {/* Sıradaki ödeme: geniş şerit, solda büyük geri sayım */}
+        {/* Sıradaki ödeme: geniş sarı şerit, solda büyük geri sayım */}
         {first ? (
           <button
             onClick={() => nav.openSubscription(first.s.id)}
-            className="pressable col-span-2 flex items-center gap-4 rounded-[22px] bg-surface p-3.5 text-left"
+            className="pressable col-span-2 flex items-center gap-4 rounded-[22px] bg-bh-yellow p-3.5 text-left text-[#141414]"
           >
             <span className="min-w-16 text-center leading-none">
               {daysUntil(first.date) === 0 ? (
@@ -83,13 +83,13 @@ export function HomeScreen({ nav }: { nav: Nav }) {
               ) : (
                 <>
                   <span className="num num-bold block text-[56px] leading-[0.85]">{daysUntil(first.date)}</span>
-                  <span className="label text-subtle">gün</span>
+                  <span className="label">gün</span>
                 </>
               )}
             </span>
-            <span aria-hidden className="w-px self-stretch bg-line" />
+            <span aria-hidden className="w-px self-stretch bg-black/15" />
             <span className="min-w-0 flex-1">
-              <span className="label block text-subtle">Sıradaki</span>
+              <span className="label block opacity-70">Sıradaki</span>
               <span className="mt-1.5 flex items-center gap-2.5">
                 <Logo serviceKey={first.s.serviceKey} name={first.s.name} size={36} />
                 <span className="min-w-0">
