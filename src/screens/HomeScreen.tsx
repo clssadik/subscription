@@ -4,7 +4,7 @@ import { Money } from '@/components/Money'
 import { HomeQuickStart } from '@/components/QuickStart'
 import { AddButton, DateHeader } from '@/components/ScreenHeader'
 import { ShareBar } from '@/components/ShareBar'
-import { daysUntil, dueLabel, monthItems, nextCardDue, nextRenewal, type MonthItem } from '@/lib/dates'
+import { daysUntil, dueLabel, hasDue, monthItems, nextCardDue, nextRenewal, type MonthItem } from '@/lib/dates'
 import { formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import { CURRENCIES } from '@/lib/types'
@@ -33,6 +33,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
     .sort((a, b) => a.date.getTime() - b.date.getTime())
   const [first, second] = upcoming
   const nextCard = cards
+    .filter(hasDue)
     .map((c) => ({ c, date: nextCardDue(c, payments) }))
     .sort((a, b) => a.date.getTime() - b.date.getTime())[0]
 

@@ -5,7 +5,7 @@ import { CardQuickStart } from '@/components/QuickStart'
 import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
 import { BigDays } from '@/screens/HomeScreen'
 import { NETWORKS } from '@/lib/banks'
-import { monthlyCost, nextCardDue, toKey } from '@/lib/dates'
+import { hasDue, monthlyCost, nextCardDue, toKey } from '@/lib/dates'
 import { dayOf, formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import type { CreditCard } from '@/lib/types'
@@ -27,11 +27,13 @@ export function CardsScreen({ nav, selectedId, onSelect }: { nav: Nav; selectedI
   // Seçili kart en altta, açık hâlde; diğerleri üstte cüzdan gibi üst üste
   const selected = cards.find((c) => c.id === selectedId) ?? cards[0]
   const stack = cards.filter((c) => c.id !== selected.id)
-  const due = nextCardDue(selected, payments)
+  // Banka kartında son ödeme yok
+  const due = hasDue(selected) ? nextCardDue(selected, payments) : null
   const onCard = subscriptions.filter((s) => s.cardId === selected.id)
   const monthlyTry = onCard.filter((s) => s.currency === 'TRY').reduce((sum, s) => sum + monthlyCost(s), 0)
 
   function markPaid() {
+    if (!due) return
     const dueDate = toKey(due)
     dispatch({ type: 'payment/toggle', kind: 'card', refId: selected.id, dueDate })
     toast(`${selected.bankName} ${formatDate(due, 'LLLL')} ödemesi işaretlendi`, {
@@ -58,11 +60,19 @@ export function CardsScreen({ nav, selectedId, onSelect }: { nav: Nav; selectedI
       </div>
 
       <div className="mt-2 grid grid-cols-2 gap-2">
-        <div className="flex h-[108px] flex-col rounded-[22px_52px_22px_22px] bg-bh-red p-3 text-white">
-          <span className="label opacity-85">Son ödeme</span>
-          <span className="mt-auto leading-none"><BigDays date={due} small /></span>
-          <span className="text-[11px] opacity-80">{formatDate(due, 'd MMMM EEEE')}</span>
-        </div>
+        {due ? (
+          <div className="flex h-[108px] flex-col rounded-[22px_52px_22px_22px] bg-bh-red p-3 text-white">
+            <span className="label opacity-85">Son ödeme</span>
+            <span className="mt-auto leading-none"><BigDays date={due} small /></span>
+            <span className="text-[11px] opacity-80">{formatDate(due, 'd MMMM EEEE')}</span>
+          </div>
+        ) : (
+          <div className="flex h-[108px] flex-col rounded-[22px_52px_22px_22px] bg-bh-blue p-3 text-white">
+            <span className="label opacity-85">Tür</span>
+            <span className="mt-auto font-label text-lg font-medium">Banka kartı</span>
+            <span className="text-[11px] opacity-80">son ödeme yok</span>
+          </div>
+        )}
         <div className="flex h-[108px] flex-col rounded-[22px] bg-surface p-3">
           <span className="label text-subtle">Bu karttan</span>
           <span className="num mt-auto text-xl">{formatMoney(monthlyTry)}</span>
@@ -77,10 +87,12 @@ export function CardsScreen({ nav, selectedId, onSelect }: { nav: Nav; selectedI
         </div>
       </div>
 
-      <button onClick={markPaid} className="pressable mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-ink font-semibold text-page">
-        <CheckCircle2Icon className="size-[18px] text-bh-yellow" />
-        {formatDate(due, 'LLLL')} ekstresi ödendi
-      </button>
+      {due && (
+        <button onClick={markPaid} className="pressable mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-ink font-semibold text-page">
+          <CheckCircle2Icon className="size-[18px] text-bh-yellow" />
+          {formatDate(due, 'LLLL')} ekstresi ödendi
+        </button>
+      )}
 
       {onCard.length > 0 && (
         <>
@@ -124,7 +136,11 @@ function BigCard({ card, onEdit }: { card: CreditCard; onEdit: () => void }) {
       </div>
       <div className="num relative mt-auto text-base tracking-[0.15em]">•••• {card.last4}</div>
       <div className="relative mt-1 flex justify-between text-[11px] opacity-85">
-        <span>Kesim {dayOf(card.statementDay)} · Son ödeme {dayOf(card.dueDay)}</span>
+        <span>
+          {card.kind === 'credit' && card.statementDay && card.dueDay
+            ? `Kesim ${dayOf(card.statementDay)} · Son ödeme ${dayOf(card.dueDay)}`
+            : 'Banka kartı'}
+        </span>
         {card.limit > 0 && <span>{formatMoney(card.limit).replace(/,00$/, '')}</span>}
       </div>
     </div>

@@ -4,15 +4,18 @@
 export type Currency = 'TRY' | 'USD' | 'EUR'
 export type BillingCycle = 'monthly' | 'yearly'
 export type CardNetwork = 'visa' | 'mastercard' | 'troy' | 'amex'
+export type CardKind = 'credit' | 'debit'
 
 export interface CreditCard {
   id: string
   bankName: string
   last4: string
-  /** Hesap kesim günü (ayın kaçı, 1-31) */
-  statementDay: number
-  /** Son ödeme günü (ayın kaçı, 1-31) */
-  dueDay: number
+  /** Kredi kartı mı, banka kartı mı */
+  kind: CardKind
+  /** Hesap kesim günü (ayın kaçı, 1-31); banka kartında yok */
+  statementDay: number | null
+  /** Son ödeme günü (ayın kaçı, 1-31); banka kartında yok */
+  dueDay: number | null
   /** Kart limiti (TL) */
   limit: number
   /** Kartın rengi, "#RRGGBB" */
@@ -55,6 +58,11 @@ export interface MissingLogo {
 }
 
 export const CURRENCIES: Currency[] = ['TRY', 'USD', 'EUR']
+
+export const CARD_KIND_LABELS: Record<CardKind, string> = {
+  credit: 'Kredi kartı',
+  debit: 'Banka kartı',
+}
 
 export const CYCLE_LABELS: Record<BillingCycle, string> = {
   monthly: 'Aylık',

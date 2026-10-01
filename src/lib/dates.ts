@@ -38,7 +38,11 @@ export function renewalsBetween(sub: Subscription, start: Date, end: Date) {
   return out
 }
 
-export function cardDueInMonth(card: CreditCard, month: Date) {
+/** Son ödeme günü olan kart: kredi kartı. Banka kartlarında son ödeme yok. */
+export type DueCard = CreditCard & { dueDay: number }
+export const hasDue = (c: CreditCard): c is DueCard => c.kind === 'credit' && c.dueDay != null
+
+export function cardDueInMonth(card: DueCard, month: Date) {
   return dayInMonth(month.getFullYear(), month.getMonth(), card.dueDay)
 }
 
@@ -55,7 +59,7 @@ export function nextRenewal(sub: Subscription, payments: Payment[] = [], from: D
 }
 
 /** Bugünden itibaren henüz "ödendi" işaretlenmemiş ilk son ödeme günü. */
-export function nextCardDue(card: CreditCard, payments: Payment[] = [], from: Date = new Date()) {
+export function nextCardDue(card: DueCard, payments: Payment[] = [], from: Date = new Date()) {
   const today = startOfDay(from)
   for (let i = 0; i < 3; i++) {
     const d = cardDueInMonth(card, addMonths(today, i))
@@ -83,7 +87,7 @@ export function monthlyCost(sub: Subscription) {
 
 export type MonthItem =
   | { kind: 'subscription'; date: Date; paid: boolean; subscription: Subscription }
-  | { kind: 'card'; date: Date; paid: boolean; card: CreditCard }
+  | { kind: 'card'; date: Date; paid: boolean; card: DueCard }
 
 /** Bir aydaki bütün ödemeler (abonelik yenilemeleri + kart son ödemeleri), tarih sırasıyla. */
 export function monthItems(
@@ -103,7 +107,7 @@ export function monthItems(
         subscription: s,
       })),
     ),
-    ...cards.map((c) => {
+    ...cards.filter(hasDue).map((c) => {
       const date = cardDueInMonth(c, start)
       return { kind: 'card' as const, date, paid: isPaid(payments, c.id, date), card: c }
     }),

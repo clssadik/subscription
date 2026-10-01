@@ -1,4 +1,6 @@
+import { ChevronsUpDownIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { dayOf } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 /** Form içindeki gruplanmış alan kutusu */
@@ -67,5 +69,33 @@ export function PrimaryButton({ children, className, ...props }: React.Component
     >
       {children}
     </button>
+  )
+}
+
+/** Ayın günü seçimi: iPhone'da kaydırmalı seçici açılır, seçilince "Her ayın 15'i" yazar */
+export function DaySelect({
+  id,
+  value,
+  onChange,
+}: {
+  id: string
+  value: number | null
+  onChange: (day: number) => void
+}) {
+  return (
+    <div className="relative flex w-full items-center">
+      <select
+        id={id}
+        value={value ?? ''}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className={cn('w-full appearance-none bg-transparent pr-6 text-base outline-none', value ? 'text-ink' : 'text-subtle/60')}
+      >
+        <option value="" disabled>Gün seç</option>
+        {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+          <option key={d} value={d}>Her ayın {dayOf(d)}</option>
+        ))}
+      </select>
+      <ChevronsUpDownIcon aria-hidden className="pointer-events-none absolute right-0 size-4 text-subtle" />
+    </div>
   )
 }

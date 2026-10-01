@@ -94,6 +94,7 @@ function migrate(raw: Partial<State>): State {
   const cards = (raw.cards ?? []).map((c) => ({
     ...c,
     color: c.color ?? bankColor(c.bankName) ?? '#2B2A29',
+    kind: c.kind ?? 'credit',
     network: c.network ?? null,
   }))
   const subscriptions = (raw.subscriptions ?? []).map((s) => ({

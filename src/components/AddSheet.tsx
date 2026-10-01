@@ -2,14 +2,14 @@ import { format } from 'date-fns'
 import { CreditCardIcon, RepeatIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Field, FieldGroup, inputClass, PrimaryButton, Segmented, selectClass } from '@/components/FormBits'
+import { DaySelect, Field, FieldGroup, inputClass, PrimaryButton, Segmented, selectClass } from '@/components/FormBits'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer'
 import { bankColor, bankName as fullBankName, cardColor } from '@/lib/banks'
 import { parseAmount } from '@/lib/format'
 import { getService, matchService } from '@/lib/services'
 import { newId, useStore } from '@/lib/store'
 import { useUndoable } from '@/lib/undo'
-import { CURRENCIES, type BillingCycle, type CreditCard, type Currency, type Subscription } from '@/lib/types'
+import { CURRENCIES, type BillingCycle, type CardKind, type CreditCard, type Currency, type Subscription } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 /** Açılacak form. id varsa düzenleme; serviceKey/name/bankName yeni kayıtta hazır seçili gelir. */
@@ -168,8 +168,10 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
   const card = state.cards.find((c) => c.id === id)
   const [bankName, setBankName] = useState(card?.bankName ?? preset.bankName ?? '')
   const [last4, setLast4] = useState(card?.last4 ?? '')
-  const [statementDay, setStatementDay] = useState(card ? String(card.statementDay) : '')
-  const [dueDay, setDueDay] = useState(card ? String(card.dueDay) : '')
+  const [kind, setKind] = useState<CardKind>(card?.kind ?? 'credit')
+  const [statementDay, setStatementDay] = useState<number | null>(card?.statementDay ?? null)
+  const [dueDay, setDueDay] = useState<number | null>(card?.dueDay ?? null)
+  const credit = kind === 'credit'
   const [error, setError] = useState('')
 
   // Renk banka adından gelir; listede olmayan bankada düzenlerken eski rengi koru
@@ -177,18 +179,18 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    const sDay = Number(statementDay)
-    const dDay = Number(dueDay)
     if (!bankName.trim()) return setError('Banka adını gir.')
     if (!/^\d{4}$/.test(last4)) return setError('Son 4 hane tam 4 rakam olmalı.')
-    if (!Number.isInteger(sDay) || sDay < 1 || sDay > 31) return setError('Hesap kesim günü 1-31 arası olmalı.')
-    if (!Number.isInteger(dDay) || dDay < 1 || dDay > 31) return setError('Son ödeme günü 1-31 arası olmalı.')
+    if (credit && !statementDay) return setError('Hesap kesim gününü seç.')
+    if (credit && !dueDay) return setError('Son ödeme gününü seç.')
     const saved: CreditCard = {
       id: card?.id ?? newId(),
       bankName: fullBankName(bankName),
       last4,
-      statementDay: sDay,
-      dueDay: dDay,
+      kind,
+      // Banka kartında kesim ve son ödeme yok
+      statementDay: credit ? statementDay : null,
+      dueDay: credit ? dueDay : null,
       // Limit ve kart ağı artık sorulmuyor; eski kartlarda varsa korunur
       limit: card?.limit ?? 0,
       color,
@@ -203,6 +205,12 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
 
   return (
     <form onSubmit={submit} className="mt-4 grid grid-cols-1 gap-3">
+      <Segmented
+        className="bg-surface"
+        value={kind}
+        onChange={setKind}
+        options={[{ value: 'credit', label: 'Kredi kartı' }, { value: 'debit', label: 'Banka kartı' }]}
+      />
       <FieldGroup>
         <Field label="Banka adı" htmlFor="c-bank">
           <input id="c-bank" className={inputClass} value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="Garanti BBVA" />
@@ -211,12 +219,16 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
         <Field label="Son 4 hane" htmlFor="c-last4">
           <input id="c-last4" className={cn(inputClass, 'num tracking-widest')} inputMode="numeric" autoComplete="off" value={last4} onChange={(e) => setLast4(digits(e.target.value, 4))} placeholder="1234" />
         </Field>
-        <Field label="Hesap kesim" htmlFor="c-st">
-          <input id="c-st" className={cn(inputClass, 'num')} inputMode="numeric" value={statementDay} onChange={(e) => setStatementDay(digits(e.target.value, 2))} placeholder="Ayın kaçı? 15" />
-        </Field>
-        <Field label="Son ödeme" htmlFor="c-due">
-          <input id="c-due" className={cn(inputClass, 'num')} inputMode="numeric" value={dueDay} onChange={(e) => setDueDay(digits(e.target.value, 2))} placeholder="Ayın kaçı? 25" />
-        </Field>
+        {credit && (
+          <>
+            <Field label="Hesap kesim" htmlFor="c-st">
+              <DaySelect id="c-st" value={statementDay} onChange={setStatementDay} />
+            </Field>
+            <Field label="Son ödeme" htmlFor="c-due">
+              <DaySelect id="c-due" value={dueDay} onChange={setDueDay} />
+            </Field>
+          </>
+        )}
       </FieldGroup>
 
       {error && <p className="px-1 text-sm text-bh-red" role="alert">{error}</p>}
