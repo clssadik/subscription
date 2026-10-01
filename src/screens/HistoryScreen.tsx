@@ -54,17 +54,6 @@ export function HistoryScreen() {
         </div>
       </section>
 
-      {/* Henüz kayıt yoksa: dolacak satırların soluk izi */}
-      {payments.length === 0 && (
-        <div className="grid grid-cols-2 gap-2" aria-hidden>
-          <div className="flex h-[84px] items-center justify-center rounded-[40px_40px_14px_14px] bg-surface opacity-60">
-            <Logo serviceKey="netflix" name="Netflix" size={50} className="opacity-50" />
-          </div>
-          <div className="flex h-[84px] items-center justify-center rounded-[14px] bg-surface opacity-60">
-            <Logo serviceKey="spotify" name="Spotify" size={50} className="opacity-50" />
-          </div>
-        </div>
-      )}
 
       {[...groups.entries()].map(([month, list]) => (
         <section key={month} className="mb-3">
