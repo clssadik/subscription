@@ -8,7 +8,7 @@ export function ShareBar({ subscriptions, height = 8 }: { subscriptions: Subscri
     .filter((s) => s.currency === 'TRY')
     .map((s) => ({ id: s.id, value: monthlyCost(s), color: serviceColor(s.serviceKey, s.name) }))
     .sort((a, b) => b.value - a.value)
-  if (items.length === 0) return <div className="rounded-full bg-white/15" style={{ height }} />
+  if (items.length === 0) return <div className="rounded-full bg-line" style={{ height }} />
   return (
     <div className="flex gap-[3px]" role="img" aria-label="Aboneliklerin aylık maliyetteki payları">
       {items.map((i) => (

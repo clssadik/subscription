@@ -1,30 +1,36 @@
-import { useState } from 'react'
-import { Segmented } from '@/components/FormBits'
+import { endOfMonth, endOfWeek, startOfDay } from 'date-fns'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { SubscriptionQuickStart } from '@/components/QuickStart'
 import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
 import { ShareBar } from '@/components/ShareBar'
 import { SwipeRow } from '@/components/SwipeRow'
-import { daysUntil, dueLabel, monthlyCost, nextRenewal } from '@/lib/dates'
-import { formatMoney } from '@/lib/format'
+import { daysUntil, monthlyCost, nextRenewal } from '@/lib/dates'
+import { formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import { useUndoable } from '@/lib/undo'
 import { CURRENCIES, type Subscription } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import type { Nav } from '@/App'
 
-type Sort = 'date' | 'amount' | 'card'
-
 export function SubscriptionsScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const undoable = useUndoable()
-  const [sort, setSort] = useState<Sort>('date')
   const { subscriptions, cards, payments } = state
 
-  const rows = subscriptions.map((s) => ({ s, next: nextRenewal(s, payments) }))
-  if (sort === 'date') rows.sort((a, b) => a.next.getTime() - b.next.getTime())
-  if (sort === 'amount') rows.sort((a, b) => monthlyCost(b.s) - monthlyCost(a.s))
+  const rows = subscriptions
+    .map((s) => ({ s, next: nextRenewal(s, payments) }))
+    .sort((a, b) => a.next.getTime() - b.next.getTime())
+
+  // Yaklaşan ödemeye göre üç grup
+  const today = startOfDay(new Date())
+  const weekEnd = endOfWeek(today, { weekStartsOn: 1 })
+  const monthEnd = endOfMonth(today)
+  const groups = [
+    { title: 'Bu hafta', list: rows.filter((r) => r.next <= weekEnd) },
+    { title: 'Bu ay', list: rows.filter((r) => r.next > weekEnd && r.next <= monthEnd) },
+    { title: 'Sonra', list: rows.filter((r) => r.next > monthEnd) },
+  ].filter((g) => g.list.length > 0)
 
   const totals = CURRENCIES.map((c) => ({
     currency: c,
@@ -36,25 +42,36 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
     return c ? `${c.bankName} •• ${c.last4}` : 'kart seçilmedi'
   }
 
-  const row = ({ s, next }: (typeof rows)[number]) => (
-    <SwipeRow
-      key={s.id}
-      onTap={() => nav.openSubscription(s.id)}
-      onDelete={() => undoable(`${s.name} silindi`, () => dispatch({ type: 'subscription/delete', id: s.id }))}
-    >
-      <div className="flex items-center gap-3 px-3 py-2.5">
-        <Logo serviceKey={s.serviceKey} name={s.name} />
-        <div className="min-w-0 flex-1">
-          <div className="truncate font-medium">{s.name}</div>
-          <div className="truncate text-[11px] text-subtle">{cardLabel(s)}{s.cycle === 'yearly' ? ' · yıllık' : ''}</div>
+  const row = ({ s, next }: (typeof rows)[number]) => {
+    const isToday = daysUntil(next) === 0
+    return (
+      <SwipeRow
+        key={s.id}
+        surface="bg-page"
+        onTap={() => nav.openSubscription(s.id)}
+        onDelete={() => undoable(`${s.name} silindi`, () => dispatch({ type: 'subscription/delete', id: s.id }))}
+      >
+        <div className="flex items-center gap-3 px-1 py-1.5">
+          {/* Takvim yaprağı gibi gün kutusu; bugün sarı */}
+          <div
+            className={cn(
+              'flex h-12 w-11 shrink-0 flex-col items-center justify-center rounded-xl',
+              isToday ? 'bg-bh-yellow text-[#141414]' : 'bg-surface',
+            )}
+          >
+            <span className="num num-bold text-lg leading-none">{next.getDate()}</span>
+            <span className={cn('label text-[8px]', !isToday && 'text-subtle')}>{formatDate(next, 'MMM').toLocaleUpperCase('tr')}</span>
+          </div>
+          <Logo serviceKey={s.serviceKey} name={s.name} size={32} />
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-medium">{s.name}</div>
+            <div className="truncate text-[11px] text-subtle">{cardLabel(s)}{s.cycle === 'yearly' ? ' · yıllık' : ''}</div>
+          </div>
+          <span className="num text-[15px]">{formatMoney(s.amount, s.currency)}</span>
         </div>
-        <div className="text-right">
-          <div className="num text-[15px]">{formatMoney(s.amount, s.currency)}</div>
-          <div className={cn('label', daysUntil(next) <= 1 ? 'font-semibold text-bh-red' : 'text-subtle')}>{dueLabel(next)}</div>
-        </div>
-      </div>
-    </SwipeRow>
-  )
+      </SwipeRow>
+    )
+  }
 
   return (
     <>
@@ -63,45 +80,26 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
         <SubscriptionQuickStart nav={nav} />
       ) : (
         <>
-          <section className="mb-2 flex h-[108px] flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg">
-            <div className="flex justify-between opacity-70">
+          <section className="mb-2 rounded-[22px] bg-surface p-3.5">
+            <div className="flex justify-between text-subtle">
               <span className="label">Aylık toplam</span>
               <span className="label">{subscriptions.length} abonelik</span>
             </div>
-            <div className="mt-1 leading-none">
+            <div className="mt-0.5 leading-none">
               <Money amount={totals[0].total} size={34} />
               {totals.slice(1).filter((t) => t.total > 0).map((t) => (
-                <span key={t.currency} className="num ml-2 text-sm opacity-60">+ {formatMoney(t.total, t.currency)}</span>
+                <span key={t.currency} className="num ml-2 text-sm text-subtle">+ {formatMoney(t.total, t.currency)}</span>
               ))}
             </div>
-            <div className="mt-auto"><ShareBar subscriptions={subscriptions} height={7} /></div>
+            <div className="mt-3"><ShareBar subscriptions={subscriptions} height={10} /></div>
           </section>
 
-          <Segmented
-            className="mb-2 bg-surface"
-            value={sort}
-            onChange={setSort}
-            options={[{ value: 'date', label: 'Tarihe göre' }, { value: 'amount', label: 'Tutara göre' }, { value: 'card', label: 'Karta göre' }]}
-          />
-
-          {sort === 'card' ? (
-            [...cards.map((c) => ({ id: c.id, title: `${c.bankName} •• ${c.last4}`, color: c.color })), { id: null, title: 'Kart seçilmedi', color: 'transparent' }].map((g) => {
-              const list = rows.filter((r) => r.s.cardId === g.id)
-              if (list.length === 0) return null
-              return (
-                <section key={g.id ?? 'none'} className="mb-3">
-                  <h2 className="label mb-1.5 flex items-center gap-2 px-1 text-subtle">
-                    <span className="size-2.5 rounded-full" style={{ background: g.color }} />
-                    {g.title}
-                  </h2>
-                  <div className="grid gap-1.5">{list.map(row)}</div>
-                </section>
-              )
-            })
-          ) : (
-            <div className="grid gap-1.5">{rows.map(row)}</div>
-          )}
-          <p className="mt-3 text-center text-[11px] text-subtle">Silmek için satırı sola kaydır</p>
+          {groups.map((g) => (
+            <section key={g.title}>
+              <h2 className="label mt-4 mb-1 px-1 text-subtle">{g.title}</h2>
+              <div className="grid gap-0.5">{g.list.map(row)}</div>
+            </section>
+          ))}
         </>
       )}
     </>

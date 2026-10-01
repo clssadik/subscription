@@ -10,11 +10,14 @@ export function SwipeRow({
   onTap,
   onDelete,
   className,
+  surface = 'bg-surface',
 }: {
   children: ReactNode
   onTap: () => void
   onDelete: () => void
   className?: string
+  /** Satırın zemin rengi (kırmızı "Sil"in üstünü örtmesi için opak olmalı) */
+  surface?: string
 }) {
   const [x, setX] = useState(0)
   const [dragging, setDragging] = useState(false)
@@ -26,6 +29,8 @@ export function SwipeRow({
         onClick={onDelete}
         aria-label="Sil"
         tabIndex={x === 0 ? -1 : 0}
+        // Kaydırılmadıkça gizli; yoksa yuvarlak köşenin arkasından ince kırmızı bir çizgi sızıyor
+        style={{ visibility: x === 0 && !dragging ? 'hidden' : 'visible' }}
         className="absolute inset-y-0 right-0 flex w-[84px] items-center justify-center gap-1 bg-bh-red text-sm font-medium text-white"
       >
         <Trash2Icon className="size-4" /> Sil
@@ -34,7 +39,7 @@ export function SwipeRow({
         role="button"
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && onTap()}
-        className="relative bg-surface select-none"
+        className={cn('relative select-none', surface)}
         style={{
           transform: `translateX(${x}px)`,
           transition: dragging ? 'none' : 'transform 220ms cubic-bezier(.2,.8,.2,1)',
