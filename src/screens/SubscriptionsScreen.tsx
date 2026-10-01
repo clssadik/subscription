@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Segmented } from '@/components/FormBits'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
-import { AddButton, EmptyState, ScreenHeader } from '@/components/ScreenHeader'
+import { EmptyState, ScreenHeader } from '@/components/ScreenHeader'
 import { ShareBar } from '@/components/ShareBar'
 import { SwipeRow } from '@/components/SwipeRow'
 import { daysUntil, dueLabel, monthlyCost, nextRenewal } from '@/lib/dates'
@@ -57,7 +57,7 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
 
   return (
     <>
-      <ScreenHeader title="Abonelikler" action={<AddButton label="Abonelik ekle" onClick={nav.add} />} />
+      <ScreenHeader title="Abonelikler" />
       {subscriptions.length === 0 ? (
         <EmptyState
           title="Abonelik yok"

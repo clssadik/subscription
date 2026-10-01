@@ -1,7 +1,7 @@
 import { CheckCircle2Icon, PencilIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Logo } from '@/components/Logo'
-import { AddButton, EmptyState, ScreenHeader } from '@/components/ScreenHeader'
+import { EmptyState, ScreenHeader } from '@/components/ScreenHeader'
 import { BigDays } from '@/screens/HomeScreen'
 import { NETWORKS } from '@/lib/banks'
 import { monthlyCost, nextCardDue, toKey } from '@/lib/dates'
@@ -17,7 +17,7 @@ export function CardsScreen({ nav, selectedId, onSelect }: { nav: Nav; selectedI
   if (cards.length === 0) {
     return (
       <>
-        <ScreenHeader title="Kartlar" action={<AddButton label="Kart ekle" onClick={nav.addCard} />} />
+        <ScreenHeader title="Kartlar" />
         <EmptyState
           title="Kart ekle"
           text="Sadece banka adı ve son 4 hane. Son ödeme günü yaklaşınca burada ve özet ekranında görünür."
@@ -44,7 +44,7 @@ export function CardsScreen({ nav, selectedId, onSelect }: { nav: Nav; selectedI
 
   return (
     <>
-      <ScreenHeader title="Kartlar" action={<AddButton label="Kart ekle" onClick={nav.addCard} />} />
+      <ScreenHeader title="Kartlar" />
       <div>
         {stack.map((c) => (
           <button

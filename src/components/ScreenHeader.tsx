@@ -1,4 +1,3 @@
-import { PlusIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { formatDate } from '@/lib/format'
 
@@ -18,15 +17,6 @@ export function RoundButton({ label, onClick, children }: { label: string; onCli
   return (
     <button onClick={onClick} aria-label={label} className="pressable flex size-11 items-center justify-center rounded-full bg-surface">
       {children}
-    </button>
-  )
-}
-
-/** Başlığın sağındaki sarı "+" */
-export function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button onClick={onClick} aria-label={label} className="pressable flex size-11 items-center justify-center rounded-full bg-bh-yellow text-[#141414]">
-      <PlusIcon className="size-6" strokeWidth={2} />
     </button>
   )
 }

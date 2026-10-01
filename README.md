@@ -3,13 +3,6 @@
 Personal PWA for tracking subscriptions and credit card payments.
 Vite + React + TypeScript + Tailwind + shadcn/ui + vite-plugin-pwa.
 
-## Setup
-
-1. Create a Supabase project and run `supabase/migrations/0001_init.sql` in the SQL Editor.
-2. In Authentication > Emails, put `{{ .Token }}` in the "Confirm signup" and "Magic Link" templates so users get a 6-digit code.
-3. Copy `.env.example` to `.env.local` and fill in the project URL and anon key.
-4. `npm install`
-
 ## Commands
 
 - `npm run dev` — dev server (http://localhost:5173)
@@ -19,13 +12,10 @@ Vite + React + TypeScript + Tailwind + shadcn/ui + vite-plugin-pwa.
 
 ## Structure
 
-- `src/screens/` — Login, Summary, Subscriptions (+ detail), Account, Cards, History screens
+- `src/screens/` — Summary, Subscriptions (+ detail), Cards, History screens
 - `src/components/` — bottom nav, add sheet, logo, swipe-to-delete and other parts
 - `src/lib/types.ts` — data types
-- `src/lib/store.tsx` — app state; changes are synced to Supabase, last state cached on device
-- `src/lib/db.ts` — Supabase reads and writes
-- `src/lib/auth.tsx` — sign-in gate (email + 6-digit code)
-- `supabase/migrations/` — database schema with row level security
+- `src/lib/store.tsx` — data (on device for now, localStorage)
 - `src/lib/dates.ts` — renewal, due date and monthly calculations
 - `src/lib/services.ts` — preset services and logos
 - `src/lib/banks.ts` — Turkish banks and card colors
