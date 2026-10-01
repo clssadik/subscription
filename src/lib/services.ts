@@ -20,6 +20,7 @@ import {
   siYoutube,
   type SimpleIcon,
 } from 'simple-icons'
+import { colorFromName } from './color'
 
 // Hazır servis listesi. Logo iki yerden gelir:
 // 1) simple-icons paketi (uygulamanın içine gömülü, internetsiz çalışır)
@@ -129,9 +130,3 @@ export function normalize(s: string) {
   return s.toLocaleLowerCase('tr').replace(/[^a-z0-9çğıöşü]/g, '')
 }
 
-const FALLBACK = ['#1F4FB4', '#D9381E', '#B8860B', '#0B7A43', '#6A1B9A', '#00838F', '#AD1457']
-function colorFromName(name: string) {
-  let h = 0
-  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0
-  return FALLBACK[h % FALLBACK.length]
-}

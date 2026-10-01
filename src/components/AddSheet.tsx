@@ -4,12 +4,12 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { Field, FieldGroup, inputClass, PrimaryButton, Segmented, selectClass } from '@/components/FormBits'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer'
-import { BANKS, CARD_COLORS, NETWORKS, bankColor } from '@/lib/banks'
+import { bankColor, bankName as fullBankName, cardColor } from '@/lib/banks'
 import { parseAmount } from '@/lib/format'
 import { getService, matchService } from '@/lib/services'
 import { newId, useStore } from '@/lib/store'
 import { useUndoable } from '@/lib/undo'
-import { CURRENCIES, type BillingCycle, type CardNetwork, type CreditCard, type Currency, type Subscription } from '@/lib/types'
+import { CURRENCIES, type BillingCycle, type CreditCard, type Currency, type Subscription } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 /** Açılacak form. id varsa düzenleme; serviceKey/name/bankName yeni kayıtta hazır seçili gelir. */
@@ -30,13 +30,9 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
     <Drawer open={!!target} onOpenChange={(o) => !o && onClose()}>
       <DrawerContent className="max-h-[94svh] rounded-t-[30px] border-0 bg-page data-[vaul-drawer-direction=bottom]:max-h-[94svh]">
         <div className="mx-auto w-full max-w-md overflow-y-auto px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-          <div className="flex items-center justify-between pt-3 pb-1">
-            <button onClick={onClose} className="min-h-11 text-subtle">Vazgeç</button>
-            <DrawerTitle className="num text-lg font-medium">
-              {editing ? (kind === 'card' ? 'Kartı düzenle' : 'Aboneliği düzenle') : 'Yeni ekle'}
-            </DrawerTitle>
-            <span className="w-14" />
-          </div>
+          <DrawerTitle className="num pt-3 pb-1 text-center text-lg font-medium">
+            {editing ? (kind === 'card' ? 'Kartı düzenle' : 'Aboneliği düzenle') : 'Yeni ekle'}
+          </DrawerTitle>
           <DrawerDescription className="sr-only">Abonelik ya da kart bilgilerini gir.</DrawerDescription>
 
           {!editing && (
@@ -171,39 +167,32 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
   const undoable = useUndoable()
   const card = state.cards.find((c) => c.id === id)
   const [bankName, setBankName] = useState(card?.bankName ?? preset.bankName ?? '')
-  const [color, setColor] = useState(card?.color ?? bankColor(preset.bankName ?? '') ?? CARD_COLORS[0])
   const [last4, setLast4] = useState(card?.last4 ?? '')
   const [statementDay, setStatementDay] = useState(card ? String(card.statementDay) : '')
   const [dueDay, setDueDay] = useState(card ? String(card.dueDay) : '')
-  const [limit, setLimit] = useState(card ? String(card.limit) : '')
-  const [network, setNetwork] = useState<CardNetwork | null>(card?.network ?? null)
   const [error, setError] = useState('')
 
-  function chooseBank(name: string) {
-    setBankName(name)
-    const c = bankColor(name)
-    if (c) setColor(c)
-  }
+  // Renk banka adından gelir; listede olmayan bankada düzenlerken eski rengi koru
+  const color = bankColor(bankName) ?? (card && card.bankName === bankName.trim() ? card.color : cardColor(bankName))
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
     const sDay = Number(statementDay)
     const dDay = Number(dueDay)
-    const lim = limit.trim() ? parseAmount(limit) : 0
-    if (!bankName.trim()) return setError('Banka adını gir ya da listeden seç.')
+    if (!bankName.trim()) return setError('Banka adını gir.')
     if (!/^\d{4}$/.test(last4)) return setError('Son 4 hane tam 4 rakam olmalı.')
     if (!Number.isInteger(sDay) || sDay < 1 || sDay > 31) return setError('Hesap kesim günü 1-31 arası olmalı.')
     if (!Number.isInteger(dDay) || dDay < 1 || dDay > 31) return setError('Son ödeme günü 1-31 arası olmalı.')
-    if (!(lim >= 0)) return setError('Limiti sayı olarak gir.')
     const saved: CreditCard = {
       id: card?.id ?? newId(),
-      bankName: bankName.trim(),
+      bankName: fullBankName(bankName),
       last4,
       statementDay: sDay,
       dueDay: dDay,
-      limit: lim,
+      // Limit ve kart ağı artık sorulmuyor; eski kartlarda varsa korunur
+      limit: card?.limit ?? 0,
       color,
-      network,
+      network: card?.network ?? null,
     }
     dispatch({ type: 'card/save', card: saved })
     toast.success(card ? 'Kart güncellendi' : 'Kart eklendi')
@@ -214,30 +203,10 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
 
   return (
     <form onSubmit={submit} className="mt-4 grid grid-cols-1 gap-3">
-      <div>
-        <span className="label mb-2 block px-1 text-subtle">Banka</span>
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
-          {BANKS.map((b) => (
-            <button
-              key={b.name}
-              type="button"
-              onClick={() => chooseBank(b.name)}
-              aria-pressed={bankName === b.name}
-              className={cn(
-                'pressable flex min-h-10 shrink-0 items-center gap-2 rounded-full px-3 text-sm',
-                bankName === b.name ? 'bg-ink text-page' : 'bg-surface',
-              )}
-            >
-              <span className="size-2.5 rounded-full" style={{ background: b.color }} />
-              {b.name}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <FieldGroup>
         <Field label="Banka adı" htmlFor="c-bank">
-          <input id="c-bank" className={inputClass} value={bankName} onChange={(e) => chooseBank(e.target.value)} placeholder="Listede yoksa yaz" />
+          <input id="c-bank" className={inputClass} value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="Garanti BBVA" />
+          {bankName.trim() && <span aria-hidden className="size-4 shrink-0 rounded-full" style={{ background: color }} />}
         </Field>
         <Field label="Son 4 hane" htmlFor="c-last4">
           <input id="c-last4" className={cn(inputClass, 'num tracking-widest')} inputMode="numeric" autoComplete="off" value={last4} onChange={(e) => setLast4(digits(e.target.value, 4))} placeholder="1234" />
@@ -247,32 +216,6 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
         </Field>
         <Field label="Son ödeme" htmlFor="c-due">
           <input id="c-due" className={cn(inputClass, 'num')} inputMode="numeric" value={dueDay} onChange={(e) => setDueDay(digits(e.target.value, 2))} placeholder="Ayın kaçı? 25" />
-        </Field>
-        <Field label="Limit (₺)" htmlFor="c-limit">
-          <input id="c-limit" className={cn(inputClass, 'num')} inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="İsteğe bağlı" />
-        </Field>
-        <Field label="Kart ağı" stacked>
-          <Segmented
-            className="w-full"
-            value={network ?? ('none' as const)}
-            onChange={(v) => setNetwork(v === 'none' ? null : (v as CardNetwork))}
-            options={[{ value: 'none' as const, label: '—' }, ...NETWORKS.map((n) => ({ value: n.key, label: n.label }))]}
-          />
-        </Field>
-        <Field label="Renk">
-          <div className="flex flex-wrap gap-2 py-1.5">
-            {(CARD_COLORS.includes(color) ? CARD_COLORS : [color, ...CARD_COLORS.slice(0, -1)]).map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setColor(c)}
-                aria-label={`Renk ${c}`}
-                aria-pressed={color === c}
-                className={cn('size-7 rounded-full', color === c && 'outline-2 outline-offset-2 outline-bh-yellow')}
-                style={{ background: c }}
-              />
-            ))}
-          </div>
         </Field>
       </FieldGroup>
 
