@@ -8,10 +8,12 @@ interface Props {
   name: string
   size?: number
   className?: string
+  /** Logonun rengini zorla (ör. marka renkli kutuda beyaz) */
+  color?: string
 }
 
 /** Servis logosu: koyu kare üzerinde markanın kendi renginde. Logo yoksa renkli harf. */
-export function Logo({ serviceKey, name, size = 34, className }: Props) {
+export function Logo({ serviceKey, name, size = 34, className, color }: Props) {
   const logo = logoFor(serviceKey, name)
   const inner = Math.round(size * 0.55)
   const style = { width: size, height: size, borderRadius: Math.round(size * 0.24) }
@@ -32,7 +34,7 @@ export function Logo({ serviceKey, name, size = 34, className }: Props) {
       {logo.type === 'image' ? (
         <img src={logo.url} alt="" style={{ width: inner, height: inner }} />
       ) : (
-        <svg viewBox="0 0 24 24" width={inner} height={inner} fill={luminance(logo.color) < 0.2 ? '#fff' : logo.color}>
+        <svg viewBox="0 0 24 24" width={inner} height={inner} fill={color ?? (luminance(logo.color) < 0.2 ? '#fff' : logo.color)}>
           <path d={logo.path} />
         </svg>
       )}

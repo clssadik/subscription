@@ -1,8 +1,8 @@
-import { CreditCardIcon, PencilIcon, PlusIcon, SearchIcon } from 'lucide-react'
+import { CreditCardIcon, PlusIcon, SearchIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { BANKS } from '@/lib/banks'
-import { SERVICES, normalize } from '@/lib/services'
+import { SERVICES, getService, normalize, serviceColor } from '@/lib/services'
 import { cn } from '@/lib/utils'
 import type { Nav } from '@/App'
 
@@ -42,15 +42,44 @@ export function ServiceMosaic({ nav, services = POPULAR }: { nav: Nav; services?
   )
 }
 
+// Özet ekranındaki bento: kutular farklı boyda ve her biri servisin kendi renginde
+const BENTO: { key: string; cls: string; glyph: number; fg: string; name?: boolean }[] = [
+  { key: 'netflix', cls: 'col-span-2 row-span-2 rounded-[90px_90px_18px_18px]', glyph: 52, fg: '#fff', name: true },
+  { key: 'spotify', cls: 'col-span-2 rounded-[18px]', glyph: 34, fg: '#000' },
+  { key: 'youtube', cls: 'rounded-[18px_40px_18px_18px]', glyph: 30, fg: '#fff' },
+  { key: 'icloud', cls: 'rounded-full', glyph: 30, fg: '#fff' },
+  { key: 'claude', cls: 'rounded-[18px]', glyph: 30, fg: '#fff' },
+  { key: 'playstation', cls: 'rounded-[40px_18px_18px_18px]', glyph: 30, fg: '#fff' },
+  { key: 'hbomax', cls: 'col-span-2 rounded-[18px_18px_44px_18px]', glyph: 40, fg: '#fff' },
+  { key: 'gemini', cls: 'col-span-2 rounded-[18px_18px_18px_44px]', glyph: 32, fg: '#fff' },
+  { key: 'duolingo', cls: 'col-span-2 rounded-[18px]', glyph: 34, fg: '#fff' },
+]
+
 /** Özet ekranı boşken */
 export function HomeQuickStart({ nav }: { nav: Nav }) {
   return (
     <>
       <p className="label mb-2 px-1 text-subtle">İlk aboneliğini seç</p>
-      <ServiceMosaic nav={nav} />
+      <div className="grid auto-rows-[78px] grid-cols-4 gap-2">
+        {BENTO.map((b) => {
+          const s = getService(b.key)!
+          return (
+            <button
+              key={b.key}
+              onClick={() => nav.add({ serviceKey: b.key })}
+              aria-label={`${s.name} ekle`}
+              className={cn('pressable flex flex-col items-center justify-center gap-2', b.cls)}
+              style={{ background: serviceColor(s.key, s.name) }}
+            >
+              <Logo serviceKey={s.key} name={s.name} size={Math.round(b.glyph / 0.55)} color={b.fg} className="bg-transparent" />
+              {b.name && <span className="text-base font-medium" style={{ color: b.fg }}>{s.name}</span>}
+            </button>
+          )
+        })}
+      </div>
       <div className="mt-2 grid grid-cols-2 gap-2">
         <button onClick={() => nav.add()} className="pressable flex min-h-14 items-center justify-center gap-2 rounded-[14px] bg-bh-blue font-medium text-white">
-          <PencilIcon className="size-4" /> Elle ekle
+          <PlusIcon className="size-4" /> Abonelik ekle
         </button>
         <button onClick={() => nav.addCard()} className="pressable flex min-h-14 items-center justify-center gap-2 rounded-[14px_14px_14px_40px] bg-bh-red font-medium text-white">
           <CreditCardIcon className="size-4" /> Kart ekle
