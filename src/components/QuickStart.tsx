@@ -93,7 +93,6 @@ export function SubscriptionQuickStart({ nav }: { nav: Nav }) {
           className="w-full bg-transparent text-base text-ink outline-none placeholder:text-subtle"
         />
       </label>
-      {!q && <p className="label mb-2.5 px-1 text-subtle">Popüler</p>}
       <div className="grid grid-cols-4 gap-x-2 gap-y-3.5">
         {list.map((s) => {
           const dark = luminance(serviceColor(s.key, s.name)) < 0.2 || s.icon?.hex === '000000'
