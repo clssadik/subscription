@@ -3,11 +3,10 @@ import { CreditCardIcon, RepeatIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Field, FieldGroup, inputClass, PrimaryButton, Segmented, selectClass } from '@/components/FormBits'
-import { Logo } from '@/components/Logo'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer'
 import { BANKS, CARD_COLORS, NETWORKS, bankColor } from '@/lib/banks'
 import { parseAmount } from '@/lib/format'
-import { QUICK_PICKS, SERVICES, getService, matchService } from '@/lib/services'
+import { getService, matchService } from '@/lib/services'
 import { newId, useStore } from '@/lib/store'
 import { useUndoable } from '@/lib/undo'
 import { CURRENCIES, type BillingCycle, type CardNetwork, type CreditCard, type Currency, type Subscription } from '@/lib/types'
@@ -42,7 +41,7 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
 
           {!editing && (
             <div className="mt-3 flex gap-2">
-              <KindButton active={kind === 'subscription'} onClick={() => setKind('subscription')} arch>
+              <KindButton active={kind === 'subscription'} onClick={() => setKind('subscription')}>
                 <RepeatIcon className="size-5" /> Abonelik
               </KindButton>
               <KindButton active={kind === 'card'} onClick={() => setKind('card')}>
@@ -63,7 +62,7 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
   )
 }
 
-function KindButton({ active, arch, onClick, children }: { active: boolean; arch?: boolean; onClick: () => void; children: React.ReactNode }) {
+function KindButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       type="button"
@@ -71,7 +70,7 @@ function KindButton({ active, arch, onClick, children }: { active: boolean; arch
       aria-pressed={active}
       className={cn(
         'pressable flex h-16 flex-1 flex-col items-center justify-center gap-0.5 font-label text-sm',
-        arch ? 'rounded-[32px_32px_14px_14px]' : 'rounded-[14px]',
+        'rounded-[14px]',
         active ? 'bg-bh-yellow font-medium text-[#141414]' : 'bg-surface text-subtle',
       )}
     >
@@ -84,7 +83,7 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
   const { state, dispatch } = useStore()
   const undoable = useUndoable()
   const sub = state.subscriptions.find((s) => s.id === id)
-  const [serviceKey, setServiceKey] = useState<string | null>(sub?.serviceKey ?? preset.serviceKey ?? null)
+  const [serviceKey] = useState<string | null>(sub?.serviceKey ?? preset.serviceKey ?? null)
   const [name, setName] = useState(sub?.name ?? getService(preset.serviceKey)?.name ?? preset.name ?? '')
   const [amount, setAmount] = useState(sub ? String(sub.amount).replace('.', ',') : '')
   const [currency, setCurrency] = useState<Currency>(sub?.currency ?? 'TRY')
@@ -92,15 +91,8 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
   const [renewalDate, setRenewalDate] = useState(() => sub?.renewalDate ?? format(new Date(), 'yyyy-MM-dd'))
   const [cardId, setCardId] = useState(sub?.cardId ?? '')
   const [error, setError] = useState('')
-  const [showAll, setShowAll] = useState(false)
 
-  const picks = showAll ? SERVICES : SERVICES.filter((s) => QUICK_PICKS.includes(s.key))
 
-  function pick(key: string) {
-    const s = getService(key)!
-    setServiceKey(key)
-    setName(s.name)
-  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -127,32 +119,6 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
 
   return (
     <form onSubmit={submit} className="mt-4 grid grid-cols-1 gap-3">
-      <div>
-        <div className="mb-2 flex items-center justify-between px-1">
-          <span className="label text-subtle">Hızlı seç</span>
-          <button type="button" onClick={() => setShowAll((v) => !v)} className="min-h-9 text-sm text-subtle">
-            {showAll ? 'Daha az' : 'Tümü'}
-          </button>
-        </div>
-        <div className="grid grid-cols-6 gap-2">
-          {picks.map((s) => (
-            <button
-              key={s.key}
-              type="button"
-              onClick={() => pick(s.key)}
-              aria-label={s.name}
-              aria-pressed={serviceKey === s.key}
-              className={cn(
-                'pressable flex aspect-square items-center justify-center rounded-xl',
-                serviceKey === s.key && 'outline-2 outline-offset-2 outline-bh-yellow',
-              )}
-            >
-              <Logo serviceKey={s.key} name={s.name} size={40} />
-            </button>
-          ))}
-        </div>
-      </div>
-
       <FieldGroup>
         <Field label="Ad" htmlFor="s-name">
           <input id="s-name" className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Netflix" />

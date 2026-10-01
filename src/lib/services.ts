@@ -71,9 +71,6 @@ export const SERVICES: Service[] = [
   { key: 'storytel', name: 'Storytel', color: '#FF5C28' },
 ]
 
-/** Hızlı seç ızgarasında ilk görünenler */
-export const QUICK_PICKS = ['netflix', 'spotify', 'youtube', 'icloud', 'disney', 'exxen']
-
 // Elle eklenen logolar: src/assets/logos/netflix.svg gibi. Dosya adı = servis anahtarı.
 const localLogos = import.meta.glob('../assets/logos/*.svg', {
   eager: true,
