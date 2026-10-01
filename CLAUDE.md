@@ -3,6 +3,12 @@
 Kişisel abonelik ve kredi kartı takip PWA'sı (iPhone'a "Ana Ekrana Ekle" ile kurulur).
 Vite + React + TypeScript + Tailwind v4 + shadcn/ui. Kullanıcı yeni başlıyor: adımları sade Türkçeyle açıkla.
 
+## Git ve README
+
+- Commit mesajları ve README İngilizce.
+- Commit mesajı tek satır, kısa ve sade; ne değiştiğini söyler, hikâye anlatmaz.
+- Doğrudan `main`'e commit + push (tek kişilik proje, PR yok).
+
 ## Her oturumun başında: eksik logolar
 
 Logosu olmayan bir servis eklendiğinde uygulama bunu `missingLogos` listesine not alır
