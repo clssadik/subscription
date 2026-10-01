@@ -131,7 +131,6 @@ export function SubscriptionQuickStart({ nav }: { nav: Nav }) {
 export function CardQuickStart({ nav }: { nav: Nav }) {
   return (
     <>
-      <p className="label mb-2 px-1 text-subtle">Bankanı seç</p>
       <div className="grid grid-cols-2 gap-2">
         {BANKS.slice(0, 7).map((b) => (
           <button
