@@ -127,35 +127,31 @@ export function SubscriptionQuickStart({ nav }: { nav: Nav }) {
   )
 }
 
-const BANK_SHAPES = [
-  'rounded-[14px_40px_14px_14px]',
-  'rounded-[14px]',
-  'rounded-[14px]',
-  'rounded-[40px_14px_14px_14px]',
-  'rounded-[14px_14px_14px_40px]',
-  'rounded-[14px]',
-  'rounded-[14px]',
-  'rounded-[14px_14px_40px_14px]',
-]
-
-/** Kartlar ekranı boşken: bankalar kendi renklerinde */
+/** Kartlar ekranı boşken: gerçek kart oranında, banka renginde mini kartlar */
 export function CardQuickStart({ nav }: { nav: Nav }) {
   return (
     <>
       <p className="label mb-2 px-1 text-subtle">Bankanı seç</p>
       <div className="grid grid-cols-2 gap-2">
-        {BANKS.slice(0, 7).map((b, i) => (
+        {BANKS.slice(0, 7).map((b) => (
           <button
             key={b.name}
             onClick={() => nav.addCard(b.name)}
-            className={cn('pressable flex h-[62px] items-end p-2.5 text-left text-[13px] font-medium text-white', BANK_SHAPES[i])}
+            aria-label={`${b.name} kartı ekle`}
+            className="pressable relative flex aspect-[1.586] flex-col overflow-hidden rounded-xl px-2.5 py-2 text-left text-white"
             style={{ background: b.color }}
           >
-            {b.name}
+            <span aria-hidden className="absolute -right-5 -bottom-5 size-16 rounded-full bg-black/18" />
+            <span className="relative font-label text-[13px] font-medium">{b.name}</span>
+            {/* kart çipi */}
+            <span aria-hidden className="relative mt-auto h-3.5 w-5 rounded-[4px] bg-white/35" />
           </button>
         ))}
-        <button onClick={() => nav.addCard()} className={cn('pressable flex h-[62px] items-end justify-between bg-surface p-2.5 text-left text-[13px] font-medium', BANK_SHAPES[7])}>
-          Diğer <PlusIcon className="size-4 text-subtle" />
+        <button
+          onClick={() => nav.addCard()}
+          className="pressable flex aspect-[1.586] items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-dashed border-subtle/40 text-sm text-subtle"
+        >
+          <PlusIcon className="size-4" /> Diğer
         </button>
       </div>
     </>
