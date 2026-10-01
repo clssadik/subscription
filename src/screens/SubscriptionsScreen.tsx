@@ -1,83 +1,112 @@
-import { PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import { useState } from 'react'
-import { toast } from 'sonner'
-import { DueBadge } from '@/components/DueBadge'
-import { SubscriptionForm } from '@/components/SubscriptionForm'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { nextRenewal } from '@/lib/dates'
-import { formatMoney, formatShortDate } from '@/lib/format'
+import { Segmented } from '@/components/FormBits'
+import { Logo } from '@/components/Logo'
+import { Money } from '@/components/Money'
+import { EmptyState, ScreenHeader } from '@/components/ScreenHeader'
+import { ShareBar } from '@/components/ShareBar'
+import { SwipeRow } from '@/components/SwipeRow'
+import { daysUntil, dueLabel, monthlyCost, nextRenewal } from '@/lib/dates'
+import { formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
-import { CYCLE_LABELS, type Subscription } from '@/lib/types'
+import { useUndoable } from '@/lib/undo'
+import { CURRENCIES, type Subscription } from '@/lib/types'
+import { cn } from '@/lib/utils'
+import type { Nav } from '@/App'
 
-export function SubscriptionsScreen() {
+type Sort = 'date' | 'amount' | 'card'
+
+export function SubscriptionsScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
-  const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState<Subscription | undefined>()
+  const undoable = useUndoable()
+  const [sort, setSort] = useState<Sort>('date')
+  const { subscriptions, cards, payments } = state
 
-  function openForm(subscription?: Subscription) {
-    setEditing(subscription)
-    setFormOpen(true)
+  const rows = subscriptions.map((s) => ({ s, next: nextRenewal(s, payments) }))
+  if (sort === 'date') rows.sort((a, b) => a.next.getTime() - b.next.getTime())
+  if (sort === 'amount') rows.sort((a, b) => monthlyCost(b.s) - monthlyCost(a.s))
+
+  const totals = CURRENCIES.map((c) => ({
+    currency: c,
+    total: subscriptions.filter((s) => s.currency === c).reduce((sum, s) => sum + monthlyCost(s), 0),
+  }))
+
+  const cardLabel = (s: Subscription) => {
+    const c = cards.find((c) => c.id === s.cardId)
+    return c ? `${c.bankName} •• ${c.last4}` : 'kart seçilmedi'
   }
 
-  function remove(sub: Subscription) {
-    if (!window.confirm(`${sub.name} silinsin mi?`)) return
-    dispatch({ type: 'subscription/delete', id: sub.id })
-    toast.success('Abonelik silindi')
-  }
-
-  const sorted = state.subscriptions
-    .map((s) => ({ sub: s, next: nextRenewal(s) }))
-    .sort((a, b) => a.next.getTime() - b.next.getTime())
+  const row = ({ s, next }: (typeof rows)[number]) => (
+    <SwipeRow
+      key={s.id}
+      onTap={() => nav.openSubscription(s.id)}
+      onDelete={() => undoable(`${s.name} silindi`, () => dispatch({ type: 'subscription/delete', id: s.id }))}
+    >
+      <div className="flex items-center gap-3 px-3 py-2.5">
+        <Logo serviceKey={s.serviceKey} name={s.name} />
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-medium">{s.name}</div>
+          <div className="truncate text-[11px] text-subtle">{cardLabel(s)}{s.cycle === 'yearly' ? ' · yıllık' : ''}</div>
+        </div>
+        <div className="text-right">
+          <div className="num text-[15px]">{formatMoney(s.amount, s.currency)}</div>
+          <div className={cn('label', daysUntil(next) <= 1 ? 'font-semibold text-bh-red' : 'text-subtle')}>{dueLabel(next)}</div>
+        </div>
+      </div>
+    </SwipeRow>
+  )
 
   return (
-    <div className="grid gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Abonelikler</h1>
-        <Button onClick={() => openForm()}><PlusIcon /> Abonelik ekle</Button>
-      </div>
+    <>
+      <ScreenHeader title="Abonelikler" />
+      {subscriptions.length === 0 ? (
+        <EmptyState
+          title="Abonelik yok"
+          text="Netflix, Spotify, iCloud… Ekledikçe aylık toplamın burada oluşur."
+          action={<button onClick={nav.add} className="pressable min-h-11 rounded-full bg-ink px-5 text-page">Abonelik ekle</button>}
+        />
+      ) : (
+        <>
+          <section className="mb-2 flex h-[108px] flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg">
+            <div className="flex justify-between opacity-70">
+              <span className="label">Aylık toplam</span>
+              <span className="label">{subscriptions.length} abonelik</span>
+            </div>
+            <div className="mt-1 leading-none">
+              <Money amount={totals[0].total} size={34} />
+              {totals.slice(1).filter((t) => t.total > 0).map((t) => (
+                <span key={t.currency} className="num ml-2 text-sm opacity-60">+ {formatMoney(t.total, t.currency)}</span>
+              ))}
+            </div>
+            <div className="mt-auto"><ShareBar subscriptions={subscriptions} height={7} /></div>
+          </section>
 
-      {sorted.length === 0 && (
-        <p className="py-8 text-center text-muted-foreground">Henüz abonelik eklemedin.</p>
+          <Segmented
+            className="mb-2 bg-surface"
+            value={sort}
+            onChange={setSort}
+            options={[{ value: 'date', label: 'Tarihe göre' }, { value: 'amount', label: 'Tutara göre' }, { value: 'card', label: 'Karta göre' }]}
+          />
+
+          {sort === 'card' ? (
+            [...cards.map((c) => ({ id: c.id, title: `${c.bankName} •• ${c.last4}`, color: c.color })), { id: null, title: 'Kart seçilmedi', color: 'transparent' }].map((g) => {
+              const list = rows.filter((r) => r.s.cardId === g.id)
+              if (list.length === 0) return null
+              return (
+                <section key={g.id ?? 'none'} className="mb-3">
+                  <h2 className="label mb-1.5 flex items-center gap-2 px-1 text-subtle">
+                    <span className="size-2.5 rounded-full" style={{ background: g.color }} />
+                    {g.title}
+                  </h2>
+                  <div className="grid gap-1.5">{list.map(row)}</div>
+                </section>
+              )
+            })
+          ) : (
+            <div className="grid gap-1.5">{rows.map(row)}</div>
+          )}
+          <p className="mt-3 text-center text-[11px] text-subtle">Silmek için satırı sola kaydır</p>
+        </>
       )}
-
-      {sorted.map(({ sub, next }) => {
-        const card = state.cards.find((c) => c.id === sub.cardId)
-        return (
-          <Card key={sub.id}>
-            <CardContent className="flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{sub.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {formatMoney(sub.amount, sub.currency)} · {CYCLE_LABELS[sub.cycle]}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {card ? `${card.bankName} •••• ${card.last4}` : 'Kart seçilmedi'}
-                </p>
-                <div className="mt-1 flex items-center gap-2 text-sm">
-                  <span>Yenilenme: {formatShortDate(next)}</span>
-                  <DueBadge date={next} />
-                </div>
-              </div>
-              <div className="flex flex-col gap-1">
-                <Button variant="ghost" size="icon" aria-label="Düzenle" onClick={() => openForm(sub)}><PencilIcon /></Button>
-                <Button variant="ghost" size="icon" aria-label="Sil" onClick={() => remove(sub)}><Trash2Icon /></Button>
-              </div>
-            </CardContent>
-          </Card>
-        )
-      })}
-
-      <SubscriptionForm
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        subscription={editing}
-        onSave={(subscription) => {
-          dispatch({ type: 'subscription/save', subscription })
-          setFormOpen(false)
-          toast.success(editing ? 'Abonelik güncellendi' : 'Abonelik eklendi')
-        }}
-      />
-    </div>
+    </>
   )
 }

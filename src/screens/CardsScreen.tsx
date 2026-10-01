@@ -1,97 +1,135 @@
-import { PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react'
-import { useState } from 'react'
+import { CheckCircle2Icon, PencilIcon } from 'lucide-react'
 import { toast } from 'sonner'
-import { CardForm } from '@/components/CardForm'
-import { DueBadge } from '@/components/DueBadge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { monthlyCost, nextMonthlyDay } from '@/lib/dates'
-import { formatDate, formatMoney } from '@/lib/format'
+import { Logo } from '@/components/Logo'
+import { EmptyState, ScreenHeader } from '@/components/ScreenHeader'
+import { BigDays } from '@/screens/HomeScreen'
+import { NETWORKS } from '@/lib/banks'
+import { monthlyCost, nextCardDue, toKey } from '@/lib/dates'
+import { dayOf, formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import type { CreditCard } from '@/lib/types'
+import type { Nav } from '@/App'
 
-export function CardsScreen() {
+export function CardsScreen({ nav, selectedId, onSelect }: { nav: Nav; selectedId: string | null; onSelect: (id: string) => void }) {
   const { state, dispatch } = useStore()
-  const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState<CreditCard | undefined>()
+  const { cards, subscriptions, payments } = state
 
-  function openForm(card?: CreditCard) {
-    setEditing(card)
-    setFormOpen(true)
+  if (cards.length === 0) {
+    return (
+      <>
+        <ScreenHeader title="Kartlar" />
+        <EmptyState
+          title="Kart ekle"
+          text="Sadece banka adı ve son 4 hane. Son ödeme günü yaklaşınca burada ve özet ekranında görünür."
+          action={<button onClick={nav.addCard} className="pressable min-h-11 rounded-full bg-ink px-5 text-page">Kart ekle</button>}
+        />
+      </>
+    )
   }
 
-  function remove(card: CreditCard) {
-    const linked = state.subscriptions.filter((s) => s.cardId === card.id).length
-    const msg = linked
-      ? `${card.bankName} •••• ${card.last4} silinsin mi? Bu karta bağlı ${linked} abonelik kartsız kalacak.`
-      : `${card.bankName} •••• ${card.last4} silinsin mi?`
-    if (!window.confirm(msg)) return
-    dispatch({ type: 'card/delete', id: card.id })
-    toast.success('Kart silindi')
+  // Seçili kart en altta, açık hâlde; diğerleri üstte cüzdan gibi üst üste
+  const selected = cards.find((c) => c.id === selectedId) ?? cards[0]
+  const stack = cards.filter((c) => c.id !== selected.id)
+  const due = nextCardDue(selected, payments)
+  const onCard = subscriptions.filter((s) => s.cardId === selected.id)
+  const monthlyTry = onCard.filter((s) => s.currency === 'TRY').reduce((sum, s) => sum + monthlyCost(s), 0)
+
+  function markPaid() {
+    const dueDate = toKey(due)
+    dispatch({ type: 'payment/toggle', kind: 'card', refId: selected.id, dueDate })
+    toast(`${selected.bankName} ${formatDate(due, 'LLLL')} ödemesi işaretlendi`, {
+      action: { label: 'Geri al', onClick: () => dispatch({ type: 'payment/toggle', kind: 'card', refId: selected.id, dueDate }) },
+    })
   }
 
   return (
-    <div className="grid gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Kartlar</h1>
-        <Button onClick={() => openForm()}><PlusIcon /> Kart ekle</Button>
+    <>
+      <ScreenHeader title="Kartlar" />
+      <div>
+        {stack.map((c) => (
+          <button
+            key={c.id}
+            onClick={() => onSelect(c.id)}
+            className="pressable -mb-3.5 flex h-[60px] w-full items-start justify-between rounded-[20px] px-3.5 pt-3 text-white"
+            style={{ background: c.color }}
+          >
+            <span className="font-label text-sm font-medium">{c.bankName}</span>
+            <span className="num text-xs opacity-85">•• {c.last4}</span>
+          </button>
+        ))}
+        <BigCard card={selected} onEdit={() => nav.edit({ kind: 'card', id: selected.id })} />
       </div>
 
-      {state.cards.length === 0 && (
-        <p className="py-8 text-center text-muted-foreground">Henüz kart eklemedin.</p>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <div className="flex h-[108px] flex-col rounded-[22px_52px_22px_22px] bg-bh-red p-3 text-white">
+          <span className="label opacity-85">Son ödeme</span>
+          <span className="mt-auto leading-none"><BigDays date={due} small /></span>
+          <span className="text-[11px] opacity-80">{formatDate(due, 'd MMMM EEEE')}</span>
+        </div>
+        <div className="flex h-[108px] flex-col rounded-[22px] bg-surface p-3">
+          <span className="label text-subtle">Bu karttan</span>
+          <span className="num mt-auto text-xl">{formatMoney(monthlyTry)}</span>
+          <div className="mt-1 flex">
+            {onCard.slice(0, 5).map((s, i) => (
+              <span key={s.id} className="rounded-[9px] border-2 border-surface" style={{ marginLeft: i ? -6 : 0 }}>
+                <Logo serviceKey={s.serviceKey} name={s.name} size={20} />
+              </span>
+            ))}
+            {onCard.length === 0 && <span className="text-[11px] text-subtle">abonelik yok</span>}
+          </div>
+        </div>
+      </div>
+
+      <button onClick={markPaid} className="pressable mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-ink font-semibold text-page">
+        <CheckCircle2Icon className="size-[18px] text-bh-yellow" />
+        {formatDate(due, 'LLLL')} ekstresi ödendi
+      </button>
+
+      {onCard.length > 0 && (
+        <>
+          <h2 className="label mt-5 mb-2 px-1 text-subtle">Bu karttan çekilenler</h2>
+          <ul className="grid gap-1.5">
+            {onCard.map((s) => (
+              <li key={s.id}>
+                <button onClick={() => nav.openSubscription(s.id)} className="flex w-full items-center gap-3 rounded-[18px] bg-surface px-3 py-2.5 text-left">
+                  <Logo serviceKey={s.serviceKey} name={s.name} size={30} />
+                  <span className="flex-1 truncate font-medium">{s.name}</span>
+                  <span className="num text-[15px]">{formatMoney(s.amount, s.currency)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
-
-      {state.cards.map((card) => {
-        const subs = state.subscriptions.filter((s) => s.cardId === card.id && s.currency === 'TRY')
-        const monthlyTry = subs.reduce((sum, s) => sum + monthlyCost(s), 0)
-        const due = nextMonthlyDay(card.dueDay)
-        return (
-          <Card key={card.id}>
-            <CardHeader className="flex flex-row items-start justify-between gap-2">
-              <div>
-                <CardTitle>{card.bankName}</CardTitle>
-                <p className="font-mono text-sm text-muted-foreground">•••• •••• •••• {card.last4}</p>
-              </div>
-              <div className="flex gap-1">
-                <Button variant="ghost" size="icon" aria-label="Düzenle" onClick={() => openForm(card)}><PencilIcon /></Button>
-                <Button variant="ghost" size="icon" aria-label="Sil" onClick={() => remove(card)}><Trash2Icon /></Button>
-              </div>
-            </CardHeader>
-            <CardContent className="grid gap-2 text-sm">
-              <Row label="Limit" value={formatMoney(card.limit)} />
-              <Row label="Hesap kesim" value={`Her ayın ${card.statementDay}. günü`} />
-              <Row label="Son ödeme" value={`Her ayın ${card.dueDay}. günü`} />
-              <div className="flex items-center justify-between gap-2 rounded-md bg-muted px-3 py-2">
-                <span>Sıradaki son ödeme: {formatDate(due)}</span>
-                <DueBadge date={due} />
-              </div>
-              {monthlyTry > 0 && (
-                <Row label="Bu karttaki aylık TL abonelik" value={formatMoney(monthlyTry)} />
-              )}
-            </CardContent>
-          </Card>
-        )
-      })}
-
-      <CardForm
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        card={editing}
-        onSave={(card) => {
-          dispatch({ type: 'card/save', card })
-          setFormOpen(false)
-          toast.success(editing ? 'Kart güncellendi' : 'Kart eklendi')
-        }}
-      />
-    </div>
+    </>
   )
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function BigCard({ card, onEdit }: { card: CreditCard; onEdit: () => void }) {
+  const network = NETWORKS.find((n) => n.key === card.network)
   return (
-    <div className="flex justify-between gap-2">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium tabular-nums">{value}</span>
+    <div className="relative flex h-[168px] flex-col overflow-hidden rounded-[20px] px-3.5 py-3 text-white" style={{ background: card.color }}>
+      <span aria-hidden className="absolute -right-10 -bottom-10 size-[130px] rounded-full bg-black/18" />
+      <span aria-hidden className="absolute -top-[30px] right-[60px] size-[60px] rotate-90 rounded-br-full bg-bh-yellow/90" />
+      <div className="relative flex items-start justify-between">
+        <span className="font-label text-[15px] font-medium">{card.bankName}</span>
+        <div className="flex items-center gap-1">
+          {network &&
+            (network.path ? (
+              <svg viewBox="0 0 24 24" className="size-8" fill="currentColor" aria-label={network.label}><path d={network.path} /></svg>
+            ) : (
+              <span className="text-[13px] italic">{network.label}</span>
+            ))}
+          <button onClick={onEdit} aria-label="Kartı düzenle" className="-mr-2 flex size-10 items-center justify-center">
+            <PencilIcon className="size-4" />
+          </button>
+        </div>
+      </div>
+      <div className="num relative mt-auto text-base tracking-[0.15em]">•••• {card.last4}</div>
+      <div className="relative mt-1 flex justify-between text-[11px] opacity-85">
+        <span>Kesim {dayOf(card.statementDay)} · Son ödeme {dayOf(card.dueDay)}</span>
+        {card.limit > 0 && <span>{formatMoney(card.limit).replace(/,00$/, '')}</span>}
+      </div>
     </div>
   )
 }

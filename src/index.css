@@ -1,26 +1,40 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource/dm-sans/400.css";
+@import "@fontsource/dm-sans/500.css";
+@import "@fontsource/dm-sans/600.css";
+@import "@fontsource/space-grotesk/500.css";
+@import "@fontsource/space-grotesk/700.css";
+@import "@fontsource/outfit/500.css";
+@import "@fontsource/outfit/600.css";
 
-@custom-variant dark (&:is(.dark *));
+/* Tema telefonun ayarını izler: açık = "Gündüz Bauhaus", koyu = "Gece Bauhaus" */
+@custom-variant dark (@media (prefers-color-scheme: dark));
 
 @theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
+    --font-sans: 'DM Sans', -apple-system, sans-serif;
+    --font-num: 'Space Grotesk', 'DM Sans', sans-serif;
+    --font-label: 'Outfit', 'DM Sans', sans-serif;
+
+    /* Bauhaus renkleri: iki temada da aynı */
+    --color-bh-yellow: #F4C21B;
+    --color-bh-blue: #1F4FB4;
+    --color-bh-red: #D9381E;
+    --color-bh-green: #22B573;
+
+    /* Temaya göre değişen yüzeyler */
+    --color-page: var(--page);
+    --color-ink: var(--ink);
+    --color-subtle: var(--subtle);
+    --color-surface: var(--surface);
+    --color-line: var(--line);
+    --color-hero: var(--hero);
+    --color-hero-fg: var(--hero-fg);
+    --color-nav: var(--nav);
+    --color-nav-off: var(--nav-off);
+
+    /* shadcn bileşenlerinin kullandığı isimler */
     --color-ring: var(--ring);
     --color-input: var(--input);
     --color-border: var(--border);
@@ -49,82 +63,97 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --page: #F1ECE2;
+    --ink: #141414;
+    --subtle: #857C6D;
+    --surface: #FFFFFF;
+    --line: #E2DBCD;
+    --hero: #141414;
+    --hero-fg: #F2F2F2;
+    --nav: #141414;
+    --nav-off: #8A8172;
+
+    --background: var(--page);
+    --foreground: var(--ink);
+    --card: var(--surface);
+    --card-foreground: var(--ink);
+    --popover: var(--page);
+    --popover-foreground: var(--ink);
+    --primary: var(--ink);
+    --primary-foreground: var(--page);
+    --secondary: var(--surface);
+    --secondary-foreground: var(--ink);
+    --muted: var(--line);
+    --muted-foreground: var(--subtle);
+    --accent: var(--line);
+    --accent-foreground: var(--ink);
+    --destructive: #D9381E;
+    --border: var(--line);
+    --input: var(--line);
+    --ring: #F4C21B;
+    --radius: 0.875rem;
 }
 
-.dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+@media (prefers-color-scheme: dark) {
+    :root {
+        --page: #000000;
+        --ink: #F2F2F2;
+        --subtle: #858585;
+        --surface: #141414;
+        --line: #262626;
+        --hero: #1F4FB4;
+        --hero-fg: #FFFFFF;
+        --nav: #141414;
+        --nav-off: #5C5C5C;
+        color-scheme: dark;
+    }
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
-  body {
-    @apply bg-background text-foreground;
-    }
+  }
   html {
     @apply font-sans;
-    }
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-page text-ink antialiased;
+    overscroll-behavior-y: none;
+  }
 }
+
+@layer utilities {
+  /* Rakamlar: Space Grotesk. Varsayılan orta kalınlık; .num-bold sadece önemli tutarlar için */
+  .num {
+    font-family: var(--font-num);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .num-bold {
+    font-weight: 700;
+    letter-spacing: -0.035em;
+  }
+  /* Küçük büyük harfli etiketler */
+  .label {
+    font-family: var(--font-label);
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+  .pressable {
+    transition: transform 120ms ease-out, opacity 120ms ease-out;
+  }
+  .pressable:active {
+    transform: scale(0.97);
+    opacity: 0.85;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pressable:active { transform: none; }
+  }
+}
+
+:root { --logo-tile: #141414; }
+@media (prefers-color-scheme: dark) { :root { --logo-tile: #000000; } }

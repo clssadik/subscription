@@ -17,8 +17,8 @@ export default defineConfig({
         short_name: 'Abonelikler',
         description: 'Abonelik ve kredi kartı ödemelerini takip et',
         lang: 'tr',
-        theme_color: '#0f172a',
-        background_color: '#ffffff',
+        theme_color: '#141414',
+        background_color: '#F1ECE2',
         display: 'standalone',
         start_url: '/',
         icons: [
@@ -31,6 +31,6 @@ export default defineConfig({
     }),
   ],
   resolve: {
-    alias: { '@': path.resolve(__dirname, './src') },
+    alias: { '@': path.resolve(import.meta.dirname, './src') },
   },
 })

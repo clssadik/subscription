@@ -2,11 +2,18 @@ import {
   addMonths,
   addYears,
   differenceInCalendarDays,
+  differenceInCalendarMonths,
+  differenceInCalendarYears,
+  endOfMonth,
+  format,
   getDaysInMonth,
   parseISO,
   startOfDay,
+  startOfMonth,
 } from 'date-fns'
-import type { CreditCard, Subscription } from './types'
+import type { CreditCard, Payment, Subscription } from './types'
+
+export const toKey = (d: Date) => format(d, 'yyyy-MM-dd')
 
 /** Ayın `day`. günü; ay o kadar uzun değilse (ör. Şubat'ta 31) ayın son günü. */
 function dayInMonth(year: number, month: number, day: number) {
@@ -14,55 +21,92 @@ function dayInMonth(year: number, month: number, day: number) {
   return new Date(year, month, Math.min(day, last))
 }
 
-/** `from` tarihinden itibaren (o gün dahil) ayın `day`. gününe denk gelen ilk tarih. */
-export function nextMonthlyDay(day: number, from: Date = new Date()) {
-  const today = startOfDay(from)
-  const thisMonth = dayInMonth(today.getFullYear(), today.getMonth(), day)
-  if (thisMonth >= today) return thisMonth
-  return dayInMonth(today.getFullYear(), today.getMonth() + 1, day)
+/** Aboneliğin [start, end] aralığına düşen bütün yenilenme tarihleri. */
+export function renewalsBetween(sub: Subscription, start: Date, end: Date) {
+  const anchor = parseISO(sub.renewalDate)
+  const monthly = sub.cycle === 'monthly'
+  const step = monthly ? addMonths : addYears
+  // Hep ilk tarihten sayıyoruz ki 31'inde başlayan abonelik Şubat'tan sonra 28'ine kaymasın.
+  let n = (monthly ? differenceInCalendarMonths : differenceInCalendarYears)(start, anchor) - 1
+  let date = step(anchor, n)
+  while (date < start) date = step(anchor, ++n)
+  const out: Date[] = []
+  while (date <= end) {
+    out.push(date)
+    date = step(anchor, ++n)
+  }
+  return out
 }
 
-/** Aboneliğin bugünden itibaren bir sonraki yenilenme tarihi. */
-export function nextRenewal(sub: Subscription, from: Date = new Date()) {
+export function cardDueInMonth(card: CreditCard, month: Date) {
+  return dayInMonth(month.getFullYear(), month.getMonth(), card.dueDay)
+}
+
+export function isPaid(payments: Payment[], refId: string, date: Date) {
+  const key = toKey(date)
+  return payments.some((p) => p.refId === refId && p.dueDate === key)
+}
+
+/** Bugünden itibaren henüz "ödendi" işaretlenmemiş ilk yenilenme. */
+export function nextRenewal(sub: Subscription, payments: Payment[] = [], from: Date = new Date()) {
   const today = startOfDay(from)
-  const anchor = parseISO(sub.renewalDate)
-  const step = sub.cycle === 'monthly' ? addMonths : addYears
-  // Hep ilk tarihten ileri sayıyoruz ki 31'inde başlayan abonelik
-  // Şubat'tan sonra 28'ine kaymasın.
-  let n = 0
-  let date = anchor
-  while (date < today) date = step(anchor, ++n)
-  return date
+  const dates = renewalsBetween(sub, today, addYears(today, 3))
+  return dates.find((d) => !isPaid(payments, sub.id, d)) ?? dates[0]
+}
+
+/** Bugünden itibaren henüz "ödendi" işaretlenmemiş ilk son ödeme günü. */
+export function nextCardDue(card: CreditCard, payments: Payment[] = [], from: Date = new Date()) {
+  const today = startOfDay(from)
+  for (let i = 0; i < 3; i++) {
+    const d = cardDueInMonth(card, addMonths(today, i))
+    if (d >= today && !isPaid(payments, card.id, d)) return d
+  }
+  return cardDueInMonth(card, addMonths(today, 1))
 }
 
 export function daysUntil(date: Date, from: Date = new Date()) {
   return differenceInCalendarDays(date, startOfDay(from))
 }
 
+/** "bugün", "yarın", "5 gün", "2 gün geçti" */
+export function dueLabel(date: Date, from: Date = new Date()) {
+  const d = daysUntil(date, from)
+  if (d === 0) return 'bugün'
+  if (d === 1) return 'yarın'
+  if (d < 0) return `${-d} gün geçti`
+  return `${d} gün`
+}
+
 export function monthlyCost(sub: Subscription) {
   return sub.cycle === 'monthly' ? sub.amount : sub.amount / 12
 }
 
-export type UpcomingPayment =
-  | { kind: 'subscription'; date: Date; subscription: Subscription }
-  | { kind: 'card-due'; date: Date; card: CreditCard }
+export type MonthItem =
+  | { kind: 'subscription'; date: Date; paid: boolean; subscription: Subscription }
+  | { kind: 'card'; date: Date; paid: boolean; card: CreditCard }
 
-/** Önümüzdeki `days` gün içindeki abonelik yenilemeleri ve kart son ödeme günleri. */
-export function upcomingPayments(
+/** Bir aydaki bütün ödemeler (abonelik yenilemeleri + kart son ödemeleri), tarih sırasıyla. */
+export function monthItems(
   cards: CreditCard[],
   subscriptions: Subscription[],
-  days = 30,
-  from: Date = new Date(),
-): UpcomingPayment[] {
-  const items: UpcomingPayment[] = [
-    ...subscriptions.map((s) => ({
-      kind: 'subscription' as const,
-      date: nextRenewal(s, from),
-      subscription: s,
-    })),
-    ...cards.map((c) => ({ kind: 'card-due' as const, date: nextMonthlyDay(c.dueDay, from), card: c })),
+  payments: Payment[],
+  month: Date = new Date(),
+): MonthItem[] {
+  const start = startOfMonth(month)
+  const end = endOfMonth(month)
+  const items: MonthItem[] = [
+    ...subscriptions.flatMap((s) =>
+      renewalsBetween(s, start, end).map((date) => ({
+        kind: 'subscription' as const,
+        date,
+        paid: isPaid(payments, s.id, date),
+        subscription: s,
+      })),
+    ),
+    ...cards.map((c) => {
+      const date = cardDueInMonth(c, start)
+      return { kind: 'card' as const, date, paid: isPaid(payments, c.id, date), card: c }
+    }),
   ]
-  return items
-    .filter((i) => daysUntil(i.date, from) <= days)
-    .sort((a, b) => a.date.getTime() - b.date.getTime())
+  return items.sort((a, b) => a.date.getTime() - b.date.getTime())
 }

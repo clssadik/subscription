@@ -12,10 +12,13 @@ Vite + React + TypeScript + Tailwind + shadcn/ui + vite-plugin-pwa.
 
 ## Structure
 
-- `src/screens/` — Summary, Subscriptions, Cards screens
-- `src/components/` — forms and small parts (`ui/` holds shadcn components)
+- `src/screens/` — Summary, Subscriptions (+ detail), Cards, History screens
+- `src/components/` — bottom nav, add sheet, logo, swipe-to-delete and other parts
 - `src/lib/types.ts` — data types
 - `src/lib/store.tsx` — data (on device for now, localStorage)
-- `src/lib/dates.ts` — renewal and due date calculations
+- `src/lib/dates.ts` — renewal, due date and monthly calculations
+- `src/lib/services.ts` — preset services and logos
+- `src/lib/banks.ts` — Turkish banks and card colors
+- `src/assets/logos/` — logos added by hand for services missing from simple-icons
 
 Full card numbers are never stored; only the bank name and last 4 digits.
