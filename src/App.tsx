@@ -25,14 +25,26 @@ export interface Nav {
   back: () => void
 }
 
+type Pending = { sheet: NonNullable<SheetTarget>; tab: Tab } | null
+
 export default function App() {
   const user = useUser()
+  // Girişsiz ekleme denenince hatırlanır. Giriş yapınca Main yeniden kurulduğu için burada tutuluyor.
+  const pending = useRef<Pending>(null)
+  const savePending = (p: Pending) => {
+    pending.current = p
+  }
+  const takePending = () => {
+    const p = pending.current
+    pending.current = null
+    return p
+  }
   return (
     <>
       {user !== undefined && (
         // key: hesap değişince (giriş/çıkış) veriler sıfırdan yüklensin
         <StoreProvider key={user?.id ?? 'guest'} userId={user?.id ?? null}>
-          <Main user={user} />
+          <Main user={user} savePending={savePending} takePending={takePending} />
         </StoreProvider>
       )}
       <Toaster position="top-center" />
@@ -40,33 +52,31 @@ export default function App() {
   )
 }
 
-function Main({ user }: { user: User | null }) {
+function Main({
+  user,
+  savePending,
+  takePending,
+}: {
+  user: User | null
+  savePending: (p: Pending) => void
+  takePending: () => Pending
+}) {
   const { ready } = useStore()
-  const [tab, setTab] = useState<Tab>('home')
+  // Giriş yapan kullanıcıyı yarım kalan işine geri götür
+  const [resume] = useState(() => (user ? takePending() : null))
+  const [tab, setTab] = useState<Tab>(resume?.tab ?? 'home')
   const [detailId, setDetailId] = useState<string | null>(null)
   const [cardId, setCardId] = useState<string | null>(null)
-  const [sheet, setSheet] = useState<SheetTarget>(null)
-  // Girişsiz ekleme denenince hatırlanır; giriş yapılınca form kendiliğinden açılır
-  const pending = useRef<{ sheet: NonNullable<SheetTarget>; tab: Tab } | null>(null)
+  const [sheet, setSheet] = useState<SheetTarget>(resume?.sheet ?? null)
 
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [tab, detailId])
 
-  // Giriş yapan kullanıcıyı yarım kalan işine geri götür
-  useEffect(() => {
-    if (user && pending.current) {
-      const p = pending.current
-      pending.current = null
-      setTab(p.tab)
-      setSheet(p.sheet)
-    }
-  }, [user])
-
   /** Ekleme/düzenleme girişsiz yapılamaz: önce giriş ekranına götür */
   function openSheet(target: NonNullable<SheetTarget>) {
     if (user) return setSheet(target)
-    pending.current = { sheet: target, tab }
+    savePending({ sheet: target, tab })
     setDetailId(null)
     setTab('account')
     toast('Eklemek için önce giriş yap')
@@ -108,7 +118,7 @@ function Main({ user }: { user: User | null }) {
         onTab={(t) => {
           setTab(t)
           setDetailId(null)
-          if (t !== 'account') pending.current = null
+          if (t !== 'account') savePending(null)
         }}
       />
       <AddSheet target={sheet} onClose={() => setSheet(null)} />

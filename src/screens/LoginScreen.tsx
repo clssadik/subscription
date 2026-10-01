@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BauhausTiles } from '@/components/BauhausTiles'
+import { DEMO_CODE, DEMO_EMAIL, demoSignIn } from '@/lib/demo'
 import { isConfigured, supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 
@@ -15,7 +16,13 @@ export function LoginScreen() {
     e.preventDefault()
     const address = email.trim().toLowerCase()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) return setError('Geçerli bir e-posta gir.')
-    if (!isConfigured) return setError('Hesap sistemi henüz hazır değil.')
+    if (!isConfigured) {
+      // Supabase yokken sadece test hesabı
+      if (address !== DEMO_EMAIL) return setError(`Şimdilik sadece ${DEMO_EMAIL} ile girilebilir.`)
+      setEmail(address)
+      setError('')
+      return setStep('code')
+    }
     setBusy(true)
     setError('')
     const { error } = await supabase.auth.signInWithOtp({ email: address, options: { shouldCreateUser: true } })
@@ -28,6 +35,10 @@ export function LoginScreen() {
   async function verify(e: React.FormEvent) {
     e.preventDefault()
     if (!/^\d{6,8}$/.test(code)) return setError('Kodu gir.')
+    if (!isConfigured) {
+      if (code !== DEMO_CODE) return setError('Kod hatalı ya da süresi dolmuş.')
+      return demoSignIn()
+    }
     setBusy(true)
     setError('')
     const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' })

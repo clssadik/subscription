@@ -3,6 +3,7 @@ import { LogOutIcon } from 'lucide-react'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { formatDate, initial } from '@/lib/format'
 import { clearCache, useStore } from '@/lib/store'
+import { DEMO_ID, demoSignOut } from '@/lib/demo'
 import { supabase } from '@/lib/supabase'
 
 export function AccountScreen({ user }: { user: User }) {
@@ -10,6 +11,8 @@ export function AccountScreen({ user }: { user: User }) {
   const email = user.email ?? ''
 
   async function signOut() {
+    // Test hesabının verileri cihazda kalsın; gerçek hesapta çıkarken temizlenir
+    if (user.id === DEMO_ID) return demoSignOut()
     clearCache(user.id)
     await supabase.auth.signOut()
   }

@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useReducer, useRef, useState, typ
 import { toast } from 'sonner'
 import { bankColor } from './banks'
 import { loadAll, pushChanges } from './db'
+import { DEMO_ID } from './demo'
 import { hasLogo, matchService, normalize } from './services'
 import type { CreditCard, MissingLogo, Payment, Subscription } from './types'
 
@@ -124,18 +125,20 @@ export function clearCache(userId: string) {
 
 const StoreContext = createContext<{ state: State; dispatch: React.Dispatch<Action>; ready: boolean } | null>(null)
 
-/** userId null ise (giriş yok) veriler boş kalır ve hiçbir yere yazılmaz. */
+/** userId null ise (giriş yok) veriler boş kalır ve hiçbir yere yazılmaz.
+ *  Test hesabında veriler sadece cihazda tutulur, Supabase'e gitmez. */
 export function StoreProvider({ userId, children }: { userId: string | null; children: ReactNode }) {
+  const remote = !!userId && userId !== DEMO_ID
   const [cached] = useState(() => (userId ? readCache(userId) : null))
   const [state, dispatch] = useReducer(reducer, cached ?? EMPTY)
-  const [ready, setReady] = useState(!userId || !!cached)
+  const [ready, setReady] = useState(!remote || !!cached)
   // Veritabanında olduğunu bildiğimiz son durum; yeni durumla farkı gönderilir
   const server = useRef<State>(cached ?? EMPTY)
   // Yazmalar sırayla gitsin diye zincir (hızlı iki dokunuş birbirini ezmesin)
   const queue = useRef<Promise<void>>(Promise.resolve())
 
   useEffect(() => {
-    if (!userId) return
+    if (!remote) return
     let cancelled = false
     loadAll()
       .then((data) => {
@@ -154,7 +157,7 @@ export function StoreProvider({ userId, children }: { userId: string | null; chi
     return () => {
       cancelled = true
     }
-  }, [userId])
+  }, [remote])
 
   useEffect(() => {
     if (!userId) return
@@ -163,7 +166,7 @@ export function StoreProvider({ userId, children }: { userId: string | null; chi
     } catch {
       // depolama doluysa veya kapalıysa yapacak bir şey yok
     }
-    if (state === server.current) return
+    if (!remote || state === server.current) return
     const before = server.current
     server.current = state
     queue.current = queue.current.then(() =>
@@ -177,7 +180,7 @@ export function StoreProvider({ userId, children }: { userId: string | null; chi
         }).catch(() => {})
       }),
     )
-  }, [state, userId])
+  }, [state, userId, remote])
 
   return <StoreContext value={{ state, dispatch, ready }}>{children}</StoreContext>
 }
