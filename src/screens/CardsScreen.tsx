@@ -1,7 +1,8 @@
 import { CheckCircle2Icon, PencilIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Logo } from '@/components/Logo'
-import { AddButton, EmptyState, ScreenHeader } from '@/components/ScreenHeader'
+import { CardQuickStart } from '@/components/QuickStart'
+import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
 import { BigDays } from '@/screens/HomeScreen'
 import { NETWORKS } from '@/lib/banks'
 import { monthlyCost, nextCardDue, toKey } from '@/lib/dates'
@@ -17,12 +18,8 @@ export function CardsScreen({ nav, selectedId, onSelect }: { nav: Nav; selectedI
   if (cards.length === 0) {
     return (
       <>
-        <ScreenHeader title="Kartlar" action={<AddButton label="Kart ekle" onClick={nav.addCard} />} />
-        <EmptyState
-          title="Kart ekle"
-          text="Sadece banka adı ve son 4 hane. Son ödeme günü yaklaşınca burada ve özet ekranında görünür."
-          action={<button onClick={nav.addCard} className="pressable min-h-11 rounded-full bg-ink px-5 text-page">Kart ekle</button>}
-        />
+        <ScreenHeader title="Kartlar" action={<AddButton label="Kart ekle" onClick={() => nav.addCard()} />} />
+        <CardQuickStart nav={nav} />
       </>
     )
   }
@@ -44,7 +41,7 @@ export function CardsScreen({ nav, selectedId, onSelect }: { nav: Nav; selectedI
 
   return (
     <>
-      <ScreenHeader title="Kartlar" action={<AddButton label="Kart ekle" onClick={nav.addCard} />} />
+      <ScreenHeader title="Kartlar" action={<AddButton label="Kart ekle" onClick={() => nav.addCard()} />} />
       <div>
         {stack.map((c) => (
           <button

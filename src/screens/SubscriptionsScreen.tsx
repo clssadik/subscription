@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Segmented } from '@/components/FormBits'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
-import { AddButton, EmptyState, ScreenHeader } from '@/components/ScreenHeader'
+import { SubscriptionQuickStart } from '@/components/QuickStart'
+import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
 import { ShareBar } from '@/components/ShareBar'
 import { SwipeRow } from '@/components/SwipeRow'
 import { daysUntil, dueLabel, monthlyCost, nextRenewal } from '@/lib/dates'
@@ -57,13 +58,9 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
 
   return (
     <>
-      <ScreenHeader title="Abonelikler" action={<AddButton label="Abonelik ekle" onClick={nav.add} />} />
+      <ScreenHeader title="Abonelikler" action={<AddButton label="Abonelik ekle" onClick={() => nav.add()} />} />
       {subscriptions.length === 0 ? (
-        <EmptyState
-          title="Abonelik yok"
-          text="Netflix, Spotify, iCloud… Ekledikçe aylık toplamın burada oluşur."
-          action={<button onClick={nav.add} className="pressable min-h-11 rounded-full bg-ink px-5 text-page">Abonelik ekle</button>}
-        />
+        <SubscriptionQuickStart nav={nav} />
       ) : (
         <>
           <section className="mb-2 flex h-[108px] flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg">

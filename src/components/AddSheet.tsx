@@ -13,7 +13,8 @@ import { useUndoable } from '@/lib/undo'
 import { CURRENCIES, type BillingCycle, type CardNetwork, type CreditCard, type Currency, type Subscription } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-export type SheetTarget = { kind: 'subscription' | 'card'; id?: string } | null
+/** Açılacak form. id varsa düzenleme; serviceKey/name/bankName yeni kayıtta hazır seçili gelir. */
+export type SheetTarget = { kind: 'subscription' | 'card'; id?: string; serviceKey?: string; name?: string; bankName?: string } | null
 
 /** "+" ile ya da düzenle ile açılan alt panel */
 export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: () => void }) {
@@ -51,10 +52,10 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
           )}
 
           {target && kind === 'subscription' && (
-            <SubscriptionFields key={target.id ?? 'new-sub'} id={target.kind === 'subscription' ? target.id : undefined} onDone={onClose} />
+            <SubscriptionFields key={target.id ?? 'new-sub'} id={target.kind === 'subscription' ? target.id : undefined} preset={target} onDone={onClose} />
           )}
           {target && kind === 'card' && (
-            <CardFields key={target.id ?? 'new-card'} id={target.kind === 'card' ? target.id : undefined} onDone={onClose} />
+            <CardFields key={target.id ?? 'new-card'} id={target.kind === 'card' ? target.id : undefined} preset={target} onDone={onClose} />
           )}
         </div>
       </DrawerContent>
@@ -79,12 +80,12 @@ function KindButton({ active, arch, onClick, children }: { active: boolean; arch
   )
 }
 
-function SubscriptionFields({ id, onDone }: { id?: string; onDone: () => void }) {
+function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNullable<SheetTarget>; onDone: () => void }) {
   const { state, dispatch } = useStore()
   const undoable = useUndoable()
   const sub = state.subscriptions.find((s) => s.id === id)
-  const [serviceKey, setServiceKey] = useState<string | null>(sub?.serviceKey ?? null)
-  const [name, setName] = useState(sub?.name ?? '')
+  const [serviceKey, setServiceKey] = useState<string | null>(sub?.serviceKey ?? preset.serviceKey ?? null)
+  const [name, setName] = useState(sub?.name ?? getService(preset.serviceKey)?.name ?? preset.name ?? '')
   const [amount, setAmount] = useState(sub ? String(sub.amount).replace('.', ',') : '')
   const [currency, setCurrency] = useState<Currency>(sub?.currency ?? 'TRY')
   const [cycle, setCycle] = useState<BillingCycle>(sub?.cycle ?? 'monthly')
@@ -199,12 +200,12 @@ function SubscriptionFields({ id, onDone }: { id?: string; onDone: () => void })
   )
 }
 
-function CardFields({ id, onDone }: { id?: string; onDone: () => void }) {
+function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<SheetTarget>; onDone: () => void }) {
   const { state, dispatch } = useStore()
   const undoable = useUndoable()
   const card = state.cards.find((c) => c.id === id)
-  const [bankName, setBankName] = useState(card?.bankName ?? '')
-  const [color, setColor] = useState(card?.color ?? CARD_COLORS[0])
+  const [bankName, setBankName] = useState(card?.bankName ?? preset.bankName ?? '')
+  const [color, setColor] = useState(card?.color ?? bankColor(preset.bankName ?? '') ?? CARD_COLORS[0])
   const [last4, setLast4] = useState(card?.last4 ?? '')
   const [statementDay, setStatementDay] = useState(card ? String(card.statementDay) : '')
   const [dueDay, setDueDay] = useState(card ? String(card.dueDay) : '')

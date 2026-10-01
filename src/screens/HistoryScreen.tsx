@@ -2,7 +2,7 @@ import { addMonths, format, parseISO, startOfMonth } from 'date-fns'
 import { CheckIcon } from 'lucide-react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
-import { EmptyState, ScreenHeader } from '@/components/ScreenHeader'
+import { ScreenHeader } from '@/components/ScreenHeader'
 import { formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
@@ -10,15 +10,6 @@ import { cn } from '@/lib/utils'
 export function HistoryScreen() {
   const { state } = useStore()
   const { payments, subscriptions, cards } = state
-
-  if (payments.length === 0) {
-    return (
-      <>
-        <ScreenHeader title="Geçmiş" />
-        <EmptyState title="Henüz kayıt yok" text="Özet ekranında bir ödemenin yanındaki yuvarlağa dokunduğunda burada birikmeye başlar." />
-      </>
-    )
-  }
 
   // Son 6 ayda ödendi işaretlenen abonelik tutarları (TL). Kart ekstreleri tutarsız tutulduğu için dahil değil.
   const thisMonth = startOfMonth(new Date())
@@ -62,6 +53,18 @@ export function HistoryScreen() {
           ))}
         </div>
       </section>
+
+      {/* Henüz kayıt yoksa: dolacak satırların soluk izi */}
+      {payments.length === 0 && (
+        <div className="grid grid-cols-2 gap-2" aria-hidden>
+          <div className="flex h-[84px] items-center justify-center rounded-[40px_40px_14px_14px] bg-surface opacity-60">
+            <Logo serviceKey="netflix" name="Netflix" size={50} className="opacity-50" />
+          </div>
+          <div className="flex h-[84px] items-center justify-center rounded-[14px] bg-surface opacity-60">
+            <Logo serviceKey="spotify" name="Spotify" size={50} className="opacity-50" />
+          </div>
+        </div>
+      )}
 
       {[...groups.entries()].map(([month, list]) => (
         <section key={month} className="mb-3">

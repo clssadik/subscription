@@ -17,8 +17,8 @@ import { SubscriptionsScreen } from '@/screens/SubscriptionsScreen'
 
 /** Ekranların birbirine geçiş için kullandığı komutlar */
 export interface Nav {
-  add: () => void
-  addCard: () => void
+  add: (preset?: { serviceKey?: string; name?: string }) => void
+  addCard: (bankName?: string) => void
   edit: (target: NonNullable<SheetTarget>) => void
   openSubscription: (id: string) => void
   openCard: (id: string) => void
@@ -73,8 +73,8 @@ function Main({ user }: { user: User | null }) {
   }
 
   const nav: Nav = {
-    add: () => openSheet({ kind: 'subscription' }),
-    addCard: () => openSheet({ kind: 'card' }),
+    add: (preset) => openSheet({ kind: 'subscription', ...preset }),
+    addCard: (bankName) => openSheet({ kind: 'card', bankName }),
     edit: openSheet,
     openSubscription: (id) => setDetailId(id),
     openCard: (id) => {
