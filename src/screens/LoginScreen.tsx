@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Logo } from '@/components/Logo'
+import { BauhausTiles } from '@/components/BauhausTiles'
 import { isConfigured, supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 
@@ -40,83 +40,59 @@ export function LoginScreen() {
 
   return (
     <section className="flex min-h-[calc(100svh-10rem)] flex-col justify-center">
-      <TileRow top />
+      <BauhausTiles>
+        <div className="my-2 rounded-[24px] bg-surface px-3.5 pt-5 pb-3.5">
+          <h1 className="num num-bold mb-4 text-center text-[28px]">{step === 'email' ? 'Giriş yap' : 'Kodu gir'}</h1>
 
-      <div className="my-2 rounded-[24px] bg-surface px-3.5 pt-5 pb-3.5">
-        <h1 className="num num-bold mb-4 text-center text-[28px]">{step === 'email' ? 'Giriş yap' : 'Kodu gir'}</h1>
-
-        {step === 'email' ? (
-          <form onSubmit={sendCode} className="grid gap-2">
-            <label htmlFor="email" className="sr-only">E-posta</label>
-            <input
-              id="email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              autoCapitalize="none"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="E-posta"
-              className={field}
-            />
-            {error && <p className="px-1 text-sm text-bh-red" role="alert">{error}</p>}
-            <button type="submit" disabled={busy} className={button}>{busy ? 'Gönderiliyor…' : 'Kod gönder'}</button>
-          </form>
-        ) : (
-          <form onSubmit={verify} className="grid gap-2">
-            <p className="-mt-3 mb-1 truncate text-center text-sm text-subtle">{email}</p>
-            <label htmlFor="code" className="sr-only">Kod</label>
-            <input
-              id="code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={8}
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-              placeholder="••••••"
-              className={cn(field, 'num text-center text-2xl tracking-[0.4em]')}
-            />
-            {error && <p className="px-1 text-sm text-bh-red" role="alert">{error}</p>}
-            <button type="submit" disabled={busy} className={button}>{busy ? 'Kontrol ediliyor…' : 'Giriş yap'}</button>
-            <button
-              type="button"
-              onClick={() => {
-                setStep('email')
-                setCode('')
-                setError('')
-              }}
-              className="min-h-11 text-sm text-subtle"
-            >
-              Geri
-            </button>
-          </form>
-        )}
-      </div>
-
-      <TileRow />
+          {step === 'email' ? (
+            <form onSubmit={sendCode} className="grid gap-2">
+              <label htmlFor="email" className="sr-only">E-posta</label>
+              <input
+                id="email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="E-posta"
+                className={field}
+              />
+              {error && <p className="px-1 text-sm text-bh-red" role="alert">{error}</p>}
+              <button type="submit" disabled={busy} className={button}>{busy ? 'Gönderiliyor…' : 'Kod gönder'}</button>
+            </form>
+          ) : (
+            <form onSubmit={verify} className="grid gap-2">
+              <p className="-mt-3 mb-1 truncate text-center text-sm text-subtle">{email}</p>
+              <label htmlFor="code" className="sr-only">Kod</label>
+              <input
+                id="code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={8}
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                placeholder="••••••"
+                className={cn(field, 'num text-center text-2xl tracking-[0.4em]')}
+              />
+              {error && <p className="px-1 text-sm text-bh-red" role="alert">{error}</p>}
+              <button type="submit" disabled={busy} className={button}>{busy ? 'Kontrol ediliyor…' : 'Giriş yap'}</button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('email')
+                  setCode('')
+                  setError('')
+                }}
+                className="min-h-11 text-sm text-subtle"
+              >
+                Geri
+              </button>
+            </form>
+          )}
+        </div>
+      </BauhausTiles>
     </section>
-  )
-}
-
-/** Formun üstündeki ve altındaki Bauhaus kutuları (Özet ekranının mozaiği gibi) */
-function TileRow({ top }: { top?: boolean }) {
-  const ink = 'flex items-center justify-center bg-[#141414] dark:bg-surface dark:ring-1 dark:ring-white/10'
-  return (
-    <div className="grid grid-cols-3 gap-2" aria-hidden>
-      {top ? (
-        <>
-          <div className="h-[70px] rounded-[35px_35px_12px_12px] bg-bh-yellow" />
-          <div className={cn('h-[70px] rounded-xl', ink)}><Logo serviceKey="netflix" name="Netflix" size={34} /></div>
-          <div className="h-[70px] rounded-[12px_35px_12px_12px] bg-bh-red" />
-        </>
-      ) : (
-        <>
-          <div className="h-[70px] rounded-[12px_12px_12px_35px] bg-bh-blue" />
-          <div className="h-[70px] rounded-[35px] bg-bh-yellow" />
-          <div className={cn('h-[70px] rounded-xl', ink)}><Logo serviceKey="spotify" name="Spotify" size={34} /></div>
-        </>
-      )}
-    </div>
   )
 }
 

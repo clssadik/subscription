@@ -157,3 +157,10 @@
 
 :root { --logo-tile: #141414; }
 @media (prefers-color-scheme: dark) { :root { --logo-tile: #000000; } }
+
+/* Giriş ekranı kutuları: yeni renk ortadan daire olarak büyür */
+@keyframes bloom {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+.bloom { animation: bloom 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
