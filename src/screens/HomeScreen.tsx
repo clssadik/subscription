@@ -1,4 +1,4 @@
-import { CheckIcon } from 'lucide-react'
+import { CheckIcon, CreditCardIcon } from 'lucide-react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { HomeQuickStart } from '@/components/QuickStart'
@@ -71,50 +71,67 @@ export function HomeScreen({ nav }: { nav: Nav }) {
           </div>
         </section>
 
-        {/* Sıradaki ödeme: kemer biçimli sarı kutu */}
+        {/* Sıradaki ödeme: geniş şerit, solda büyük geri sayım */}
         {first ? (
           <button
             onClick={() => nav.openSubscription(first.s.id)}
-            className="pressable row-span-2 flex h-[248px] flex-col items-center rounded-[110px_110px_22px_22px] bg-bh-yellow px-3 pt-7 pb-3 text-center text-[#141414]"
+            className="pressable col-span-2 flex items-center gap-4 rounded-[22px] bg-surface p-3.5 text-left"
           >
-            <span className="label">Sıradaki</span>
-            <Logo serviceKey={first.s.serviceKey} name={first.s.name} size={52} className="my-3" />
-            <span className="w-full truncate font-medium">{first.s.name}</span>
-            <span className="mt-auto leading-none">
-              <BigDays date={first.date} />
+            <span className="min-w-16 text-center leading-none">
+              {daysUntil(first.date) === 0 ? (
+                <span className="num num-bold text-[30px]">Bugün</span>
+              ) : (
+                <>
+                  <span className="num num-bold block text-[56px] leading-[0.85]">{daysUntil(first.date)}</span>
+                  <span className="label text-subtle">gün</span>
+                </>
+              )}
             </span>
-            <span className="num mt-1 text-sm">{formatMoney(first.s.amount, first.s.currency)}</span>
+            <span aria-hidden className="w-px self-stretch bg-line" />
+            <span className="min-w-0 flex-1">
+              <span className="label block text-subtle">Sıradaki</span>
+              <span className="mt-1.5 flex items-center gap-2.5">
+                <Logo serviceKey={first.s.serviceKey} name={first.s.name} size={36} />
+                <span className="min-w-0">
+                  <span className="block truncate font-medium">{first.s.name}</span>
+                  <span className="num block">{formatMoney(first.s.amount, first.s.currency)}</span>
+                </span>
+              </span>
+            </span>
           </button>
         ) : (
-          <div className="row-span-2 flex h-[248px] items-center justify-center rounded-[110px_110px_22px_22px] bg-bh-yellow/30 p-4 text-center text-sm text-subtle">
-            Abonelik eklediğinde sıradaki ödeme burada görünür.
-          </div>
+          <button onClick={() => nav.add()} className="pressable col-span-2 flex min-h-20 items-center justify-center rounded-[22px] bg-surface text-sm text-subtle">
+            + Abonelik ekle
+          </button>
         )}
 
+        {/* Altında: sonraki abonelik ve en yakın kart son ödemesi */}
         {second ? (
-          <button onClick={() => nav.openSubscription(second.s.id)} className="pressable flex h-[120px] flex-col rounded-[22px] bg-surface p-3 text-left">
-            <div className="flex items-start justify-between">
-              <Logo serviceKey={second.s.serviceKey} name={second.s.name} size={30} />
-              <span className="label text-subtle">{dueLabel(second.date)}</span>
-            </div>
-            <span className="mt-auto truncate font-medium">{second.s.name}</span>
-            <span className="num text-[17px]">{formatMoney(second.s.amount, second.s.currency)}</span>
+          <button onClick={() => nav.openSubscription(second.s.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-surface p-2.5 text-left">
+            <Logo serviceKey={second.s.serviceKey} name={second.s.name} size={32} />
+            <span className="min-w-0">
+              <span className="block truncate text-[13px] font-medium">{second.s.name}</span>
+              <span className="block truncate text-[11px] text-subtle">{dueLabel(second.date)} · {formatMoney(second.s.amount, second.s.currency)}</span>
+            </span>
           </button>
         ) : (
-          <button onClick={() => nav.add()} className="pressable flex h-[120px] items-center justify-center rounded-[22px] bg-surface text-sm text-subtle">
+          <button onClick={() => nav.add()} className="pressable flex min-h-[52px] items-center justify-center rounded-[18px] bg-surface text-sm text-subtle">
             + Abonelik ekle
           </button>
         )}
 
         {nextCard ? (
-          <button onClick={() => nav.openCard(nextCard.c.id)} className="pressable relative flex h-[120px] flex-col overflow-hidden rounded-[22px] bg-bh-red p-3 text-left text-white">
-            <span aria-hidden className="absolute -right-7 -bottom-7 size-[84px] rounded-full bg-black/20" />
-            <span className="label truncate opacity-90">{nextCard.c.bankName}</span>
-            <span className="mt-auto leading-none"><BigDays date={nextCard.date} small /></span>
-            <span className="text-[11px] opacity-85">son ödeme</span>
+          <button onClick={() => nav.openCard(nextCard.c.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-bh-red p-2.5 text-left text-white">
+            <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-[16px_16px_6px_6px] bg-black/25">
+              <CreditCardIcon className="size-4" />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-[13px] font-medium">{nextCard.c.bankName}</span>
+              <span className="block truncate text-[11px] opacity-85">{dueLabel(nextCard.date)} · son ödeme</span>
+            </span>
           </button>
         ) : (
-          <button onClick={() => nav.addCard()} className="pressable flex h-[120px] items-center justify-center rounded-[22px] bg-surface text-sm text-subtle">
+          <button onClick={() => nav.addCard()} className="pressable flex min-h-[52px] items-center justify-center rounded-[18px] bg-surface text-sm text-subtle">
             + Kart ekle
           </button>
         )}
@@ -149,7 +166,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
                 </button>
               ) : (
                 <button onClick={() => nav.openCard(i.card.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                  <span aria-hidden className="size-[30px] shrink-0 rounded-[15px_15px_5px_5px]" style={{ background: i.card.color }} />
+                  <span aria-hidden className="size-[30px] shrink-0 rounded-[15px_15px_5px_5px] ring-1 ring-line ring-inset" style={{ background: i.card.color }} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{i.card.bankName}</span>
                     <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · son ödeme · {i.paid ? 'ödendi' : past ? 'geçti' : dueLabel(i.date)}</span>
