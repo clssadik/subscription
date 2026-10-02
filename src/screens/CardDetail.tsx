@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { Logo } from '@/components/Logo'
 import { RoundButton } from '@/components/ScreenHeader'
 import { daysUntil, hasDue, monthlyCost, nextCardCycle, toKey } from '@/lib/dates'
-import { dayOf, formatDate, formatMoney } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { BankMark } from '@/components/BankMark'
@@ -38,24 +38,23 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
         <RoundButton label="Düzenle" onClick={() => nav.edit({ kind: 'card', id: card.id })}><PencilIcon className="size-[18px]" /></RoundButton>
       </div>
 
-      <div className="flex items-center gap-2.5 px-1">
-        <BankMark bankName={card.bankName} color={card.color} size={36} />
-        <div className="min-w-0">
-          <h1 className="num num-bold truncate text-xl leading-tight">{card.bankName}</h1>
-          <p className="text-xs text-subtle">•••• {card.last4}</p>
-        </div>
+      {/* Ortada: banka sembolü, adı ve son 4 hane */}
+      <div className="flex flex-col items-center text-center">
+        <BankMark bankName={card.bankName} color={card.color} size={64} />
+        <h1 className="num num-bold mt-2 max-w-full truncate text-2xl leading-tight">{card.bankName}</h1>
+        <p className="num mt-1.5 rounded-full bg-surface px-3.5 py-1 text-xl tracking-[0.06em]">•••• {card.last4}</p>
       </div>
 
       <Gauge color={card.color} due={due} previousDue={cycle?.previousDue ?? null} />
 
       <div className="mt-2 grid grid-cols-2 gap-2">
-        {hasDue(card) && card.statementDay && <Stat label="Kesim" value={dayOf(card.statementDay)} />}
-        <Stat
-          label="Bu karttan"
-          value={formatMoney(monthlyTry)}
-          sub={`${onCard.length} abonelik`}
-          className={hasDue(card) && card.statementDay ? undefined : 'col-span-2'}
-        />
+        {cycle && (
+          <>
+            <Stat label="Kesim" value={formatDate(cycle.statement, 'd MMM')} sub={formatDate(cycle.statement, 'EEEE')} />
+            <Stat label="Son ödeme" value={formatDate(cycle.due, 'd MMM')} sub={formatDate(cycle.due, 'EEEE')} />
+          </>
+        )}
+        <Stat label="Bu karttan" value={formatMoney(monthlyTry)} sub={`${onCard.length} abonelik`} className="col-span-2" />
       </div>
 
       {due && (
@@ -104,7 +103,7 @@ function Gauge({ color, due, previousDue }: { color: string; due: Date | null; p
   const end = { x: cx - R * Math.cos(Math.PI * progress), y: cy - R * Math.sin(Math.PI * progress) }
 
   return (
-    <div className="relative mt-3">
+    <div className="relative mx-auto mt-3 w-[86%]">
       <svg viewBox={`0 0 ${W} 150`} className="w-full" role="img" aria-label={due ? `Son ödemeye ${left} gün kaldı` : 'Banka kartı'}>
         <path d={arc(1)} fill="none" stroke="var(--line)" strokeWidth={22} />
         {progress > 0.01 && <path d={arc(progress)} fill="none" stroke={color} strokeWidth={22} />}
@@ -121,7 +120,6 @@ function Gauge({ color, due, previousDue }: { color: string; due: Date | null; p
                 <span className="text-[15px]"> gün</span>
               </>
             )}
-            <div className="mt-0.5 text-xs text-subtle">{formatDate(due, 'd MMMM EEEE')} · son ödeme</div>
           </>
         ) : (
           <>
