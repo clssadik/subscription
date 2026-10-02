@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 
 // Liste uçlarında iOS gibi esneme + en üstte aşağı çekip yenileme.
 // En üstte çekince bütün sayfa (stage) aşağı iner, üstte açılan boşlukta yenileme halkası belirir.
-// En altta çekince sadece liste (content) hafifçe yukarı esner. Bırakınca yumuşakça yerine döner (sekmeden).
+// En altta çekince liste (content) sadece azıcık yukarı çıkar. Bırakınca yumuşakça yerine döner (sekmeden).
 const TOP_MAX = 180 // en üstte en fazla bu kadar esner (px)
 const TRIGGER = 90 // bu kadar çekip bırakınca yenilenir (parmakla ~300px)
 const HOLD = 60 // yenilenirken sayfa bu kadar aşağıda bekler
-const BOTTOM_MAX = 70 // en altta en fazla bu kadar esner
+const BOTTOM_MAX = 12 // en altta sadece bu kadar (azıcık) yukarı çıkar
 const SPRING = 'transform 320ms cubic-bezier(0.25, 1, 0.5, 1)'
 
 /** Çektikçe zorlaşan esneme: d = parmağın gittiği yol, max = sınır, k = ne kadar yolda yarıya ulaşacağı */
@@ -71,7 +71,7 @@ export function useElasticScroll(onRefresh?: () => Promise<void>) {
         return
       }
       e.preventDefault()
-      set(edge === 'top' ? rubber(d, TOP_MAX, 300) : -rubber(-d, BOTTOM_MAX, 200), 'none')
+      set(edge === 'top' ? rubber(d, TOP_MAX, 300) : -rubber(-d, BOTTOM_MAX, 40), 'none')
     }
     const onEnd = async () => {
       if (edge === 'top' && pull >= TRIGGER && refresh.current) {
@@ -92,7 +92,7 @@ export function useElasticScroll(onRefresh?: () => Promise<void>) {
       const down = e.deltaY > 0
       if (!((down && atBottom()) || (!down && atTop()))) return
       wheelRaw = Math.max(-600, Math.min(600, wheelRaw + e.deltaY))
-      const v = rubber(Math.abs(wheelRaw), BOTTOM_MAX, 200) * (wheelRaw > 0 ? -1 : 1)
+      const v = rubber(Math.abs(wheelRaw), BOTTOM_MAX, 40) * (wheelRaw > 0 ? -1 : 1)
       set(v, 'none')
       clearTimeout(wheelTimer)
       wheelTimer = window.setTimeout(() => {
