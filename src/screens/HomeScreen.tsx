@@ -15,8 +15,8 @@ import { cn } from '@/lib/utils'
 import { BankMark } from '@/components/BankMark'
 import type { Nav } from '@/App'
 
-// Üst bloğun tamamen küçülmesi için gereken kaydırma (px): bloğun toplam küçülme mesafesi kadar
-const COLLAPSE = 110
+// Üst bloğun tamamen küçülmesi için gereken kaydırma (px): bloğun küçülme mesafesinin iki katı, telefonda çok hızlı olmasın
+const COLLAPSE = 220
 // Tüm para birimleri aynı tipografiyi kullanır: virgülden önceki ana kısım aynı boyut/renk, sonrası küçük ve soluk
 const AMOUNT_SIZE = 'calc(42px - 16px * var(--p, 0))'
 
@@ -26,8 +26,8 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   // Kaydırınca üst blok (toplam, sıradaki, iki küçük kart) birlikte küçülür; tarih başlığı sabit. --p 0 (en üstte) → 1 (COLLAPSE px kaydırınca). Her karede yeniden çizmemek için CSS değişkeni.
   const top = useRef<HTMLDivElement>(null)
   const [scrolled, setScrolled] = useState(false)
-  // Uçlarda esneme + en üstte aşağı çekip yenileme (çekince bütün sayfa aşağı iner)
-  const { scroller, content, stage, refreshing, trigger } = useElasticScroll(refresh)
+  // En üstte esneme + aşağı çekip yenileme (çekince bütün sayfa aşağı iner)
+  const { scroller, stage, refreshing, trigger } = useElasticScroll(refresh)
   const pageRef = useCallback(
     (n: HTMLDivElement | null) => {
       top.current = n
@@ -222,7 +222,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
         onScroll={onScroll}
         className="-mt-[72px] min-h-0 flex-1 overflow-y-auto overscroll-none pt-[72px] pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        <div ref={content}>
+        <div>
           {/* Bu ayın bütün ödemeleri; soldaki yuvarlak "ödendi" işareti */}
           <h2 className="label mt-3 mb-2 px-1 text-subtle">{formatDate(new Date(), 'LLLL')} ödemeleri</h2>
           <ul className="grid gap-1.5">

@@ -1,25 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 
-// Liste uçlarında iOS gibi esneme + en üstte aşağı çekip yenileme.
+// Listenin en üstünde iOS gibi esneme + aşağı çekip yenileme. En altta esneme yok.
 // En üstte çekince bütün sayfa (stage) aşağı iner, üstte açılan boşlukta yenileme halkası belirir.
-// En altta çekince liste (content) sadece azıcık yukarı çıkar. Bırakınca yumuşakça yerine döner (sekmeden).
+// Bırakınca yumuşakça yerine döner (sekmeden).
 const TOP_MAX = 180 // en üstte en fazla bu kadar esner (px)
 const TRIGGER = 90 // bu kadar çekip bırakınca yenilenir (parmakla ~300px)
 const HOLD = 60 // yenilenirken sayfa bu kadar aşağıda bekler
-const BOTTOM_MAX = 12 // en altta sadece bu kadar (azıcık) yukarı çıkar
 const SPRING = 'transform 320ms cubic-bezier(0.25, 1, 0.5, 1)'
 
 /** Çektikçe zorlaşan esneme: d = parmağın gittiği yol, max = sınır, k = ne kadar yolda yarıya ulaşacağı */
 const rubber = (d: number, max: number, k: number) => max * (1 - 1 / (d / k + 1))
 
 /**
- * Üç ref: `scroller` kayan alan (dokunuşları dinler), `content` onun içindeki sarmalayıcı (altta esner),
- * `stage` bütün sayfa (üstte aşağı iner). Çekme miktarı `stage`'e `--pull` (sayı) olarak yazılır.
+ * İki ref: `scroller` kayan alan (dokunuşları dinler), `stage` bütün sayfa (üstte aşağı iner).
+ * Çekme miktarı `stage`'e `--pull` (sayı) olarak yazılır.
  */
 export function useElasticScroll(onRefresh?: () => Promise<void>) {
   // Ref yerine state: liste sonradan ekrana gelirse (ör. ilk kayıttan sonra) dinleyiciler o an bağlanır
   const [el, scroller] = useState<HTMLDivElement | null>(null)
-  const [inner, content] = useState<HTMLDivElement | null>(null)
   const [page, stage] = useState<HTMLDivElement | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   // Her çizimde dinleyicileri yeniden kurmamak için en güncel işlevi ref'te tut
@@ -29,52 +27,47 @@ export function useElasticScroll(onRefresh?: () => Promise<void>) {
   })
 
   useEffect(() => {
-    if (!el || !inner || !page) return
+    if (!el || !page) return
     let startY = 0
-    let pull = 0 // + üstte (sayfa aşağı), - altta (liste yukarı)
-    let edge: 'top' | 'bottom' | null = null
+    let pull = 0
+    let pulling = false
     let busy = false
     let wheelRaw = 0
     let wheelTimer = 0
 
     const set = (v: number, transition: string) => {
       pull = v
-      const top = Math.max(0, v)
-      const bottom = Math.min(0, v)
-      page.style.transition = inner.style.transition = transition
-      page.style.transform = top ? `translateY(${top}px)` : ''
-      inner.style.transform = bottom ? `translateY(${bottom}px)` : ''
-      page.style.setProperty('--pull', String(top))
+      page.style.transition = transition
+      page.style.transform = v ? `translateY(${v}px)` : ''
+      page.style.setProperty('--pull', String(v))
     }
     const atTop = () => el.scrollTop <= 0
-    const atBottom = () => el.scrollTop + el.clientHeight >= el.scrollHeight - 1
 
     const onStart = (e: TouchEvent) => {
       startY = e.touches[0].clientY
-      edge = null
+      pulling = false
     }
     const onMove = (e: TouchEvent) => {
       if (busy) return
       const y = e.touches[0].clientY
-      if (edge === null) {
-        // Esneme ancak uçtayken ve uca doğru çekince başlar
-        if (y > startY && atTop()) edge = 'top'
-        else if (y < startY && atBottom()) edge = 'bottom'
-        else return
+      if (!pulling) {
+        // Esneme ancak en üstteyken aşağı çekince başlar
+        if (!(y > startY && atTop())) return
+        pulling = true
         startY = y
         return
       }
       const d = y - startY
-      if ((edge === 'top' && d <= 0) || (edge === 'bottom' && d >= 0)) {
+      if (d <= 0) {
         set(0, 'none')
-        edge = null
+        pulling = false
         return
       }
       e.preventDefault()
-      set(edge === 'top' ? rubber(d, TOP_MAX, 300) : -rubber(-d, BOTTOM_MAX, 40), 'none')
+      set(rubber(d, TOP_MAX, 300), 'none')
     }
     const onEnd = async () => {
-      if (edge === 'top' && pull >= TRIGGER && refresh.current) {
+      if (pulling && pull >= TRIGGER && refresh.current) {
         busy = true
         setRefreshing(true)
         set(HOLD, SPRING)
@@ -83,17 +76,14 @@ export function useElasticScroll(onRefresh?: () => Promise<void>) {
         setRefreshing(false)
         busy = false
       }
-      edge = null
+      pulling = false
       set(0, SPRING)
     }
-    // Bilgisayarda fare tekerleği / dokunmatik yüzey: uçta küçük bir esneme, hareketi gecikmesiz takip eder; bitince hızla döner
+    // Bilgisayarda fare tekerleği / dokunmatik yüzey: en üstte küçük bir esneme, hareketi gecikmesiz takip eder; bitince hızla döner
     const onWheel = (e: WheelEvent) => {
-      if (busy) return
-      const down = e.deltaY > 0
-      if (!((down && atBottom()) || (!down && atTop()))) return
-      wheelRaw = Math.max(-600, Math.min(600, wheelRaw + e.deltaY))
-      const v = rubber(Math.abs(wheelRaw), BOTTOM_MAX, 40) * (wheelRaw > 0 ? -1 : 1)
-      set(v, 'none')
+      if (busy || e.deltaY > 0 || !atTop()) return
+      wheelRaw = Math.min(600, wheelRaw - e.deltaY)
+      set(rubber(wheelRaw, 12, 40), 'none')
       clearTimeout(wheelTimer)
       wheelTimer = window.setTimeout(() => {
         wheelRaw = 0
@@ -114,7 +104,7 @@ export function useElasticScroll(onRefresh?: () => Promise<void>) {
       el.removeEventListener('touchcancel', onEnd)
       el.removeEventListener('wheel', onWheel)
     }
-  }, [el, inner, page])
+  }, [el, page])
 
-  return { scroller, content, stage, refreshing, trigger: TRIGGER }
+  return { scroller, stage, refreshing, trigger: TRIGGER }
 }
