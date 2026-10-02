@@ -19,6 +19,8 @@ Logosu olmayan bir servis eklendiğinde uygulama bunu Supabase'deki `missing_log
 - Her eksik logo için: önce `simple-icons` paketinde var mı bak (`node -e "console.log(!!require('simple-icons').siXxx)"`).
   Varsa `src/lib/services.ts` içindeki servise `icon` olarak ekle. Yoksa resmî SVG'yi
   `src/assets/logos/<servis-anahtarı>.svg` olarak ekle (dosya adı = `SERVICES` içindeki `key`).
+- Logo kutusu açık temada siyah, koyu temada beyaz. Beyaz çizilmiş bir SVG eklersen beyazları `#141414` yapılmış
+  kopyasını `src/assets/logos/on-light/<servis-anahtarı>.svg` olarak da ekle (koyu temada o kullanılır).
 - Logo eklenince not kendiliğinden kapanır (`migrate()` logosu olanları listeden düşer).
 - Banka logoları ayrı: `src/assets/banks/<anahtar>.svg` (beyaz tek renk tam logo) ve `symbols/<anahtar>.svg`
   (sadece sembol, küçük kutular için). Anahtar `BANKS` içindeki `key` (`src/lib/banks.ts`). Sembolü olmayan bankada baş harf görünür.
