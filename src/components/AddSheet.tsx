@@ -86,9 +86,10 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
   const [cycle, setCycle] = useState<BillingCycle>(sub?.cycle ?? 'monthly')
   const [renewalDate, setRenewalDate] = useState(() => sub?.renewalDate ?? format(new Date(), 'yyyy-MM-dd'))
   const [cardId, setCardId] = useState(sub?.cardId ?? '')
+  // "Yeni kart ekle" seçilince kartın bilgileri bu formda girilir; kaydedince kart da oluşur ve aboneliğe bağlanır
+  const newCard = cardId === NEW_CARD
+  const [card, setCard] = useState<NewCard>({ bankName: '', last4: '', kind: 'credit', statementDay: null })
   const [error, setError] = useState('')
-
-
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -96,6 +97,14 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
     if (!name.trim()) return setError('Abonelik adını gir.')
     if (!(value > 0)) return setError('Tutarı sayı olarak gir, örneğin 229,99.')
     if (!renewalDate) return setError('Yenilenme tarihini seç.')
+    let linkedCard = cardId || null
+    if (newCard) {
+      const problem = cardProblem(card)
+      if (problem) return setError(problem)
+      const saved = buildCard(card)
+      dispatch({ type: 'card/save', card: saved })
+      linkedCard = saved.id
+    }
     // Elle yazılan ad listedeki bir servise denk geliyorsa logosunu bağla
     const key = getService(serviceKey)?.name === name.trim() ? serviceKey : (matchService(name)?.key ?? null)
     const subscription: Subscription = {
@@ -105,11 +114,11 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
       currency,
       cycle,
       renewalDate,
-      cardId: cardId || null,
+      cardId: linkedCard,
       serviceKey: key,
     }
     dispatch({ type: 'subscription/save', subscription })
-    toast.success(sub ? 'Abonelik güncellendi' : 'Abonelik eklendi')
+    toast.success(sub ? 'Abonelik güncellendi' : newCard ? 'Abonelik ve kart eklendi' : 'Abonelik eklendi')
     onDone()
   }
 
@@ -140,9 +149,17 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
           <select id="s-card" className={cn(selectClass, 'w-full font-normal text-ink dark:text-ink')} value={cardId} onChange={(e) => setCardId(e.target.value)}>
             <option value="">Kart seçilmedi</option>
             {state.cards.map((c) => <option key={c.id} value={c.id}>{c.bankName} •• {c.last4}</option>)}
+            <option value={NEW_CARD}>+ Yeni kart ekle</option>
           </select>
         </Field>
       </FieldGroup>
+
+      {newCard && (
+        <>
+          <p className="label -mb-1 px-1 text-subtle">Yeni kart</p>
+          <CardInputs value={card} onChange={setCard} idPrefix="sc" />
+        </>
+      )}
 
       {error && <p className="px-1 text-sm text-bh-red" role="alert">{error}</p>}
       <PrimaryButton type="submit">Kaydet</PrimaryButton>
@@ -162,66 +179,91 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
   )
 }
 
+const NEW_CARD = '__new'
+
+/** Kart formunun alanları (kart ekleme ve abonelik eklerken yeni kart) */
+type NewCard = { bankName: string; last4: string; kind: CardKind; statementDay: number | null }
+
+function cardProblem(c: NewCard) {
+  if (!c.bankName.trim()) return 'Banka adını gir.'
+  if (!/^\d{4}$/.test(c.last4)) return 'Son 4 hane tam 4 rakam olmalı.'
+  if (c.kind === 'credit' && !c.statementDay) return 'Hesap kesim gününü seç.'
+  return ''
+}
+
+/** Renk banka adından gelir; listede olmayan bankada düzenlerken eski rengi koru */
+function colorFor(bankName: string, existing?: CreditCard) {
+  return bankColor(bankName) ?? (existing && existing.bankName === bankName.trim() ? existing.color : cardColor(bankName))
+}
+
+function buildCard(c: NewCard, existing?: CreditCard): CreditCard {
+  return {
+    id: existing?.id ?? newId(),
+    bankName: fullBankName(c.bankName),
+    last4: c.last4,
+    kind: c.kind,
+    // Banka kartında kesim yok; son ödeme kesimden hesaplanır
+    statementDay: c.kind === 'credit' ? c.statementDay : null,
+    // Limit ve kart ağı artık sorulmuyor; eski kartlarda varsa korunur
+    limit: existing?.limit ?? 0,
+    color: colorFor(c.bankName, existing),
+    network: existing?.network ?? null,
+  }
+}
+
+function CardInputs({ value, onChange, idPrefix, existing }: { value: NewCard; onChange: (c: NewCard) => void; idPrefix: string; existing?: CreditCard }) {
+  const set = (patch: Partial<NewCard>) => onChange({ ...value, ...patch })
+  const digits = (v: string, max: number) => v.replace(/\D/g, '').slice(0, max)
+  return (
+    <>
+      <Segmented
+        className="bg-surface"
+        value={value.kind}
+        onChange={(kind) => set({ kind })}
+        options={[{ value: 'credit', label: 'Kredi kartı' }, { value: 'debit', label: 'Banka kartı' }]}
+      />
+      <FieldGroup>
+        <Field label="Banka adı" htmlFor={`${idPrefix}-bank`}>
+          <input id={`${idPrefix}-bank`} className={inputClass} value={value.bankName} onChange={(e) => set({ bankName: e.target.value })} placeholder="Garanti BBVA" />
+          {value.bankName.trim() && <span aria-hidden className="size-4 shrink-0 rounded-full" style={{ background: colorFor(value.bankName, existing) }} />}
+        </Field>
+        <Field label="Son 4 hane" htmlFor={`${idPrefix}-last4`}>
+          <input id={`${idPrefix}-last4`} className={cn(inputClass, 'num tracking-widest')} inputMode="numeric" autoComplete="off" value={value.last4} onChange={(e) => set({ last4: digits(e.target.value, 4) })} placeholder="1234" />
+        </Field>
+        {value.kind === 'credit' && (
+          <Field label="Hesap kesim" htmlFor={`${idPrefix}-st`}>
+            <DaySelect id={`${idPrefix}-st`} value={value.statementDay} onChange={(statementDay) => set({ statementDay })} />
+          </Field>
+        )}
+      </FieldGroup>
+    </>
+  )
+}
+
 function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<SheetTarget>; onDone: () => void }) {
   const { state, dispatch } = useStore()
   const undoable = useUndoable()
   const card = state.cards.find((c) => c.id === id)
-  const [bankName, setBankName] = useState(card?.bankName ?? preset.bankName ?? '')
-  const [last4, setLast4] = useState(card?.last4 ?? '')
-  const [kind, setKind] = useState<CardKind>(card?.kind ?? 'credit')
-  const [statementDay, setStatementDay] = useState<number | null>(card?.statementDay ?? null)
-  const credit = kind === 'credit'
+  const [value, setValue] = useState<NewCard>({
+    bankName: card?.bankName ?? preset.bankName ?? '',
+    last4: card?.last4 ?? '',
+    kind: card?.kind ?? 'credit',
+    statementDay: card?.statementDay ?? null,
+  })
   const [error, setError] = useState('')
-
-  // Renk banka adından gelir; listede olmayan bankada düzenlerken eski rengi koru
-  const color = bankColor(bankName) ?? (card && card.bankName === bankName.trim() ? card.color : cardColor(bankName))
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (!bankName.trim()) return setError('Banka adını gir.')
-    if (!/^\d{4}$/.test(last4)) return setError('Son 4 hane tam 4 rakam olmalı.')
-    if (credit && !statementDay) return setError('Hesap kesim gününü seç.')
-    const saved: CreditCard = {
-      id: card?.id ?? newId(),
-      bankName: fullBankName(bankName),
-      last4,
-      kind,
-      // Banka kartında kesim yok; son ödeme kesimden hesaplanır
-      statementDay: credit ? statementDay : null,
-      // Limit ve kart ağı artık sorulmuyor; eski kartlarda varsa korunur
-      limit: card?.limit ?? 0,
-      color,
-      network: card?.network ?? null,
-    }
-    dispatch({ type: 'card/save', card: saved })
+    const problem = cardProblem(value)
+    if (problem) return setError(problem)
+    dispatch({ type: 'card/save', card: buildCard(value, card) })
     toast.success(card ? 'Kart güncellendi' : 'Kart eklendi')
     onDone()
   }
 
-  const digits = (v: string, max: number) => v.replace(/\D/g, '').slice(0, max)
-
   return (
     <form onSubmit={submit} className="mt-4 grid grid-cols-1 gap-3">
-      <Segmented
-        className="bg-surface"
-        value={kind}
-        onChange={setKind}
-        options={[{ value: 'credit', label: 'Kredi kartı' }, { value: 'debit', label: 'Banka kartı' }]}
-      />
-      <FieldGroup>
-        <Field label="Banka adı" htmlFor="c-bank">
-          <input id="c-bank" className={inputClass} value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="Garanti BBVA" />
-          {bankName.trim() && <span aria-hidden className="size-4 shrink-0 rounded-full" style={{ background: color }} />}
-        </Field>
-        <Field label="Son 4 hane" htmlFor="c-last4">
-          <input id="c-last4" className={cn(inputClass, 'num tracking-widest')} inputMode="numeric" autoComplete="off" value={last4} onChange={(e) => setLast4(digits(e.target.value, 4))} placeholder="1234" />
-        </Field>
-        {credit && (
-          <Field label="Hesap kesim" htmlFor="c-st">
-            <DaySelect id="c-st" value={statementDay} onChange={setStatementDay} />
-          </Field>
-        )}
-      </FieldGroup>
+      <CardInputs value={value} onChange={setValue} idPrefix="c" existing={card} />
 
       {error && <p className="px-1 text-sm text-bh-red" role="alert">{error}</p>}
       <PrimaryButton type="submit">Kaydet</PrimaryButton>
