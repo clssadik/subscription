@@ -69,12 +69,15 @@ export function HomeScreen({ nav }: { nav: Nav }) {
     <div ref={top} className="contents">
       <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
       {/* Üstteki blok (toplam, sıradaki, iki küçük kart) yerinde sabit kalır ve kaydırınca birlikte küçülür.
-          Zemin renginde: liste altına girince aradaki boşluklardan görünmez. Kaydırınca alt kenarda,
-          alttaki cam menüdeki gibi zemin renginden şeffafa yumuşak bir geçiş belirir. */}
+          Zemin renginde: liste altına girince aradaki boşluklardan görünmez. Kaydırınca alt kenarda, cam menüdeki gibi
+          içerik renk almadan bulanıklaşarak bloğun altına girer (bulanıklık aşağı doğru azalır). */}
       <div className="relative z-10 -mx-3 shrink-0 bg-page px-3 pb-2">
         <div
           aria-hidden
-          className={cn('pointer-events-none absolute inset-x-0 top-full h-7 bg-linear-to-b from-page to-transparent transition-opacity', scrolled ? 'opacity-100' : 'opacity-0')}
+          className={cn(
+            'pointer-events-none absolute inset-x-0 top-full h-6 backdrop-blur-[6px] transition-opacity [mask-image:linear-gradient(to_bottom,#000,transparent)]',
+            scrolled ? 'opacity-100' : 'opacity-0',
+          )}
         />
       {/* Bu ayın toplamı: 128 → 64px */}
       <section className="mb-2 flex h-[calc(128px-64px*var(--p,0))] flex-col overflow-hidden rounded-[22px] bg-hero px-3.5 py-[calc(14px-4px*var(--p,0))] text-hero-fg">
