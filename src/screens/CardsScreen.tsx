@@ -85,8 +85,9 @@ function Tile({ card, size, shape, onClick }: { card: CreditCard; size: Size; sh
       style={{ background: card.color }}
     >
       <span aria-hidden className={cn('absolute bg-black/20', shape)} />
-      <BankBrand bankName={card.bankName} className={big ? 'h-5' : 'h-4'} />
-      <span className={cn('num absolute bottom-3 left-3 leading-none! tracking-[0.02em]',big ? 'text-[22px]' : 'text-lg', size === 'tall' && 'bottom-[30px]')}>•• {card.last4}</span>
+      {/* Hem yükseklik hem genişlik sınırı: uzun yazılı logolar (Akbank) küçülür, hepsi aynı ağırlıkta durur */}
+      <BankBrand bankName={card.bankName} className={size === 'tall' ? 'h-5 max-w-[116px]' : 'h-4 max-w-[96px]'} />
+      <span className={cn('num absolute bottom-3 left-3 leading-none! tracking-[0.02em]',size === 'tall' ? 'bottom-[30px] text-[22px]' : 'text-lg')}>•• {card.last4}</span>
       {big && <span className={cn('absolute text-[11px] opacity-85', size === 'tall' ? 'bottom-2.5 left-3' : 'right-3 bottom-3')}>{note}</span>}
     </button>
   )
