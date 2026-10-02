@@ -51,15 +51,15 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
         onDelete={() => undoable(`${s.name} silindi`, () => dispatch({ type: 'subscription/delete', id: s.id }))}
       >
         <div className="flex items-center gap-3 py-1.5 pr-3 pl-1.5">
-          {/* Takvim yaprağı gibi gün kutusu: soluk mavi, bugün sarı */}
+          {/* Takvim yaprağı gibi gün kutusu: açık temada zemin renginde, koyu temada soluk mavi; bugün sarı */}
           <div
             className={cn(
               'flex h-12 w-11 shrink-0 flex-col items-center justify-center rounded-xl',
-              isToday ? 'bg-bh-yellow text-[#141414]' : 'bg-bh-blue/10 text-bh-blue dark:bg-bh-blue/30 dark:text-white',
+              isToday ? 'bg-bh-yellow text-[#141414]' : 'bg-page dark:bg-bh-blue/30 dark:text-white',
             )}
           >
             <span className="num num-bold text-lg leading-none">{next.getDate()}</span>
-            <span className={cn('label text-[8px]', !isToday && 'opacity-75')}>{formatDate(next, 'MMM').toLocaleUpperCase('tr')}</span>
+            <span className={cn('label text-[8px]', !isToday && 'text-subtle dark:text-white/75')}>{formatDate(next, 'MMM').toLocaleUpperCase('tr')}</span>
           </div>
           <Logo serviceKey={s.serviceKey} name={s.name} size={32} />
           <div className="min-w-0 flex-1">
