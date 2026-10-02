@@ -139,7 +139,11 @@ export function HomeScreen({ nav }: { nav: Nav }) {
 
       {/* Bu ayın bütün ödemeleri; soldaki yuvarlak "ödendi" işareti */}
       <h2 className="label mt-5 mb-2 px-1 text-subtle">{formatDate(new Date(), 'LLLL')} ödemeleri</h2>
-      <ul className="grid gap-1.5">
+      {/* Liste kendi içinde kaydırılır; üstteki kartlar yerinde kalır. Alttaki solma "devamı var" der. */}
+      <ul
+        className="grid max-h-[19rem] gap-1.5 overflow-y-auto overscroll-contain pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{ maskImage: 'linear-gradient(to bottom, #000 calc(100% - 28px), transparent)' }}
+      >
         {items.map((i) => {
           const key = `${i.kind}-${i.kind === 'card' ? i.card.id : i.subscription.id}-${i.date.getTime()}`
           const past = daysUntil(i.date) < 0
