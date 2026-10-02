@@ -5,6 +5,7 @@ import { Money } from '@/components/Money'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
+import { BankMark } from '@/components/BankMark'
 import { cn } from '@/lib/utils'
 
 export function HistoryScreen() {
@@ -78,7 +79,7 @@ export function HistoryScreen() {
               const c = cards.find((x) => x.id === p.refId)
               return (
                 <li key={p.id} className="flex items-center gap-3 rounded-[18px] bg-surface px-3 py-2.5">
-                  <span aria-hidden className="size-[30px] shrink-0 rounded-[15px_15px_5px_5px] ring-1 ring-line ring-inset" style={{ background: c?.color ?? '#888' }} />
+                  <BankMark bankName={c?.bankName ?? '?'} color={c?.color ?? '#888'} size={30} className="rounded-[15px_15px_5px_5px]" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{c ? `${c.bankName} ekstresi` : 'Kart ekstresi'}</span>
                     <span className="block text-[11px] text-subtle">{date} · son ödeme</span>

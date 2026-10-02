@@ -1,5 +1,6 @@
 import { CreditCardIcon, MoreHorizontalIcon, PlusIcon, SearchIcon } from 'lucide-react'
 import { useState } from 'react'
+import { BankBrand } from '@/components/BankMark'
 import { Logo } from '@/components/Logo'
 import { BANKS } from '@/lib/banks'
 import { luminance } from '@/lib/color'
@@ -140,7 +141,7 @@ export function CardQuickStart({ nav }: { nav: Nav }) {
             style={{ background: b.color }}
           >
             <span aria-hidden className="absolute -right-5 -bottom-5 size-16 rounded-full bg-black/18" />
-            <span className="relative font-label text-[13px] font-medium">{b.name}</span>
+            <BankBrand bankName={b.name} className="h-4" />
             {/* kart çipi */}
             <span aria-hidden className="relative mt-auto h-3.5 w-5 rounded-[4px] bg-white/35" />
           </button>

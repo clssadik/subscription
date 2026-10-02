@@ -1,4 +1,4 @@
-import { CheckIcon, CreditCardIcon } from 'lucide-react'
+import { CheckIcon } from 'lucide-react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { HomeQuickStart } from '@/components/QuickStart'
@@ -9,6 +9,7 @@ import { formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import { CURRENCIES } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { BankMark } from '@/components/BankMark'
 import type { Nav } from '@/App'
 
 export function HomeScreen({ nav }: { nav: Nav }) {
@@ -122,9 +123,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
 
         {nextCard ? (
           <button onClick={() => nav.openCard(nextCard.c.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-bh-red p-2.5 text-left text-white">
-            <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-[16px_16px_6px_6px] bg-black/25">
-              <CreditCardIcon className="size-4" />
-            </span>
+            <BankMark bankName={nextCard.c.bankName} color="rgb(0 0 0 / 0.25)" size={32} className="rounded-[16px_16px_6px_6px]" />
             <span className="min-w-0">
               <span className="block truncate text-[13px] font-medium">{nextCard.c.bankName}</span>
               <span className="block truncate text-[11px] opacity-85">{dueLabel(nextCard.date)} · son ödeme</span>
@@ -170,7 +169,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
                 </button>
               ) : (
                 <button onClick={() => nav.openCard(i.card.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                  <span aria-hidden className="size-[30px] shrink-0 rounded-[15px_15px_5px_5px] ring-1 ring-line ring-inset" style={{ background: i.card.color }} />
+                  <BankMark bankName={i.card.bankName} color={i.card.color} size={30} className="rounded-[15px_15px_5px_5px]" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{i.card.bankName}</span>
                     <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · son ödeme · {i.paid ? 'ödendi' : past ? 'geçti' : dueLabel(i.date)}</span>

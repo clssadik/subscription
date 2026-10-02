@@ -1,5 +1,6 @@
 import { CardQuickStart } from '@/components/QuickStart'
 import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
+import { BankBrand } from '@/components/BankMark'
 import { daysUntil, hasDue, nextCardDue } from '@/lib/dates'
 import { dayOf } from '@/lib/format'
 import { useStore } from '@/lib/store'
@@ -84,7 +85,7 @@ function Tile({ card, size, shape, onClick }: { card: CreditCard; size: Size; sh
       style={{ background: card.color }}
     >
       <span aria-hidden className={cn('absolute bg-black/20', shape)} />
-      <span className="relative block truncate font-label text-[13px] font-medium">{card.bankName}</span>
+      <BankBrand bankName={card.bankName} className={big ? 'h-5' : 'h-4'} />
       <span className={cn('num absolute bottom-3 left-3 leading-none! tracking-[0.02em]',big ? 'text-[22px]' : 'text-lg', size === 'tall' && 'bottom-[30px]')}>•• {card.last4}</span>
       {big && <span className={cn('absolute text-[11px] opacity-85', size === 'tall' ? 'bottom-2.5 left-3' : 'right-3 bottom-3')}>{note}</span>}
     </button>

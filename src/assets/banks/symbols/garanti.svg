@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 389.23 68.89"><defs><mask id="mono" maskUnits="userSpaceOnUse" x="0" y="0" width="389.2300109863281" height="68.88999938964844">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 -2.1 48.80 73.10"><defs><mask id="mono" maskUnits="userSpaceOnUse" x="0" y="0" width="389.2300109863281" height="68.88999938964844">
 
 <g>
 	<g>
@@ -80,4 +80,4 @@
 		</g>
 	</g>
 </g>
-</mask></defs><rect x="0" y="0" width="389.2300109863281" height="68.88999938964844" fill="#fff" mask="url(#mono)"></rect></svg>
+</mask></defs><rect x="0" y="-2.1" width="48.80" height="73.10" fill="#fff" mask="url(#mono)"></rect></svg>

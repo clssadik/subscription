@@ -20,6 +20,8 @@ Logosu olmayan bir servis eklendiğinde uygulama bunu Supabase'deki `missing_log
   Varsa `src/lib/services.ts` içindeki servise `icon` olarak ekle. Yoksa resmî SVG'yi
   `src/assets/logos/<servis-anahtarı>.svg` olarak ekle (dosya adı = `SERVICES` içindeki `key`).
 - Logo eklenince not kendiliğinden kapanır (`migrate()` logosu olanları listeden düşer).
+- Banka logoları ayrı: `src/assets/banks/<anahtar>.svg` (beyaz tek renk tam logo) ve `symbols/<anahtar>.svg`
+  (sadece sembol, küçük kutular için). Anahtar `BANKS` içindeki `key` (`src/lib/banks.ts`). Sembolü olmayan bankada baş harf görünür.
 
 ## Tasarım kuralları (Gündüz / Gece Bauhaus bento)
 

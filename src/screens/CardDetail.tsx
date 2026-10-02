@@ -7,6 +7,7 @@ import { daysUntil, hasDue, monthlyCost, nextCardDue, toKey } from '@/lib/dates'
 import { dayOf, formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
+import { BankMark } from '@/components/BankMark'
 import type { Nav } from '@/App'
 
 export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: () => void }) {
@@ -37,7 +38,7 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
       </div>
 
       <div className="flex items-center gap-2.5 px-1">
-        <span aria-hidden className="size-9 shrink-0 rounded-[18px_18px_6px_6px] ring-1 ring-line ring-inset" style={{ background: card.color }} />
+        <BankMark bankName={card.bankName} color={card.color} size={36} className="rounded-[18px_18px_6px_6px]" />
         <div className="min-w-0">
           <h1 className="num num-bold truncate text-xl leading-tight">{card.bankName}</h1>
           <p className="text-xs text-subtle">•••• {card.last4}</p>
