@@ -13,9 +13,6 @@ import { cn } from '@/lib/utils'
 import { BankMark } from '@/components/BankMark'
 import type { Nav } from '@/App'
 
-// Kayan alanın üst solması (sadece kaydırınca). Altta solma yok: içerik cam menünün arkasından geçer.
-const fade = (top: boolean) => `linear-gradient(to bottom, ${top ? 'transparent' : '#000'}, #000 28px)`
-
 export function HomeScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const { cards, subscriptions, payments } = state
@@ -62,8 +59,13 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   return (
     <>
       <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
-      {/* Bu ayın toplamı: yerinde sabit kalır */}
-      <section className="mb-2 flex h-32 shrink-0 flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg">
+      {/* Bu ayın toplamı: yerinde sabit kalır; kaydırınca altındaki gölge, içeriğin kartın altına girdiğini gösterir */}
+      <section
+        className={cn(
+          'relative z-10 mb-2 flex h-32 shrink-0 flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg transition-shadow',
+          scrolled && 'shadow-[0_10px_24px_-8px_rgb(0_0_0/0.45)]',
+        )}
+      >
           <div className="label opacity-70">Bu ay ödenecek</div>
           <div className="mt-1 leading-none">
             <Money amount={tryTotal.total} size={42} />
@@ -77,11 +79,11 @@ export function HomeScreen({ nav }: { nav: Nav }) {
           </div>
       </section>
 
-      {/* Toplamın altındaki her şey birlikte kayar. Alan cam menünün arkasına kadar uzanır. */}
+      {/* Toplamın altındaki her şey birlikte kayar. Alan yukarıda kartın yuvarlak köşelerinin arkasına (22px + 8px boşluk),
+          aşağıda cam menünün arkasına kadar uzanır; içerik iki kenarda da üstteki katmanın altına girer. */}
       <div
         onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
-        className="-mb-24 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+96px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        style={{ maskImage: fade(scrolled), WebkitMaskImage: fade(scrolled) }}
+        className="-mt-[30px] -mb-24 min-h-0 flex-1 overflow-y-auto overscroll-contain pt-[30px] pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+96px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <div className="grid grid-cols-2 gap-2">
           {/* Sıradaki ödeme: geniş sarı şerit, solda büyük geri sayım */}
