@@ -96,6 +96,17 @@ export function nextCardDue(card: DueCard, payments: Payment[] = [], from: Date 
   return nextCardCycle(card, payments, from).due
 }
 
+/** Ödendi işaretlenebilir mi: sadece bu ayın ya da geçmiş ayların ödemeleri. Gelecek ay, ay değişince açılır. */
+export function canMarkPaid(date: Date, from: Date = new Date()) {
+  return date <= endOfMonth(from)
+}
+
+/** Bu ay içinde ödendi işaretlenmiş bir ödemesi var mı */
+export function paidThisMonth(payments: Payment[], refId: string, from: Date = new Date()) {
+  const month = format(from, 'yyyy-MM')
+  return payments.some((p) => p.refId === refId && p.dueDate.startsWith(month))
+}
+
 export function daysUntil(date: Date, from: Date = new Date()) {
   return differenceInCalendarDays(date, startOfDay(from))
 }

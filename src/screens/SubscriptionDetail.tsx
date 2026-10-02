@@ -3,8 +3,9 @@ import { parseISO } from 'date-fns'
 import { toast } from 'sonner'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
+import { PaidNote } from '@/components/PaidNote'
 import { RoundButton } from '@/components/ScreenHeader'
-import { daysUntil, dueLabel, nextRenewal, toKey } from '@/lib/dates'
+import { canMarkPaid, daysUntil, dueLabel, nextRenewal, paidThisMonth, toKey } from '@/lib/dates'
 import { dayOf, formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import { CYCLE_LABELS } from '@/lib/types'
@@ -67,10 +68,15 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
         <Stat label="Toplam ödenen" value={formatMoney(totalPaid, sub.currency)} sub={`${history.length} ödeme`} />
       </div>
 
-      <button onClick={markPaid} className="pressable mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-ink font-semibold text-page">
-        <CheckCircle2Icon className="size-[18px] text-bh-yellow" />
-        {daysUntil(next) <= 0 ? 'Ödendi olarak işaretle' : `${formatDate(next, 'd MMMM')} ödendi olarak işaretle`}
-      </button>
+      {/* Gelecek ayın ödemesi, ay değişmeden işaretlenemez */}
+      {canMarkPaid(next) ? (
+        <button onClick={markPaid} className="pressable mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-ink font-semibold text-page">
+          <CheckCircle2Icon className="size-[18px] text-bh-yellow" />
+          {daysUntil(next) <= 0 ? 'Ödendi olarak işaretle' : `${formatDate(next, 'd MMMM')} ödendi olarak işaretle`}
+        </button>
+      ) : (
+        paidThisMonth(state.payments, sub.id) && <PaidNote month={new Date()} />
+      )}
 
       <h2 className="label mt-5 mb-2 px-1 text-subtle">Geçmiş</h2>
       {history.length === 0 ? (

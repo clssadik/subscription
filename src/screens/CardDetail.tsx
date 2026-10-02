@@ -2,8 +2,9 @@ import { CheckCircle2Icon, ChevronLeftIcon, PencilIcon } from 'lucide-react'
 import { addMonths } from 'date-fns'
 import { toast } from 'sonner'
 import { Logo } from '@/components/Logo'
+import { PaidNote } from '@/components/PaidNote'
 import { RoundButton } from '@/components/ScreenHeader'
-import { daysUntil, hasDue, monthlyCost, nextCardCycle, toKey } from '@/lib/dates'
+import { canMarkPaid, daysUntil, hasDue, monthlyCost, nextCardCycle, paidThisMonth, toKey } from '@/lib/dates'
 import { formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
@@ -57,7 +58,9 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
         <Stat label="Bu karttan" value={formatMoney(monthlyTry)} sub={`${onCard.length} abonelik`} className="col-span-2" />
       </div>
 
-      {due && (
+      {/* Gelecek ayın ekstresi, ay değişmeden işaretlenemez */}
+      {due && !canMarkPaid(due) && paidThisMonth(state.payments, card.id) && <PaidNote month={new Date()} />}
+      {due && canMarkPaid(due) && (
         <button onClick={markPaid} className="pressable mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-ink font-semibold text-page">
           <CheckCircle2Icon className="size-[18px] text-bh-yellow" />
           {formatDate(due, 'LLLL')} ekstresi ödendi
