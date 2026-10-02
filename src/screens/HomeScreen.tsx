@@ -13,13 +13,13 @@ import { cn } from '@/lib/utils'
 import { BankMark } from '@/components/BankMark'
 import type { Nav } from '@/App'
 
-// Kartın tamamen küçülmesi için gereken kaydırma (px): kartın küçüldüğü mesafe kadar
-const COLLAPSE = 64
+// Üst bloğun tamamen küçülmesi için gereken kaydırma (px): bloğun toplam küçülme mesafesi kadar
+const COLLAPSE = 110
 
 export function HomeScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const { cards, subscriptions, payments } = state
-  // Kaydırınca toplam kartı küçülür (tarih başlığı sabit): --p 0 (en üstte) → 1 (COLLAPSE px kaydırınca). Her karede yeniden çizmemek için CSS değişkeni.
+  // Kaydırınca üst blok (toplam, sıradaki, iki küçük kart) birlikte küçülür; tarih başlığı sabit. --p 0 (en üstte) → 1 (COLLAPSE px kaydırınca). Her karede yeniden çizmemek için CSS değişkeni.
   const top = useRef<HTMLDivElement>(null)
   const [scrolled, setScrolled] = useState(false)
   function onScroll(e: React.UIEvent<HTMLDivElement>) {
@@ -68,13 +68,11 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   return (
     <div ref={top} className="contents">
       <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
-      {/* Bu ayın toplamı: yerinde sabit kalır, kaydırınca incelir (128 → 64px); altındaki gölge içeriğin kartın altına girdiğini gösterir */}
-      <section
-        className={cn(
-          'relative z-10 mb-2 flex h-[calc(128px-64px*var(--p,0))] shrink-0 flex-col overflow-hidden rounded-[22px] bg-hero px-3.5 py-[calc(14px-4px*var(--p,0))] text-hero-fg transition-shadow',
-          scrolled && 'shadow-[0_10px_24px_-8px_rgb(0_0_0/0.45)]',
-        )}
-      >
+      {/* Üstteki blok (toplam, sıradaki, iki küçük kart) yerinde sabit kalır ve kaydırınca birlikte küçülür.
+          Zemin renginde: liste altına girince aradaki boşluklardan görünmez; kaydırınca alt kenarında hafif gölge. */}
+      <div className={cn('relative z-10 -mx-3 shrink-0 bg-page px-3 pb-2 transition-shadow', scrolled && 'shadow-[0_10px_16px_-14px_rgb(0_0_0/0.5)]')}>
+      {/* Bu ayın toplamı: 128 → 64px */}
+      <section className="mb-2 flex h-[calc(128px-64px*var(--p,0))] flex-col overflow-hidden rounded-[22px] bg-hero px-3.5 py-[calc(14px-4px*var(--p,0))] text-hero-fg">
           <div className="label opacity-70">Bu ay ödenecek</div>
           <div className="mt-1 leading-none">
             <Money amount={tryTotal.total} size="calc(42px - 16px * var(--p, 0))" />
@@ -89,33 +87,28 @@ export function HomeScreen({ nav }: { nav: Nav }) {
           </div>
       </section>
 
-      {/* Toplamın altındaki her şey birlikte kayar. Alan yukarıda kartın yuvarlak köşelerinin arkasına (22px + 8px boşluk),
-          aşağıda cam menünün arkasına kadar uzanır; içerik iki kenarda da üstteki katmanın altına girer. */}
-      <div
-        onScroll={onScroll}
-        className="-mt-[30px] -mb-24 min-h-0 flex-1 overflow-y-auto overscroll-contain pt-[30px] pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+96px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
         <div className="grid grid-cols-2 gap-2">
           {/* Sıradaki ödeme: geniş sarı şerit, solda büyük geri sayım */}
           {first ? (
             <button
               onClick={() => nav.openSubscription(first.s.id)}
-              className="pressable col-span-2 flex items-center gap-4 rounded-[22px] bg-bh-yellow p-3.5 text-left text-[#141414]"
+              className="pressable col-span-2 flex items-center gap-4 rounded-[22px] bg-bh-yellow px-3.5 py-[calc(14px-4px*var(--p,0))] text-left text-[#141414]"
             >
               <span className="min-w-16 text-center leading-none">
                 {daysUntil(first.date) === 0 ? (
-                  <span className="num num-bold text-[30px]">Bugün</span>
+                  <span className="num num-bold text-[length:calc(30px-8px*var(--p,0))]">Bugün</span>
                 ) : (
                   <>
-                    <span className="num num-bold block text-[56px] leading-[0.85]">{daysUntil(first.date)}</span>
+                    <span className="num num-bold block text-[length:calc(56px-24px*var(--p,0))] leading-[0.85]">{daysUntil(first.date)}</span>
                     <span className="label">gün</span>
                   </>
                 )}
               </span>
               <span aria-hidden className="w-px self-stretch bg-black/15" />
               <span className="min-w-0 flex-1">
-                <span className="label block opacity-70">Sıradaki</span>
-                <span className="mt-1.5 flex items-center gap-2.5">
+                {/* "Sıradaki" yazısı küçülürken kapanır */}
+                <span className="label block h-[calc(14px-14px*var(--p,0))] overflow-hidden opacity-[calc(0.7-1.4*var(--p,0))]">Sıradaki</span>
+                <span className="mt-[calc(6px-6px*var(--p,0))] flex items-center gap-2.5">
                   <Logo serviceKey={first.s.serviceKey} name={first.s.name} size={36} />
                   <span className="min-w-0">
                     <span className="block truncate font-medium">{first.s.name}</span>
@@ -132,11 +125,11 @@ export function HomeScreen({ nav }: { nav: Nav }) {
 
           {/* Altında: sonraki abonelik ve en yakın kart son ödemesi */}
           {second ? (
-            <button onClick={() => nav.openSubscription(second.s.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-surface p-2.5 text-left">
+            <button onClick={() => nav.openSubscription(second.s.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-surface px-2.5 py-[calc(10px-4px*var(--p,0))] text-left">
               <Logo serviceKey={second.s.serviceKey} name={second.s.name} size={32} />
               <span className="min-w-0">
                 <span className="block truncate text-[13px] font-medium">{second.s.name}</span>
-                <span className="block truncate text-[11px] text-subtle">{dueLabel(second.date)} · {formatMoney(second.s.amount, second.s.currency)}</span>
+                <span className="block h-[calc(15px-15px*var(--p,0))] truncate text-[11px] text-subtle opacity-[calc(1-2*var(--p,0))]">{dueLabel(second.date)} · {formatMoney(second.s.amount, second.s.currency)}</span>
               </span>
             </button>
           ) : (
@@ -146,11 +139,11 @@ export function HomeScreen({ nav }: { nav: Nav }) {
           )}
 
           {nextCard ? (
-            <button onClick={() => nav.openCard(nextCard.c.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-bh-red p-2.5 text-left text-white">
+            <button onClick={() => nav.openCard(nextCard.c.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-bh-red px-2.5 py-[calc(10px-4px*var(--p,0))] text-left text-white">
               <BankMark bankName={nextCard.c.bankName} color="rgb(0 0 0 / 0.25)" size={32} />
               <span className="min-w-0">
                 <span className="block truncate text-[13px] font-medium">{nextCard.c.bankName}</span>
-                <span className="block truncate text-[11px] opacity-85">{dueLabel(nextCard.date)} · son ödeme</span>
+                <span className="block h-[calc(15px-15px*var(--p,0))] truncate text-[11px] opacity-[calc(0.85-1.7*var(--p,0))]">{dueLabel(nextCard.date)} · son ödeme</span>
               </span>
             </button>
           ) : (
@@ -159,9 +152,15 @@ export function HomeScreen({ nav }: { nav: Nav }) {
             </button>
           )}
         </div>
+      </div>
 
+      {/* Sadece bu ayın ödemeleri kayar; üstteki bloğun altına girer, aşağıda cam menünün arkasına kadar uzanır */}
+      <div
+        onScroll={onScroll}
+        className="-mb-24 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+96px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {/* Bu ayın bütün ödemeleri; soldaki yuvarlak "ödendi" işareti */}
-        <h2 className="label mt-5 mb-2 px-1 text-subtle">{formatDate(new Date(), 'LLLL')} ödemeleri</h2>
+        <h2 className="label mt-3 mb-2 px-1 text-subtle">{formatDate(new Date(), 'LLLL')} ödemeleri</h2>
         <ul className="grid gap-1.5">
           {items.map((i) => {
             const key = `${i.kind}-${i.kind === 'card' ? i.card.id : i.subscription.id}-${i.date.getTime()}`
