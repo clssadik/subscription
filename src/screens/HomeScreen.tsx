@@ -18,7 +18,7 @@ import type { Nav } from '@/App'
 const COLLAPSE = 220
 // Tüm para birimleri aynı tipografiyi kullanır: virgülden önceki ana kısım aynı boyut/renk, sonrası küçük ve soluk
 const AMOUNT_SIZE = 'calc(42px - 16px * var(--p, 0))'
-// En üstteki esnemede listeyle birlikte aşağı inme
+// Uçlardaki esnemede listeyle birlikte kayma
 const PULL = { transform: 'translateY(calc(var(--pull, 0) * 1px))' }
 
 export function HomeScreen({ nav }: { nav: Nav }) {
@@ -45,8 +45,11 @@ export function HomeScreen({ nav }: { nav: Nav }) {
     const y = e.currentTarget.scrollTop
     progress.current = Math.min(1, Math.max(0, y / COLLAPSE))
     top.current?.style.setProperty('--p', String(progress.current))
-    // iPhone en üstte esnetirken scrollTop eksiye iner: başlık ve blok da listeyle birlikte aşağı iner, aralarında boşluk açılmaz
-    top.current?.style.setProperty('--pull', String(Math.max(0, -y)))
+    // iPhone uçlarda esnetirken scrollTop sınırın dışına taşar: başlık ve blok da listeyle birlikte aynı miktarda kayar,
+    // böylece bütün sayfa tek parça esner (üstte aşağı, altta yukarı)
+    const max = e.currentTarget.scrollHeight - e.currentTarget.clientHeight
+    const pull = y < 0 ? -y : y > max ? max - y : 0
+    top.current?.style.setProperty('--pull', String(pull))
     setScrolled(y > 0)
   }
   const items = monthItems(cards, subscriptions, payments)
