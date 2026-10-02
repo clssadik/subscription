@@ -3,45 +3,49 @@ import { cn } from '@/lib/utils'
 
 export type Tab = 'home' | 'subscriptions' | 'account' | 'cards' | 'history'
 
-const LEFT: { id: Tab; label: string; icon: LucideIcon }[] = [
+const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
   { id: 'home', label: 'Özet', icon: HomeIcon },
   { id: 'subscriptions', label: 'Abonelikler', icon: RepeatIcon },
-]
-const RIGHT: { id: Tab; label: string; icon: LucideIcon }[] = [
   { id: 'cards', label: 'Kartlar', icon: CreditCardIcon },
   { id: 'history', label: 'Geçmiş', icon: HistoryIcon },
 ]
 
-/** Havada duran alt menü; ortada hesap butonu (girişliyse e-postanın baş harfi, değilse kişi ikonu) */
+/**
+ * Havada duran cam (liquid glass) alt menü: dört sekme bir cam kapsülde,
+ * hesap butonu sağda ayrı bir cam dairede (girişliyse e-postanın baş harfi, değilse kişi ikonu).
+ */
 export function BottomNav({ tab, onTab, initial }: { tab: Tab; onTab: (t: Tab) => void; initial: string | null }) {
-  const item = ({ id, label, icon: Icon }: (typeof LEFT)[number]) => (
-    <button
-      key={id}
-      onClick={() => onTab(id)}
-      aria-label={label}
-      aria-current={tab === id ? 'page' : undefined}
-      className={cn('pressable flex size-12 items-center justify-center', tab === id ? 'text-bh-yellow' : 'text-nav-off')}
-    >
-      <Icon className="size-[22px]" strokeWidth={1.8} />
-    </button>
-  )
   const onAccount = tab === 'account'
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      <div className="mx-auto flex max-w-md items-center justify-around rounded-[28px] bg-nav p-1.5 dark:ring-1 dark:ring-white/12">
-        {LEFT.map(item)}
+    <nav className="fixed inset-x-0 bottom-0 z-40 px-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="mx-auto flex max-w-md items-center gap-2.5">
+        <div className="glass flex flex-1 items-center justify-around rounded-full p-1.5">
+          {TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => onTab(id)}
+              aria-label={label}
+              aria-current={tab === id ? 'page' : undefined}
+              className={cn(
+                'pressable flex h-[54px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full transition-colors',
+                tab === id ? 'glass-on text-ink' : 'text-ink/75',
+              )}
+            >
+              <Icon className={cn('size-[22px]', tab === id && 'text-[#C9930A] dark:text-bh-yellow')} strokeWidth={1.8} />
+              <span className="font-label text-[10px] font-medium">{label}</span>
+            </button>
+          ))}
+        </div>
         <button
           onClick={() => onTab('account')}
           aria-label={initial ? 'Hesap' : 'Giriş yap'}
           aria-current={onAccount ? 'page' : undefined}
-          className={cn(
-            'pressable flex size-12 items-center justify-center rounded-full font-label text-lg font-medium',
-            onAccount ? 'bg-bh-yellow text-[#141414]' : 'bg-white/10 text-bh-yellow',
-          )}
+          className={cn('glass pressable flex size-[62px] shrink-0 items-center justify-center rounded-full', onAccount && 'glass-on')}
         >
-          {initial ?? <UserIcon className="size-[22px]" strokeWidth={1.8} />}
+          <span className="flex size-10 items-center justify-center rounded-full bg-bh-yellow font-label text-lg font-medium text-[#141414]">
+            {initial ?? <UserIcon className="size-[22px]" strokeWidth={1.8} />}
+          </span>
         </button>
-        {RIGHT.map(item)}
       </div>
     </nav>
   )

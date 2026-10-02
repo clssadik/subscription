@@ -94,11 +94,8 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
             <div className="mt-3"><ShareBar subscriptions={subscriptions} height={10} /></div>
           </section>
 
-          {/* Liste kendi içinde kaydırılır; üstteki toplam kartı yerinde kalır */}
-          <div
-            className="min-h-48 flex-1 overflow-y-auto overscroll-contain pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            style={{ maskImage: 'linear-gradient(to bottom, #000 calc(100% - 28px), transparent)' }}
-          >
+          {/* Liste kendi içinde kaydırılır; üstteki toplam kartı yerinde kalır. Alan cam menünün arkasına kadar uzanır. */}
+          <div className="-mb-24 min-h-48 flex-1 overflow-y-auto overscroll-contain pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+96px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {groups.map((g) => (
               <section key={g.title}>
                 <h2 className="label mt-4 mb-1 px-1 text-subtle">{g.title}</h2>

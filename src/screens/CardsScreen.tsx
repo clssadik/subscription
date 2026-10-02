@@ -52,11 +52,8 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
         <CardFan items={upcoming.map((c) => ({ card: c, due: nextCardDue(c, payments) }))} />
       </section>
 
-      {/* Mozaik kendi içinde kaydırılır; üstteki özet yerinde kalır */}
-      <div
-        className="min-h-48 flex-1 overflow-y-auto overscroll-contain pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        style={{ maskImage: 'linear-gradient(to bottom, #000 calc(100% - 28px), transparent)' }}
-      >
+      {/* Mozaik kendi içinde kaydırılır; üstteki özet yerinde kalır. Alan cam menünün arkasına kadar uzanır. */}
+      <div className="-mb-24 min-h-48 flex-1 overflow-y-auto overscroll-contain pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+96px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="grid auto-rows-[64px] grid-flow-dense grid-cols-2 gap-2">
           {cards.map((c, i) => (
             <Tile key={c.id} card={c} size={sizeOf(i)} shape={SHAPES[i % SHAPES.length]} onClick={() => onSelect(c.id)} />

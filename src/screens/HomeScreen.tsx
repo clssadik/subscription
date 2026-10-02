@@ -13,10 +13,8 @@ import { cn } from '@/lib/utils'
 import { BankMark } from '@/components/BankMark'
 import type { Nav } from '@/App'
 
-// Kayan alanın kenar solmaları: üstte 28px (sadece kaydırınca); altta menünün üst kenarında (alt boşluk + 60px menü) tamamen kaybolur
-const NAV_TOP = 'calc(max(0.75rem, env(safe-area-inset-bottom)) + 60px)'
-const fade = (top: boolean) =>
-  `linear-gradient(to bottom, ${top ? 'transparent' : '#000'}, #000 28px, #000 calc(100% - ${NAV_TOP} - 28px), transparent calc(100% - ${NAV_TOP}))`
+// Kayan alanın üst solması (sadece kaydırınca). Altta solma yok: içerik cam menünün arkasından geçer.
+const fade = (top: boolean) => `linear-gradient(to bottom, ${top ? 'transparent' : '#000'}, #000 28px)`
 
 export function HomeScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
@@ -79,8 +77,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
           </div>
       </section>
 
-      {/* Toplamın altındaki her şey birlikte kayar. Alan menünün arkasına kadar uzanır;
-          üstte ve altta (menünün hemen üstünde) aynı yumuşak solma var. */}
+      {/* Toplamın altındaki her şey birlikte kayar. Alan cam menünün arkasına kadar uzanır. */}
       <div
         onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
         className="-mb-24 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+96px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
