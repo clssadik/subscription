@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { useUser } from '@/lib/auth'
 import { initial } from '@/lib/format'
 import { StoreProvider, useStore } from '@/lib/store'
+import { cn } from '@/lib/utils'
 import { AccountScreen } from '@/screens/AccountScreen'
 import { CardsScreen } from '@/screens/CardsScreen'
 import { HistoryScreen } from '@/screens/HistoryScreen'
@@ -97,7 +98,13 @@ function Main({
 
   return (
     <>
-      <main className="mx-auto min-h-svh max-w-md px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-32">
+      {/* Özet ekranı ekrana sığar (sayfa kaymaz); orada sadece ödeme listesi kayar */}
+      <main
+        className={cn(
+          'mx-auto max-w-md px-3 pt-[max(1rem,env(safe-area-inset-top))]',
+          tab === 'home' && !detailId && ready ? 'flex h-svh flex-col overflow-y-auto pb-24' : 'min-h-svh pb-32',
+        )}
+      >
         {!ready ? (
           <p className="pt-24 text-center text-sm text-subtle">Yükleniyor…</p>
         ) : detailId ? (
