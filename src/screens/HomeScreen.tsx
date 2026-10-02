@@ -1,5 +1,5 @@
 import { CheckIcon } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { HomeQuickStart } from '@/components/QuickStart'
@@ -23,11 +23,26 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const { cards, subscriptions, payments } = state
   // Kaydırınca üst blok (toplam, sıradaki, iki küçük kart) birlikte küçülür; tarih başlığı sabit. --p 0 (en üstte) → 1 (COLLAPSE px kaydırınca). Her karede yeniden çizmemek için CSS değişkeni.
+  // Blok listenin üstüne bindirilir (akışta yer kaplamaz): küçülürken liste alanının boyutu değişmez, hızlı kaydırmada zıplama olmaz.
+  // Listenin üst boşluğu bloğun açık haldeki yüksekliği kadardır; blok boyu değişirse (ör. yazı tipi yüklenince) en üstteyken yeniden ölçülür.
   const top = useRef<HTMLDivElement>(null)
+  const block = useRef<HTMLDivElement>(null)
+  const progress = useRef(0)
+  const [blockHeight, setBlockHeight] = useState(0)
   const [scrolled, setScrolled] = useState(false)
+  useLayoutEffect(() => {
+    const el = block.current
+    if (!el) return
+    const measure = () => progress.current === 0 && setBlockHeight(el.offsetHeight)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  })
   function onScroll(e: React.UIEvent<HTMLDivElement>) {
     const y = e.currentTarget.scrollTop
-    top.current?.style.setProperty('--p', String(Math.min(1, y / COLLAPSE)))
+    progress.current = Math.min(1, Math.max(0, y / COLLAPSE))
+    top.current?.style.setProperty('--p', String(progress.current))
     setScrolled(y > 0)
   }
   const items = monthItems(cards, subscriptions, payments)
@@ -75,7 +90,8 @@ export function HomeScreen({ nav }: { nav: Nav }) {
           Arkası küçük kartların ortasına kadar opak zemin: aradaki boşluklardan içerik görünmez. Liste sadece küçük kartların
           alt yarısının arkasından geçer, kesimi kartların yuvarlak köşeleri yapar. Son 30px'te zemin %60'a iner; kaydırınca
           altına alttaki menüdeki gibi 40px'lik solma eklenir (%60 → şeffaf). */}
-      <div className="relative z-10 -mx-3 shrink-0 px-3 pb-2">
+      <div className="relative flex min-h-0 flex-1 flex-col">
+      <div ref={block} className="absolute inset-x-0 top-0 z-10 -mx-3 px-3 pb-2">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10"
@@ -178,11 +194,12 @@ export function HomeScreen({ nav }: { nav: Nav }) {
         </div>
       </div>
 
-      {/* Sadece bu ayın ödemeleri kayar. Yukarıda bloğun alt kısmının arkasına (72px: küçük kartlar + boşluklar, sarı şeridin içine kadar),
+      {/* Sadece bu ayın ödemeleri kayar. Bloğun tamamının arkasından başlar (üst boşluk = bloğun açık hali),
           aşağıda cam menünün arkasına kadar uzanır. */}
       <div
         onScroll={onScroll}
-        className="-mt-[72px] min-h-0 flex-1 overflow-y-auto overscroll-none pt-[72px] pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-none pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{ paddingTop: blockHeight }}
       >
         <div>
           {/* Bu ayın bütün ödemeleri; soldaki yuvarlak "ödendi" işareti */}
@@ -227,6 +244,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
             })}
           </ul>
         </div>
+      </div>
       </div>
     </div>
   )
