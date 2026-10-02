@@ -47,8 +47,8 @@ export function bankLogo(name: string) {
     logo: key ? svgs[`../assets/banks/${key}.svg`] : undefined,
     symbol: key ? svgs[`../assets/banks/symbols/${key}.svg`] : undefined,
     letter: (name.trim()[0] ?? '?').toLocaleUpperCase('tr'),
-    // İş Bankası'nın logosu çok ince uzun: küçük karoda sembol + ad daha okunaklı
-    wide: key === 'isbank',
+    // Bu logolarda yazı çok ince ya da küçük: karoda sembol + banka adı daha okunaklı
+    wide: key === 'isbank' || key === 'teb' || key === 'enpara',
   }
 }
 
