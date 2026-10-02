@@ -1,7 +1,9 @@
 import { CardQuickStart } from '@/components/QuickStart'
 import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
 import { BankBrand } from '@/components/BankMark'
+import { luminance } from '@/lib/color'
 import { daysUntil, hasDue, nextCardDue } from '@/lib/dates'
+import { formatDate } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import type { CreditCard } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -36,20 +38,37 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
   }
 
   // Bu ay son ödemesi gelmemiş kredi kartları
-  const upcoming = cards.filter(hasDue).filter((c) => daysUntil(nextCardDue(c, payments)) >= 0 && nextCardDue(c, payments).getMonth() === new Date().getMonth())
+  const upcoming = cards
+    .filter(hasDue)
+    .map((card) => ({ card, due: nextCardDue(card, payments) }))
+    .filter(({ due }) => daysUntil(due) >= 0 && due.getMonth() === new Date().getMonth())
+    .sort((a, b) => a.due.getTime() - b.due.getTime())
   const sizeOf = (i: number): Size => (cards.length < 4 ? 'wide' : BLOCK[i % BLOCK.length])
 
   return (
     <>
       <ScreenHeader title="Kartlar" action={<AddButton label="Kart ekle" onClick={() => nav.addCard()} />} />
 
-      {/* Beyaz zemin (koyu temada da): renkli karolardan ayrışsın diye */}
-      <section className="mb-2 flex h-[112px] shrink-0 items-center justify-between overflow-hidden rounded-[26px] bg-surface pr-3.5 pl-[18px] dark:bg-[#F2F2F2] dark:text-[#141414]">
-        <div>
+      {/* Bauhaus afiş: solda sayı, sağda her ödenecek kart için kendi renginde bir şekil. Beyaz zemin (koyu temada da). */}
+      <section className="mb-2 grid h-[196px] shrink-0 grid-cols-[1fr_150px] overflow-hidden rounded-[26px] bg-surface dark:bg-[#F2F2F2] dark:text-[#141414]">
+        <div className="flex min-w-0 flex-col py-4 pl-[18px]">
           <div className="label text-subtle dark:text-[#141414]/60">Bu ay ödenecek</div>
-          <div className="num num-bold mt-1 text-[40px] leading-none">{upcoming.length > 0 ? `${upcoming.length} kart` : 'Yok'}</div>
+          {upcoming.length > 0 ? (
+            <div className="mt-0.5 flex items-baseline gap-2">
+              <span className="num num-bold text-[96px] leading-[0.9]">{upcoming.length}</span>
+              <span className="text-lg font-medium">kart</span>
+            </div>
+          ) : (
+            <div className="num num-bold mt-1 text-[40px] leading-none">Yok</div>
+          )}
+          {upcoming[0] && (
+            <div className="mt-auto pr-2 text-xs leading-snug">
+              <span className="text-subtle dark:text-[#141414]/60">İlk son ödeme</span>
+              <span className="block truncate font-medium">{upcoming[0].card.bankName} · {formatDate(upcoming[0].due, 'd MMMM')}</span>
+            </div>
+          )}
         </div>
-        <CardFan items={upcoming.map((c) => ({ card: c, due: nextCardDue(c, payments) }))} />
+        <Poster cards={upcoming.map((u) => u.card)} />
       </section>
 
       {/* Mozaik kendi içinde kaydırılır; üstteki özet yerinde kalır. Alan cam menünün arkasına kadar uzanır. */}
@@ -86,26 +105,26 @@ function Tile({ card, size, shape, onClick }: { card: CreditCard; size: Size; sh
   )
 }
 
-/** Özet kartındaki cüzdan: bu ay ödenecek kartlar yelpaze gibi; en yakın son ödeme en üstte (sağda, çipli). Sade kalsın diye en fazla 4 kart. */
-function CardFan({ items }: { items: { card: CreditCard; due: Date }[] }) {
-  const fan = [...items].sort((a, b) => b.due.getTime() - a.due.getTime()).slice(-4).map((x) => x.card)
-  const n = fan.length
-  if (n === 0) return null
+/** Afişin şekil yerleri (150px genişliğinde siyah panel). İlk yer daire: en yakın son ödeme oraya gelir ve sarı halka alır. */
+const POSTER = [
+  'top-3.5 left-3.5 size-14 rounded-full',
+  'top-3.5 left-20 size-14 rounded-bl-full',
+  'top-[78px] left-3.5 h-7 w-14 rounded-t-full',
+  'top-[78px] left-20 h-14 w-7',
+  'top-[78px] left-[114px] size-[22px] rounded-full',
+  'top-[114px] left-3.5 size-14 rounded-tr-full',
+  'top-[142px] left-20 h-7 w-14 rounded-b-full',
+]
+
+/** Bu ay ödenecek kartlar Bauhaus şekilleri olarak, son ödemesi en yakın olan başta. Boş kalan yerler koyu gri. */
+function Poster({ cards }: { cards: CreditCard[] }) {
   return (
-    <div aria-hidden className="relative h-[62px] w-[120px] shrink-0">
-      {fan.map((c, i) => {
-        const t = n === 1 ? 1 : i / (n - 1)
-        const angle = n === 1 ? 0 : -14 + 28 * t
-        return (
-          <span
-            key={c.id}
-            className="absolute h-[35px] w-[54px] rounded-[7px] ring-1 ring-line"
-            style={{ left: n === 1 ? 33 : 66 * t, top: 11 + (angle * angle) / 39, transform: `rotate(${angle}deg)`, background: c.color }}
-          >
-            {i === n - 1 && <span className="absolute bottom-1.5 left-[7px] h-2 w-3 rounded-[2px] bg-bh-yellow" />}
-          </span>
-        )
-      })}
+    <div aria-hidden className="relative bg-[#141414]">
+      {POSTER.map((shape, i) => (
+        // Siyah kartlar (Papara) siyah panelde kaybolmasın: ince açık kenar
+        <span key={i} className={cn('absolute', shape, cards[i] && luminance(cards[i].color) < 0.12 && 'ring-1 ring-white/30')} style={{ background: cards[i]?.color ?? '#262626' }} />
+      ))}
+      {cards.length > 0 && <span className="absolute top-3.5 left-3.5 size-14 rounded-full ring-[3px] ring-bh-yellow" />}
     </div>
   )
 }
