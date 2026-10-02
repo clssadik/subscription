@@ -4,6 +4,7 @@ import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { formatDate, formatMoney } from '@/lib/format'
+import { CURRENCIES, type Currency } from '@/lib/types'
 import { useStore } from '@/lib/store'
 import { BankMark } from '@/components/BankMark'
 import { cn } from '@/lib/utils'
@@ -12,18 +13,29 @@ export function HistoryScreen() {
   const { state } = useStore()
   const { payments, subscriptions, cards } = state
 
-  // Son 6 ayda ödendi işaretlenen abonelik tutarları (TL). Kart ekstreleri tutarsız tutulduğu için dahil değil.
+  // Son 6 ayda ödendi işaretlenen abonelik tutarları, para birimi bazında. Kart ekstreleri tutarsız tutulduğu için dahil değil.
   const thisMonth = startOfMonth(new Date())
   const months = Array.from({ length: 6 }, (_, i) => addMonths(thisMonth, i - 5))
-  const sums = months.map((m) => {
+  const paidIn = (m: Date, currency: Currency) => {
     const key = format(m, 'yyyy-MM')
     return payments
-      .filter((p) => p.kind === 'subscription' && p.currency === 'TRY' && p.dueDate.startsWith(key))
+      .filter((p) => p.kind === 'subscription' && p.currency === currency && p.dueDate.startsWith(key))
       .reduce((s, p) => s + (p.amount ?? 0), 0)
-  })
+  }
+  const sums = months.map((m) => paidIn(m, 'TRY'))
+  // Kur bilgisi olmadığı için yabancı para TL ile toplanmaz; ayrı gösterilir.
+  const foreign = CURRENCIES.filter((c) => c !== 'TRY').map((currency) => ({
+    currency,
+    sums: months.map((m) => paidIn(m, currency)),
+  }))
   const current = sums[5]
   const prev = sums[4]
   const max = Math.max(...sums, 1)
+  const paidThisMonth = foreign.filter((f) => f.sums[5] > 0)
+  const paidLastMonth = [
+    ...(prev > 0 ? [formatMoney(prev)] : []),
+    ...foreign.filter((f) => f.sums[4] > 0).map((f) => formatMoney(f.sums[4], f.currency)),
+  ]
 
   // Ay ay gruplanmış liste, yeniden eskiye
   const sorted = [...payments].sort((a, b) => b.dueDate.localeCompare(a.dueDate))
@@ -37,12 +49,22 @@ export function HistoryScreen() {
     <>
       <ScreenHeader title="Geçmiş" />
       <section className="mb-2 flex h-[176px] flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg">
-        <div className="flex justify-between">
+        <div className="flex justify-between gap-2">
           <span className="label opacity-70">{formatDate(thisMonth, 'LLLL')} ayında ödenen</span>
-          {prev > 0 && <span className="label opacity-70">geçen ay {formatMoney(prev)}</span>}
+          {paidLastMonth.length > 0 && (
+            <span className="label text-right opacity-70">geçen ay {paidLastMonth.join(' + ')}</span>
+          )}
         </div>
-        <div className="mt-1 leading-none"><Money amount={current} size={32} /></div>
-        <div className="mt-auto flex h-[70px] items-end gap-2" role="img" aria-label="Son 6 ayda ödenen abonelik tutarları">
+        <div className="mt-1 leading-none">
+          <Money amount={current} size={32} />
+          {paidThisMonth.map((f) => (
+            <span key={f.currency} className="ml-2" style={{ fontSize: 32 }}>
+              <span className="num">+ </span>
+              <Money amount={f.sums[5]} currency={f.currency} size={32} />
+            </span>
+          ))}
+        </div>
+        <div className="mt-auto flex h-[70px] items-end gap-2" role="img" aria-label="Son 6 ayda ödenen TL abonelik tutarları">
           {months.map((m, i) => (
             <div key={i} className="flex-1 text-center">
               <div

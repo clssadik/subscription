@@ -87,7 +87,10 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
             <div className="mt-0.5 leading-none">
               <Money amount={totals[0].total} size={34} />
               {totals.slice(1).filter((t) => t.total > 0).map((t) => (
-                <span key={t.currency} className="num ml-2 text-sm text-subtle">+ {formatMoney(t.total, t.currency)}</span>
+                <span key={t.currency} className="ml-2" style={{ fontSize: 34 }}>
+                  <span className="num">+ </span>
+                  <Money amount={t.total} currency={t.currency} size={34} />
+                </span>
               ))}
             </div>
             <div className="mt-3"><ShareBar subscriptions={subscriptions} height={10} /></div>

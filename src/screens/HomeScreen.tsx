@@ -16,6 +16,8 @@ import type { Nav } from '@/App'
 
 // Üst bloğun tamamen küçülmesi için gereken kaydırma (px): bloğun toplam küçülme mesafesi kadar
 const COLLAPSE = 110
+// Tüm para birimleri aynı tipografiyi kullanır: virgülden önceki ana kısım aynı boyut/renk, sonrası küçük ve soluk
+const AMOUNT_SIZE = 'calc(42px - 16px * var(--p, 0))'
 
 export function HomeScreen({ nav }: { nav: Nav }) {
   const { state, dispatch, refresh } = useStore()
@@ -122,15 +124,21 @@ export function HomeScreen({ nav }: { nav: Nav }) {
       <section className="mb-2 flex h-[calc(128px-64px*var(--p,0))] flex-col overflow-hidden rounded-[22px] bg-hero px-3.5 py-[calc(14px-4px*var(--p,0))] text-hero-fg">
           <div className="label opacity-70">Bu ay ödenecek</div>
           <div className="mt-1 leading-none">
-            <Money amount={tryTotal.total} size="calc(42px - 16px * var(--p, 0))" />
+            <Money amount={tryTotal.total} size={AMOUNT_SIZE} />
             {others.map((o) => (
-              <span key={o.currency} className="num ml-2 text-sm opacity-60">+ {formatMoney(o.total, o.currency)}</span>
+              <span key={o.currency} className="ml-2" style={{ fontSize: AMOUNT_SIZE }}>
+                <span className="num">+ </span>
+                <Money amount={o.total} currency={o.currency} size={AMOUNT_SIZE} />
+              </span>
             ))}
           </div>
           {/* Şerit ve "ödendi" satırı küçülmenin ilk yarısında kaybolur */}
           <div className="mt-auto opacity-[calc(1-2*var(--p,0))]">
             <ShareBar subscriptions={subscriptions} />
-            <div className="mt-1.5 text-[11px] opacity-70">{formatMoney(tryTotal.paid)} ödendi</div>
+            <div className="mt-1.5 text-[11px] opacity-70">
+              {formatMoney(tryTotal.paid)}
+              {totals.slice(1).filter((t) => t.paid > 0).map((t) => ` + ${formatMoney(t.paid, t.currency)}`)} ödendi
+            </div>
           </div>
       </section>
 
