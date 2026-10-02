@@ -43,10 +43,10 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
     <>
       <ScreenHeader title="Kartlar" action={<AddButton label="Kart ekle" onClick={() => nav.addCard()} />} />
 
-      {/* Beyaz zemin: renkli karolardan ayrışsın diye */}
-      <section className="mb-2 flex h-[112px] shrink-0 items-center justify-between overflow-hidden rounded-[26px] bg-surface pr-3.5 pl-[18px]">
+      {/* Beyaz zemin (koyu temada da): renkli karolardan ayrışsın diye */}
+      <section className="mb-2 flex h-[112px] shrink-0 items-center justify-between overflow-hidden rounded-[26px] bg-surface pr-3.5 pl-[18px] dark:bg-[#F2F2F2] dark:text-[#141414]">
         <div>
-          <div className="label text-subtle">Bu ay ödenecek</div>
+          <div className="label text-subtle dark:text-[#141414]/60">Bu ay ödenecek</div>
           <div className="num num-bold mt-1 text-[40px] leading-none">{upcoming.length > 0 ? `${upcoming.length} kart` : 'Yok'}</div>
         </div>
         <CardFan items={upcoming.map((c) => ({ card: c, due: nextCardDue(c, payments) }))} />
