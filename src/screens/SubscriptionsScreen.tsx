@@ -102,7 +102,7 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
         >
           {groups.map((g, i) => (
             <section key={g.title}>
-              <h2 className={cn('label mb-1 px-1 text-subtle', i > 0 && 'mt-4')}>{g.title}</h2>
+              <h2 className={cn('label mb-1 px-1 text-subtle', i > 0 && 'mt-2')}>{g.title}</h2>
               <div className="grid gap-1.5">{g.list.map(row)}</div>
             </section>
           ))}
