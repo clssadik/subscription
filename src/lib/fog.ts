@@ -11,7 +11,7 @@ export const TOP_FOG: Record<FogLevel, number> = { normal: 0.3, light: 0.15 }
  */
 export const BOTTOM_FOG: Record<FogLevel, { solid: number; above: number }> = {
   normal: { solid: 45, above: 16 },
-  light: { solid: 35, above: 0 },
+  light: { solid: 40, above: 10 },
 }
 
 /** Zemin rengi, verilen oranda saydam */
