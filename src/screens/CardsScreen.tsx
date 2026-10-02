@@ -43,16 +43,12 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
     <>
       <ScreenHeader title="Kartlar" action={<AddButton label="Kart ekle" onClick={() => nav.addCard()} />} />
 
-      <section className="mb-2 flex h-[68px] shrink-0 items-center justify-between rounded-[22px] bg-hero px-3.5 text-hero-fg">
+      <section className="mb-2 flex h-[76px] shrink-0 items-center justify-between overflow-hidden rounded-[22px] bg-hero px-3.5 text-hero-fg">
         <div>
-          <div className="label opacity-70">Bu ay son ödeme</div>
-          <div className="num num-bold mt-0.5 text-[24px] leading-none">{upcoming.length > 0 ? `${upcoming.length} kart` : 'Yok'}</div>
+          <div className="label opacity-70">Bu ay ödenecek</div>
+          <div className="num num-bold mt-0.5 text-[28px] leading-none">{upcoming.length > 0 ? `${upcoming.length} kart` : 'Yok'}</div>
         </div>
-        <div aria-hidden className="flex gap-1">
-          {upcoming.slice(0, 6).map((c) => (
-            <span key={c.id} className="h-7 w-2.5 rounded-[5px_5px_2px_2px] ring-1 ring-white/25" style={{ background: c.color }} />
-          ))}
-        </div>
+        <CardFan items={upcoming.map((c) => ({ card: c, due: nextCardDue(c, payments) }))} />
       </section>
 
       {/* Mozaik kendi içinde kaydırılır; üstteki özet yerinde kalır */}
@@ -89,5 +85,29 @@ function Tile({ card, size, shape, onClick }: { card: CreditCard; size: Size; sh
       <span className={cn('num absolute bottom-3 left-3 leading-none! tracking-[0.02em]',size === 'tall' ? 'text-[22px]' : 'text-lg', debitNote && size === 'tall' && 'bottom-[30px]')}>•• {card.last4}</span>
       {debitNote && <span className={cn('absolute text-[11px] opacity-85', size === 'tall' ? 'bottom-2.5 left-3' : 'right-3 bottom-3')}>banka kartı</span>}
     </button>
+  )
+}
+
+/** Özet kartındaki cüzdan: bu ay ödenecek kartlar yelpaze gibi; en yakın son ödeme en üstte (sağda, çipli) */
+function CardFan({ items }: { items: { card: CreditCard; due: Date }[] }) {
+  const fan = [...items].sort((a, b) => b.due.getTime() - a.due.getTime()).slice(-8).map((x) => x.card)
+  const n = fan.length
+  if (n === 0) return null
+  return (
+    <div aria-hidden className="relative h-14 w-[118px] shrink-0">
+      {fan.map((c, i) => {
+        const t = n === 1 ? 1 : i / (n - 1)
+        const angle = n === 1 ? 0 : -14 + 28 * t
+        return (
+          <span
+            key={c.id}
+            className="absolute h-[30px] w-[46px] rounded-[6px] ring-1 ring-white/20"
+            style={{ left: n === 1 ? 70 : 70 * t, top: 8 + (angle * angle) / 33, transform: `rotate(${angle}deg)`, background: c.color }}
+          >
+            {i === n - 1 && <span className="absolute bottom-[5px] left-1.5 h-[7px] w-2.5 rounded-[2px] bg-bh-yellow" />}
+          </span>
+        )
+      })}
+    </div>
   )
 }
