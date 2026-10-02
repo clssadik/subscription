@@ -22,7 +22,6 @@ export function randomCards(count = 10): CreditCard[] {
         last4: String(rand(0, 9999)).padStart(4, '0'),
         kind: credit ? 'credit' : 'debit',
         statementDay: credit ? rand(1, 28) : null,
-        dueDay: credit ? rand(1, 28) : null,
         limit: 0,
         color: b.color,
         network: null,

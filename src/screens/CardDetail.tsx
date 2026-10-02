@@ -3,7 +3,7 @@ import { addMonths } from 'date-fns'
 import { toast } from 'sonner'
 import { Logo } from '@/components/Logo'
 import { RoundButton } from '@/components/ScreenHeader'
-import { daysUntil, hasDue, monthlyCost, nextCardDue, toKey } from '@/lib/dates'
+import { daysUntil, hasDue, monthlyCost, nextCardCycle, toKey } from '@/lib/dates'
 import { dayOf, formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
@@ -16,7 +16,8 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
   if (!card) return null
 
   // Banka kartında son ödeme yok
-  const due = hasDue(card) ? nextCardDue(card, state.payments) : null
+  const cycle = hasDue(card) ? nextCardCycle(card, state.payments) : null
+  const due = cycle?.due ?? null
   const onCard = state.subscriptions.filter((s) => s.cardId === card.id)
   const monthlyTry = onCard.filter((s) => s.currency === 'TRY').reduce((sum, s) => sum + monthlyCost(s), 0)
 
@@ -45,7 +46,7 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
         </div>
       </div>
 
-      <Gauge color={card.color} due={due} />
+      <Gauge color={card.color} due={due} previousDue={cycle?.previousDue ?? null} />
 
       <div className="mt-2 grid grid-cols-2 gap-2">
         {hasDue(card) && card.statementDay && <Stat label="Kesim" value={dayOf(card.statementDay)} />}
@@ -88,7 +89,7 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
  * Yarım daire gösterge: önceki son ödemeden sonrakine ne kadar yol kaldığı.
  * Dolu kısım banka renginde; uçtaki sarı nokta bugünü gösterir.
  */
-function Gauge({ color, due }: { color: string; due: Date | null }) {
+function Gauge({ color, due, previousDue }: { color: string; due: Date | null; previousDue: Date | null }) {
   const W = 276
   const R = 112
   const cx = W / 2
@@ -96,8 +97,8 @@ function Gauge({ color, due }: { color: string; due: Date | null }) {
   const arc = (p: number) => `M ${cx - R} ${cy} A ${R} ${R} 0 0 1 ${cx - R * Math.cos(Math.PI * p)} ${cy - R * Math.sin(Math.PI * p)}`
 
   const left = due ? daysUntil(due) : 0
-  // Döngü uzunluğu: önceki ayın son ödeme gününden bu son ödemeye kadar geçen gün
-  const total = due ? Math.max(1, daysUntil(due, addMonths(due, -1))) : 1
+  // Döngü uzunluğu: önceki son ödemeden bu son ödemeye kadar geçen gün
+  const total = due ? Math.max(1, daysUntil(due, previousDue ?? addMonths(due, -1))) : 1
   const progress = due ? Math.min(1, Math.max(0, (total - left) / total)) : 0
 
   const end = { x: cx - R * Math.cos(Math.PI * progress), y: cy - R * Math.sin(Math.PI * progress) }

@@ -7,14 +7,13 @@ create table public.cards (
   bank_name text not null,
   last4 text not null check (last4 ~ '^[0-9]{4}$'),
   kind text not null default 'credit' check (kind in ('credit', 'debit')),
-  -- Debit cards have no statement or due day
+  -- Debit cards have no statement day. The due date is computed: statement + 10 days, moved to the next business day.
   statement_day smallint check (statement_day between 1 and 31),
-  due_day smallint check (due_day between 1 and 31),
   credit_limit numeric(14, 2) not null default 0,
   color text not null,
   network text check (network in ('visa', 'mastercard', 'troy', 'amex')),
   created_at timestamptz not null default now(),
-  check (kind = 'debit' or (statement_day is not null and due_day is not null))
+  check (kind = 'debit' or statement_day is not null)
 );
 
 create table public.subscriptions (

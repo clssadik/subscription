@@ -12,10 +12,8 @@ export interface CreditCard {
   last4: string
   /** Kredi kartı mı, banka kartı mı */
   kind: CardKind
-  /** Hesap kesim günü (ayın kaçı, 1-31); banka kartında yok */
+  /** Hesap kesim günü (ayın kaçı, 1-31); banka kartında yok. Son ödeme bundan hesaplanır (lib/dates.ts). */
   statementDay: number | null
-  /** Son ödeme günü (ayın kaçı, 1-31); banka kartında yok */
-  dueDay: number | null
   /** Kart limiti (TL) */
   limit: number
   /** Kartın rengi, "#RRGGBB" */

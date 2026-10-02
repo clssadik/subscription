@@ -1,4 +1,5 @@
 import {
+  addDays,
   addMonths,
   addYears,
   differenceInCalendarDays,
@@ -11,6 +12,7 @@ import {
   startOfDay,
   startOfMonth,
 } from 'date-fns'
+import { nextBusinessDay } from './holidays'
 import type { CreditCard, Payment, Subscription } from './types'
 
 export const toKey = (d: Date) => format(d, 'yyyy-MM-dd')
@@ -38,12 +40,36 @@ export function renewalsBetween(sub: Subscription, start: Date, end: Date) {
   return out
 }
 
-/** Son ödeme günü olan kart: kredi kartı. Banka kartlarında son ödeme yok. */
-export type DueCard = CreditCard & { dueDay: number }
-export const hasDue = (c: CreditCard): c is DueCard => c.kind === 'credit' && c.dueDay != null
+/** Son ödemesi olan kart: kesim günü girilmiş kredi kartı. Banka kartlarında son ödeme yok. */
+export type DueCard = CreditCard & { statementDay: number }
+export const hasDue = (c: CreditCard): c is DueCard => c.kind === 'credit' && c.statementDay != null
 
-export function cardDueInMonth(card: DueCard, month: Date) {
-  return dayInMonth(month.getFullYear(), month.getMonth(), card.dueDay)
+/** O ayın hesap kesimi: kesim günü tatile ya da hafta sonuna denk gelirse ilk iş günü */
+export function statementInMonth(card: DueCard, month: Date) {
+  return nextBusinessDay(dayInMonth(month.getFullYear(), month.getMonth(), card.statementDay))
+}
+
+/** Son ödeme: kesimden 10 gün sonra; tatile ya da hafta sonuna denk gelirse ilk iş günü */
+export function dueForStatement(statement: Date) {
+  return nextBusinessDay(addDays(statement, 10))
+}
+
+/** Bir ekstre dönemi: kesim ve ona ait son ödeme */
+export interface CardCycle {
+  statement: Date
+  due: Date
+}
+
+/** [start, end] aralığına son ödemesi düşen bütün dönemler. Bir ayda 0, 1 ya da 2 son ödeme olabilir. */
+export function cardCyclesBetween(card: DueCard, start: Date, end: Date): CardCycle[] {
+  const out: CardCycle[] = []
+  // Kesimden 10+ gün sonra ödeme gelir: iki ay öncesinden başlamak yeter
+  for (let m = startOfMonth(addMonths(start, -2)); m <= end; m = addMonths(m, 1)) {
+    const statement = statementInMonth(card, m)
+    const due = dueForStatement(statement)
+    if (due >= start && due <= end) out.push({ statement, due })
+  }
+  return out
 }
 
 export function isPaid(payments: Payment[], refId: string, date: Date) {
@@ -58,14 +84,17 @@ export function nextRenewal(sub: Subscription, payments: Payment[] = [], from: D
   return dates.find((d) => !isPaid(payments, sub.id, d)) ?? dates[0]
 }
 
+/** Bugünden itibaren henüz "ödendi" işaretlenmemiş ilk dönem; bir önceki dönemin son ödemesiyle birlikte */
+export function nextCardCycle(card: DueCard, payments: Payment[] = [], from: Date = new Date()) {
+  const today = startOfDay(from)
+  const cycles = cardCyclesBetween(card, addMonths(today, -2), addMonths(today, 4))
+  const i = Math.max(0, cycles.findIndex((c) => c.due >= today && !isPaid(payments, card.id, c.due)))
+  return { ...cycles[i], previousDue: cycles[i - 1]?.due ?? null }
+}
+
 /** Bugünden itibaren henüz "ödendi" işaretlenmemiş ilk son ödeme günü. */
 export function nextCardDue(card: DueCard, payments: Payment[] = [], from: Date = new Date()) {
-  const today = startOfDay(from)
-  for (let i = 0; i < 3; i++) {
-    const d = cardDueInMonth(card, addMonths(today, i))
-    if (d >= today && !isPaid(payments, card.id, d)) return d
-  }
-  return cardDueInMonth(card, addMonths(today, 1))
+  return nextCardCycle(card, payments, from).due
 }
 
 export function daysUntil(date: Date, from: Date = new Date()) {
@@ -107,10 +136,14 @@ export function monthItems(
         subscription: s,
       })),
     ),
-    ...cards.filter(hasDue).map((c) => {
-      const date = cardDueInMonth(c, start)
-      return { kind: 'card' as const, date, paid: isPaid(payments, c.id, date), card: c }
-    }),
+    ...cards.filter(hasDue).flatMap((c) =>
+      cardCyclesBetween(c, start, end).map(({ due: date }) => ({
+        kind: 'card' as const,
+        date,
+        paid: isPaid(payments, c.id, date),
+        card: c,
+      })),
+    ),
   ]
   return items.sort((a, b) => a.date.getTime() - b.date.getTime())
 }

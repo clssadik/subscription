@@ -170,7 +170,6 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
   const [last4, setLast4] = useState(card?.last4 ?? '')
   const [kind, setKind] = useState<CardKind>(card?.kind ?? 'credit')
   const [statementDay, setStatementDay] = useState<number | null>(card?.statementDay ?? null)
-  const [dueDay, setDueDay] = useState<number | null>(card?.dueDay ?? null)
   const credit = kind === 'credit'
   const [error, setError] = useState('')
 
@@ -182,15 +181,13 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
     if (!bankName.trim()) return setError('Banka adını gir.')
     if (!/^\d{4}$/.test(last4)) return setError('Son 4 hane tam 4 rakam olmalı.')
     if (credit && !statementDay) return setError('Hesap kesim gününü seç.')
-    if (credit && !dueDay) return setError('Son ödeme gününü seç.')
     const saved: CreditCard = {
       id: card?.id ?? newId(),
       bankName: fullBankName(bankName),
       last4,
       kind,
-      // Banka kartında kesim ve son ödeme yok
+      // Banka kartında kesim yok; son ödeme kesimden hesaplanır
       statementDay: credit ? statementDay : null,
-      dueDay: credit ? dueDay : null,
       // Limit ve kart ağı artık sorulmuyor; eski kartlarda varsa korunur
       limit: card?.limit ?? 0,
       color,
@@ -220,14 +217,9 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
           <input id="c-last4" className={cn(inputClass, 'num tracking-widest')} inputMode="numeric" autoComplete="off" value={last4} onChange={(e) => setLast4(digits(e.target.value, 4))} placeholder="1234" />
         </Field>
         {credit && (
-          <>
-            <Field label="Hesap kesim" htmlFor="c-st">
-              <DaySelect id="c-st" value={statementDay} onChange={setStatementDay} />
-            </Field>
-            <Field label="Son ödeme" htmlFor="c-due">
-              <DaySelect id="c-due" value={dueDay} onChange={setDueDay} />
-            </Field>
-          </>
+          <Field label="Hesap kesim" htmlFor="c-st">
+            <DaySelect id="c-st" value={statementDay} onChange={setStatementDay} />
+          </Field>
         )}
       </FieldGroup>
 
