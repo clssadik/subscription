@@ -1,5 +1,5 @@
 import { CheckIcon } from 'lucide-react'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { HomeQuickStart } from '@/components/QuickStart'
@@ -18,8 +18,12 @@ import type { Nav } from '@/App'
 const COLLAPSE = 220
 // Tüm para birimleri aynı tipografiyi kullanır: virgülden önceki ana kısım aynı boyut/renk, sonrası küçük ve soluk
 const AMOUNT_SIZE = 'calc(42px - 16px * var(--p, 0))'
-// Uçlardaki esnemede listeyle birlikte kayma
+// En üstteki esnemede listeyle birlikte aşağı inme
 const PULL = { transform: 'translateY(calc(var(--pull, 0) * 1px))' }
+// Listenin sonundaki esneme: en fazla bu kadar (px) çıkar, çektikçe zorlaşır; bırakınca bu geçişle döner
+const BOUNCE_MAX = 140
+const BOUNCE_SOFT = 220
+const BOUNCE_BACK = 'transform 420ms cubic-bezier(0.25, 1, 0.5, 1)'
 
 export function HomeScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
@@ -41,15 +45,62 @@ export function HomeScreen({ nav }: { nav: Nav }) {
     ro.observe(el)
     return () => ro.disconnect()
   })
+  // Listenin sonunda iPhone sadece listeyi esnetir ve bunu sayfaya bildirmez. Orada telefonun esnemesi durdurulur,
+  // yerine bütün sayfa (başlık, blok, liste) birlikte yukarı esner; bırakınca yumuşakça yerine döner.
+  const scroller = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = scroller.current
+    const page = top.current
+    if (!el || !page) return
+    let startY = 0
+    let pulling = false
+    const atBottom = () => el.scrollTop + el.clientHeight >= el.scrollHeight - 1
+    const set = (v: number, transition: string) => {
+      page.style.transition = transition
+      page.style.transform = v ? `translateY(${-v}px)` : ''
+    }
+    const onStart = (e: TouchEvent) => {
+      startY = e.touches[0].clientY
+      pulling = false
+    }
+    const onMove = (e: TouchEvent) => {
+      const y = e.touches[0].clientY
+      if (!pulling) {
+        if (!(y < startY && atBottom())) return
+        pulling = true
+        startY = y
+        return
+      }
+      const d = startY - y
+      if (d <= 0) {
+        set(0, 'none')
+        pulling = false
+        return
+      }
+      e.preventDefault()
+      set(BOUNCE_MAX * (1 - 1 / (d / BOUNCE_SOFT + 1)), 'none')
+    }
+    const onEnd = () => {
+      if (pulling) set(0, BOUNCE_BACK)
+      pulling = false
+    }
+    el.addEventListener('touchstart', onStart, { passive: true })
+    el.addEventListener('touchmove', onMove, { passive: false })
+    el.addEventListener('touchend', onEnd)
+    el.addEventListener('touchcancel', onEnd)
+    return () => {
+      el.removeEventListener('touchstart', onStart)
+      el.removeEventListener('touchmove', onMove)
+      el.removeEventListener('touchend', onEnd)
+      el.removeEventListener('touchcancel', onEnd)
+    }
+  }, [subscriptions.length === 0 && cards.length === 0])
   function onScroll(e: React.UIEvent<HTMLDivElement>) {
     const y = e.currentTarget.scrollTop
     progress.current = Math.min(1, Math.max(0, y / COLLAPSE))
     top.current?.style.setProperty('--p', String(progress.current))
-    // iPhone uçlarda esnetirken scrollTop sınırın dışına taşar: başlık ve blok da listeyle birlikte aynı miktarda kayar,
-    // böylece bütün sayfa tek parça esner (üstte aşağı, altta yukarı)
-    const max = e.currentTarget.scrollHeight - e.currentTarget.clientHeight
-    const pull = y < 0 ? -y : y > max ? max - y : 0
-    top.current?.style.setProperty('--pull', String(pull))
+    // iPhone en üstte esnetirken scrollTop eksiye iner: başlık ve blok da listeyle birlikte aşağı iner, aralarında boşluk açılmaz
+    top.current?.style.setProperty('--pull', String(Math.max(0, -y)))
     setScrolled(y > 0)
   }
   const items = monthItems(cards, subscriptions, payments)
@@ -206,6 +257,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
       {/* Sadece bu ayın ödemeleri kayar. Bloğun tamamının arkasından başlar (üst boşluk = bloğun açık hali),
           aşağıda cam menünün arkasına kadar uzanır. */}
       <div
+        ref={scroller}
         onScroll={onScroll}
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ paddingTop: blockHeight }}
