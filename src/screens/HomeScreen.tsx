@@ -13,13 +13,13 @@ import { cn } from '@/lib/utils'
 import { BankMark } from '@/components/BankMark'
 import type { Nav } from '@/App'
 
-// Üst kısmın tamamen küçülmesi için gereken kaydırma (px): başlık + kartın küçüldüğü toplam mesafe kadar
-const COLLAPSE = 90
+// Kartın tamamen küçülmesi için gereken kaydırma (px): kartın küçüldüğü mesafe kadar
+const COLLAPSE = 64
 
 export function HomeScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const { cards, subscriptions, payments } = state
-  // Kaydırınca üst kısım küçülür: --p 0 (en üstte) → 1 (COLLAPSE px kaydırınca). Her karede yeniden çizmemek için CSS değişkeni.
+  // Kaydırınca toplam kartı küçülür (tarih başlığı sabit): --p 0 (en üstte) → 1 (COLLAPSE px kaydırınca). Her karede yeniden çizmemek için CSS değişkeni.
   const top = useRef<HTMLDivElement>(null)
   const [scrolled, setScrolled] = useState(false)
   function onScroll(e: React.UIEvent<HTMLDivElement>) {
