@@ -103,7 +103,7 @@ function Main({
       <main
         className={cn(
           'mx-auto max-w-md px-3 pt-[max(1rem,env(safe-area-inset-top))]',
-          (tab === 'home' || tab === 'subscriptions' || (tab === 'cards' && !cardId)) && !detailId && ready ? 'flex h-svh flex-col overflow-y-auto pb-24' : 'min-h-svh pb-32',
+          (tab === 'home' || tab === 'subscriptions' || tab === 'history' || (tab === 'cards' && !cardId)) && !detailId && ready ? 'flex h-svh flex-col overflow-y-auto pb-24' : 'min-h-svh pb-32',
         )}
       >
         {!ready ? (

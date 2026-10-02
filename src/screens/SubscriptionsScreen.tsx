@@ -3,6 +3,7 @@ import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { SubscriptionQuickStart } from '@/components/QuickStart'
 import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
+import { PinnedLayout } from '@/components/PinnedLayout'
 import { ShareBar } from '@/components/ShareBar'
 import { SwipeRow } from '@/components/SwipeRow'
 import { daysUntil, monthlyCost, nextRenewal } from '@/lib/dates'
@@ -78,35 +79,34 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
       {subscriptions.length === 0 ? (
         <SubscriptionQuickStart nav={nav} />
       ) : (
-        <>
-          {/* Koyu temada beyaz kart: siyah zeminde öne çıksın */}
-          <section className="mb-2 rounded-[22px] bg-surface p-3.5 dark:bg-[#F2F2F2] dark:text-[#141414]">
-            <div className="flex justify-between text-subtle dark:text-[#141414]/60">
-              <span className="label">Aylık toplam</span>
-              <span className="label">{subscriptions.length} abonelik</span>
-            </div>
-            <div className="mt-0.5 leading-none">
-              <Money amount={totals[0].total} size={34} />
-              {totals.slice(1).filter((t) => t.total > 0).map((t) => (
-                <span key={t.currency} className="ml-2" style={{ fontSize: 34 }}>
-                  <span className="num">+ </span>
-                  <Money amount={t.total} currency={t.currency} size={34} />
-                </span>
-              ))}
-            </div>
-            <div className="mt-3"><ShareBar subscriptions={subscriptions} height={10} /></div>
-          </section>
-
-          {/* Liste kendi içinde kaydırılır; üstteki toplam kartı yerinde kalır. Alan cam menünün arkasına kadar uzanır. */}
-          <div className="-mb-24 min-h-48 flex-1 overflow-y-auto overscroll-contain pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {groups.map((g) => (
-              <section key={g.title}>
-                <h2 className="label mt-4 mb-1 px-1 text-subtle">{g.title}</h2>
-                <div className="grid gap-1.5">{g.list.map(row)}</div>
-              </section>
-            ))}
-          </div>
-        </>
+        <PinnedLayout
+          top={
+            /* Koyu temada beyaz kart: siyah zeminde öne çıksın */
+            <section className="rounded-[22px] bg-surface p-3.5 dark:bg-[#F2F2F2] dark:text-[#141414]">
+              <div className="flex justify-between text-subtle dark:text-[#141414]/60">
+                <span className="label">Aylık toplam</span>
+                <span className="label">{subscriptions.length} abonelik</span>
+              </div>
+              <div className="mt-0.5 leading-none">
+                <Money amount={totals[0].total} size={34} />
+                {totals.slice(1).filter((t) => t.total > 0).map((t) => (
+                  <span key={t.currency} className="ml-2" style={{ fontSize: 34 }}>
+                    <span className="num">+ </span>
+                    <Money amount={t.total} currency={t.currency} size={34} />
+                  </span>
+                ))}
+              </div>
+              <div className="mt-3"><ShareBar subscriptions={subscriptions} height={10} /></div>
+            </section>
+          }
+        >
+          {groups.map((g) => (
+            <section key={g.title}>
+              <h2 className="label mt-4 mb-1 px-1 text-subtle">{g.title}</h2>
+              <div className="grid gap-1.5">{g.list.map(row)}</div>
+            </section>
+          ))}
+        </PinnedLayout>
       )}
     </>
   )

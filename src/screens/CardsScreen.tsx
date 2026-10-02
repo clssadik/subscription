@@ -3,6 +3,7 @@ import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
 import { useState } from 'react'
 import { BankBrand, BankMark } from '@/components/BankMark'
 import { Segmented } from '@/components/FormBits'
+import { PinnedLayout } from '@/components/PinnedLayout'
 import { luminance } from '@/lib/color'
 import { daysUntil, hasDue, nextCardDue, nextStatement } from '@/lib/dates'
 import { formatDate } from '@/lib/format'
@@ -43,43 +44,46 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
     <>
       <ScreenHeader title="Kartlar" action={<AddButton label="Kart ekle" onClick={() => nav.addCard()} />} />
 
-      {/* Bauhaus afiş: solda sayı, sağda her ödenecek kart için kendi renginde bir şekil. Beyaz zemin (koyu temada da). */}
-      <section className="mb-2 grid h-[196px] shrink-0 grid-cols-[1fr_150px] overflow-hidden rounded-[26px] bg-surface dark:bg-[#F2F2F2] dark:text-[#141414]">
-        <div className="flex min-w-0 flex-col py-4 pl-[18px]">
-          <div className="label text-subtle dark:text-[#141414]/60">Bu ay ödenecek</div>
-          {upcoming.length > 0 ? (
-            <div className="mt-0.5 flex items-baseline gap-2">
-              <span className="num num-bold text-[96px] leading-[0.9]">{upcoming.length}</span>
-              <span className="text-lg font-medium">kart</span>
-            </div>
-          ) : (
-            <div className="num num-bold mt-1 text-[40px] leading-none">Yok</div>
-          )}
-          {upcoming[0] && (
-            <div className="mt-auto pr-2 text-xs leading-snug">
-              <span className="text-subtle dark:text-[#141414]/60">İlk son ödeme</span>
-              <span className="block truncate font-medium">{upcoming[0].card.bankName} · {formatDate(upcoming[0].due, 'd MMMM')}</span>
-            </div>
-          )}
-        </div>
-        <Poster cards={upcoming.map((u) => u.card)} />
-      </section>
+      <PinnedLayout
+        top={
+          <>
+            {/* Bauhaus afiş: solda sayı, sağda her ödenecek kart için kendi renginde bir şekil. Beyaz zemin (koyu temada da). */}
+            <section className="grid h-[196px] shrink-0 grid-cols-[1fr_150px] overflow-hidden rounded-[26px] bg-surface dark:bg-[#F2F2F2] dark:text-[#141414]">
+              <div className="flex min-w-0 flex-col py-4 pl-[18px]">
+                <div className="label text-subtle dark:text-[#141414]/60">Bu ay ödenecek</div>
+                {upcoming.length > 0 ? (
+                  <div className="mt-0.5 flex items-baseline gap-2">
+                    <span className="num num-bold text-[96px] leading-[0.9]">{upcoming.length}</span>
+                    <span className="text-lg font-medium">kart</span>
+                  </div>
+                ) : (
+                  <div className="num num-bold mt-1 text-[40px] leading-none">Yok</div>
+                )}
+                {upcoming[0] && (
+                  <div className="mt-auto pr-2 text-xs leading-snug">
+                    <span className="text-subtle dark:text-[#141414]/60">İlk son ödeme</span>
+                    <span className="block truncate font-medium">{upcoming[0].card.bankName} · {formatDate(upcoming[0].due, 'd MMMM')}</span>
+                  </div>
+                )}
+              </div>
+              <Poster cards={upcoming.map((u) => u.card)} />
+            </section>
 
-      {credit.length > 0 && debit.length > 0 && (
-        <Segmented
-          value={tab}
-          onChange={setTab}
-          options={[
-            { value: 'credit', label: `Kredi kartları · ${credit.length}` },
-            { value: 'debit', label: `Banka kartları · ${debit.length}` },
-          ]}
-          className="mb-1 bg-line"
-          activeClass="bg-white text-[#141414] dark:bg-[#F2F2F2]"
-        />
-      )}
-
-      {/* Liste kendi içinde kaydırılır; üstteki özet yerinde kalır. Alan cam menünün arkasına kadar uzanır. */}
-      <div className="-mb-24 min-h-48 flex-1 overflow-y-auto overscroll-contain pt-1 pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {credit.length > 0 && debit.length > 0 && (
+              <Segmented
+                value={tab}
+                onChange={setTab}
+                options={[
+                  { value: 'credit', label: `Kredi kartları · ${credit.length}` },
+                  { value: 'debit', label: `Banka kartları · ${debit.length}` },
+                ]}
+                className="mt-2 bg-line"
+                activeClass="bg-white text-[#141414] dark:bg-[#F2F2F2]"
+              />
+            )}
+          </>
+        }
+      >
         <ul className="grid gap-1.5">
           {shown === 'credit'
             ? credit.map(({ card, statement }) => (
@@ -93,7 +97,7 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
                 </li>
               ))}
         </ul>
-      </div>
+      </PinnedLayout>
     </>
   )
 }

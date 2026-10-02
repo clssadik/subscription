@@ -2,6 +2,7 @@ import { addMonths, format, parseISO, startOfMonth } from 'date-fns'
 import { CheckIcon } from 'lucide-react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
+import { PinnedLayout } from '@/components/PinnedLayout'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { formatDate, formatMoney } from '@/lib/format'
 import { CURRENCIES, type Currency } from '@/lib/types'
@@ -48,71 +49,74 @@ export function HistoryScreen() {
   return (
     <>
       <ScreenHeader title="Geçmiş" />
-      <section className="mb-2 flex h-[176px] flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg">
-        <div className="flex justify-between gap-2">
-          <span className="label opacity-70">{formatDate(thisMonth, 'LLLL')} ayında ödenen</span>
-          {paidLastMonth.length > 0 && (
-            <span className="label text-right opacity-70">geçen ay {paidLastMonth.join(' + ')}</span>
-          )}
-        </div>
-        <div className="mt-1 leading-none">
-          <Money amount={current} size={32} />
-          {paidThisMonth.map((f) => (
-            <span key={f.currency} className="ml-2" style={{ fontSize: 32 }}>
-              <span className="num">+ </span>
-              <Money amount={f.sums[5]} currency={f.currency} size={32} />
-            </span>
-          ))}
-        </div>
-        <div className="mt-auto flex h-[70px] items-end gap-2" role="img" aria-label="Son 6 ayda ödenen TL abonelik tutarları">
-          {months.map((m, i) => (
-            <div key={i} className="flex-1 text-center">
-              <div
-                className={cn(i === 5 ? 'rounded-[14px_14px_4px_4px] bg-bh-yellow' : 'rounded bg-white/20')}
-                style={{ height: Math.max(3, (sums[i] / max) * 52) }}
-              />
-              <div className="mt-1 text-[9px] opacity-70">{formatDate(m, 'LLL')}</div>
+      <PinnedLayout
+        top={
+          <section className="flex h-[176px] flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg">
+            <div className="flex justify-between gap-2">
+              <span className="label opacity-70">{formatDate(thisMonth, 'LLLL')} ayında ödenen</span>
+              {paidLastMonth.length > 0 && (
+                <span className="label text-right opacity-70">geçen ay {paidLastMonth.join(' + ')}</span>
+              )}
             </div>
-          ))}
-        </div>
-      </section>
-
-
-      {[...groups.entries()].map(([month, list]) => (
-        <section key={month} className="mb-3">
-          <h2 className="label mt-4 mb-1.5 px-1 text-subtle">{formatDate(parseISO(`${month}-01`), 'LLLL yyyy')}</h2>
-          <ul className="grid gap-1.5">
-            {list.map((p) => {
-              const date = formatDate(parseISO(p.dueDate), 'd MMMM')
-              if (p.kind === 'subscription') {
-                const s = subscriptions.find((x) => x.id === p.refId)
-                const card = cards.find((c) => c.id === s?.cardId)
+            <div className="mt-1 leading-none">
+              <Money amount={current} size={32} />
+              {paidThisMonth.map((f) => (
+                <span key={f.currency} className="ml-2" style={{ fontSize: 32 }}>
+                  <span className="num">+ </span>
+                  <Money amount={f.sums[5]} currency={f.currency} size={32} />
+                </span>
+              ))}
+            </div>
+            <div className="mt-auto flex h-[70px] items-end gap-2" role="img" aria-label="Son 6 ayda ödenen TL abonelik tutarları">
+              {months.map((m, i) => (
+                <div key={i} className="flex-1 text-center">
+                  <div
+                    className={cn(i === 5 ? 'rounded-[14px_14px_4px_4px] bg-bh-yellow' : 'rounded bg-white/20')}
+                    style={{ height: Math.max(3, (sums[i] / max) * 52) }}
+                  />
+                  <div className="mt-1 text-[9px] opacity-70">{formatDate(m, 'LLL')}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+        }
+      >
+        {[...groups.entries()].map(([month, list]) => (
+          <section key={month} className="mb-3">
+            <h2 className="label mt-4 mb-1.5 px-1 text-subtle">{formatDate(parseISO(`${month}-01`), 'LLLL yyyy')}</h2>
+            <ul className="grid gap-1.5">
+              {list.map((p) => {
+                const date = formatDate(parseISO(p.dueDate), 'd MMMM')
+                if (p.kind === 'subscription') {
+                  const s = subscriptions.find((x) => x.id === p.refId)
+                  const card = cards.find((c) => c.id === s?.cardId)
+                  return (
+                    <li key={p.id} className="flex items-center gap-3 rounded-[18px] bg-surface px-3 py-2.5">
+                      <Logo serviceKey={s?.serviceKey ?? null} name={s?.name ?? '?'} size={30} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium">{s?.name ?? 'Silinmiş abonelik'}</span>
+                        <span className="block text-[11px] text-subtle">{date}{card ? ` · ${card.bankName}` : ''}</span>
+                      </span>
+                      <span className="num text-[15px]">{p.amount != null ? formatMoney(p.amount, p.currency) : ''}</span>
+                    </li>
+                  )
+                }
+                const c = cards.find((x) => x.id === p.refId)
                 return (
                   <li key={p.id} className="flex items-center gap-3 rounded-[18px] bg-surface px-3 py-2.5">
-                    <Logo serviceKey={s?.serviceKey ?? null} name={s?.name ?? '?'} size={30} />
+                    <BankMark bankName={c?.bankName ?? '?'} color={c?.color ?? '#888'} size={30} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{s?.name ?? 'Silinmiş abonelik'}</span>
-                      <span className="block text-[11px] text-subtle">{date}{card ? ` · ${card.bankName}` : ''}</span>
+                      <span className="block truncate font-medium">{c ? `${c.bankName} ekstresi` : 'Kart ekstresi'}</span>
+                      <span className="block text-[11px] text-subtle">{date} · son ödeme</span>
                     </span>
-                    <span className="num text-[15px]">{p.amount != null ? formatMoney(p.amount, p.currency) : ''}</span>
+                    <span className="flex items-center gap-1 text-[13px] text-bh-green"><CheckIcon className="size-4" />ödendi</span>
                   </li>
                 )
-              }
-              const c = cards.find((x) => x.id === p.refId)
-              return (
-                <li key={p.id} className="flex items-center gap-3 rounded-[18px] bg-surface px-3 py-2.5">
-                  <BankMark bankName={c?.bankName ?? '?'} color={c?.color ?? '#888'} size={30} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{c ? `${c.bankName} ekstresi` : 'Kart ekstresi'}</span>
-                    <span className="block text-[11px] text-subtle">{date} · son ödeme</span>
-                  </span>
-                  <span className="flex items-center gap-1 text-[13px] text-bh-green"><CheckIcon className="size-4" />ödendi</span>
-                </li>
-              )
-            })}
-          </ul>
-        </section>
-      ))}
+              })}
+            </ul>
+          </section>
+        ))}
+      </PinnedLayout>
     </>
   )
 }
