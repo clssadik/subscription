@@ -1,7 +1,7 @@
 import { CardQuickStart } from '@/components/QuickStart'
 import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
 import { useState } from 'react'
-import { BankBrand, BankMark } from '@/components/BankMark'
+import { BankBrand } from '@/components/BankMark'
 import { Segmented } from '@/components/FormBits'
 import { PinnedLayout } from '@/components/PinnedLayout'
 import { luminance } from '@/lib/color'
@@ -89,12 +89,12 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
           {shown === 'credit'
             ? credit.map(({ card, statement }) => (
                 <li key={card.id}>
-                  <CreditRow card={card} statement={statement} onClick={() => onSelect(card.id)} />
+                  <CardRow card={card} statement={statement} onClick={() => onSelect(card.id)} />
                 </li>
               ))
             : debit.map((card) => (
                 <li key={card.id}>
-                  <DebitRow card={card} onClick={() => onSelect(card.id)} />
+                  <CardRow card={card} onClick={() => onSelect(card.id)} />
                 </li>
               ))}
         </ul>
@@ -103,31 +103,20 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
   )
 }
 
-/** Kredi kartı: bankanın renginde satır, orijinal logo ve son 4 hane; sağda sıradaki hesap kesimi */
-function CreditRow({ card, statement, onClick }: { card: CreditCard; statement: Date; onClick: () => void }) {
+/** Kart satırı: bankanın renginde, orijinal logo ve son 4 hane; kredi kartında sağda sıradaki hesap kesimi */
+function CardRow({ card, statement, onClick }: { card: CreditCard; statement?: Date; onClick: () => void }) {
   return (
     <button onClick={onClick} className="pressable flex min-h-14 w-full items-center gap-3 rounded-[18px] px-3.5 py-2 text-left text-white" style={{ background: card.color }}>
       <span className="flex min-w-0 flex-1 items-center gap-2.5">
         <BankBrand bankName={card.bankName} className="h-4 max-w-[120px]" />
         <span className="num shrink-0 text-[15px] opacity-90">•• {card.last4}</span>
       </span>
-      <span className="shrink-0 text-right leading-tight">
-        <span className="label block text-[9px] opacity-75">Kesim</span>
-        <span className="num text-[15px]">{formatDate(statement, 'd MMM')}</span>
-      </span>
-    </button>
-  )
-}
-
-function DebitRow({ card, onClick }: { card: CreditCard; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className="pressable flex w-full items-center gap-3 rounded-[18px] bg-surface py-2 pr-3 pl-2 text-left">
-      <BankMark bankName={card.bankName} color={card.color} size={36} />
-      <span className="min-w-0 flex-1">
-        <span className="block truncate font-medium">{card.bankName}</span>
-        <span className="block text-[11px] text-subtle">Banka kartı</span>
-      </span>
-      <span className="num text-[15px]">•• {card.last4}</span>
+      {statement && (
+        <span className="shrink-0 text-right leading-tight">
+          <span className="label block text-[9px] opacity-75">Kesim</span>
+          <span className="num text-[15px]">{formatDate(statement, 'd MMM')}</span>
+        </span>
+      )}
     </button>
   )
 }
