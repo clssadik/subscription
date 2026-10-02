@@ -45,6 +45,7 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
       <ScreenHeader title="Kartlar" action={<AddButton label="Kart ekle" onClick={() => nav.addCard()} />} />
 
       <PinnedLayout
+        fade={false}
         top={
           <>
             {/* Bauhaus afiş: solda sayı, sağda her ödenecek kart için kendi renginde bir şekil. Beyaz zemin (koyu temada da). */}

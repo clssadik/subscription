@@ -44,7 +44,8 @@ export function Segmented<T extends string>({
   activeClass?: string
 }) {
   return (
-    <div className={cn('flex rounded-xl bg-page p-0.5 text-sm', className)} role="radiogroup">
+    // İç düğmenin köşesi = dış köşe - boşluk (18 - 4 = 14px): ikisi aynı eğriyi izler
+    <div className={cn('flex rounded-[18px] bg-page p-1 text-sm', className)} role="radiogroup">
       {options.map((o) => (
         <button
           key={o.value}
@@ -53,7 +54,7 @@ export function Segmented<T extends string>({
           aria-checked={value === o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            'min-h-9 flex-1 rounded-[10px] px-2 transition-colors',
+            'min-h-9 flex-1 rounded-[14px] px-2 transition-colors',
             value === o.value ? cn('font-medium', activeClass) : 'text-subtle',
           )}
         >
