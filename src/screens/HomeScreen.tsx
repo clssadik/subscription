@@ -1,5 +1,5 @@
 import { CheckIcon } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { HomeQuickStart } from '@/components/QuickStart'
@@ -39,13 +39,6 @@ export function HomeScreen({ nav }: { nav: Nav }) {
     ro.observe(el)
     return () => ro.disconnect()
   })
-  // Liste uca gelince kaydırma bütün sayfaya geçer: iPhone sayfayı en baştan (tarih başlığıyla birlikte) esnetir.
-  // Diğer ekranlarda sayfa esnemesi kapalı (index.css), burada açılır.
-  useEffect(() => {
-    const els = [document.documentElement, document.body]
-    els.forEach((el) => (el.style.overscrollBehaviorY = 'auto'))
-    return () => els.forEach((el) => (el.style.overscrollBehaviorY = ''))
-  }, [])
   function onScroll(e: React.UIEvent<HTMLDivElement>) {
     const y = e.currentTarget.scrollTop
     progress.current = Math.min(1, Math.max(0, y / COLLAPSE))
@@ -205,7 +198,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
           aşağıda cam menünün arkasına kadar uzanır. */}
       <div
         onScroll={onScroll}
-        className="min-h-0 flex-1 overflow-y-auto pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ paddingTop: blockHeight }}
       >
         <div>
