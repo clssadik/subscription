@@ -1,4 +1,6 @@
 import {
+  siApplemusic,
+  siAppletv,
   siAudible,
   siClaude,
   siDeezer,
@@ -42,8 +44,8 @@ export const SERVICES: Service[] = [
   { key: 'icloud', name: 'iCloud+', color: '#3693F3', icon: siIcloud },
   { key: 'disney', name: 'Disney+', color: '#0E2C8E' },
   { key: 'primevideo', name: 'Prime Video', color: '#1F2E3E' },
-  { key: 'appletv', name: 'Apple TV+', color: '#000000' },
-  { key: 'applemusic', name: 'Apple Music', color: '#FA243C' },
+  { key: 'appletv', name: 'Apple TV+', color: '#000000', icon: siAppletv },
+  { key: 'applemusic', name: 'Apple Music', color: '#FA243C', icon: siApplemusic },
   { key: 'hbomax', name: 'HBO Max', color: '#002BE7', icon: siHbomax },
   { key: 'exxen', name: 'Exxen', color: '#F2A900' },
   { key: 'blutv', name: 'BluTV', color: '#0091FF' },
