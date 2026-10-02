@@ -18,6 +18,8 @@ import type { Nav } from '@/App'
 const COLLAPSE = 220
 // Tüm para birimleri aynı tipografiyi kullanır: virgülden önceki ana kısım aynı boyut/renk, sonrası küçük ve soluk
 const AMOUNT_SIZE = 'calc(42px - 16px * var(--p, 0))'
+// En üstteki esnemede listeyle birlikte aşağı inme
+const PULL = { transform: 'translateY(calc(var(--pull, 0) * 1px))' }
 
 export function HomeScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
@@ -43,6 +45,8 @@ export function HomeScreen({ nav }: { nav: Nav }) {
     const y = e.currentTarget.scrollTop
     progress.current = Math.min(1, Math.max(0, y / COLLAPSE))
     top.current?.style.setProperty('--p', String(progress.current))
+    // iPhone en üstte esnetirken scrollTop eksiye iner: başlık ve blok da listeyle birlikte aşağı iner, aralarında boşluk açılmaz
+    top.current?.style.setProperty('--pull', String(Math.max(0, -y)))
     setScrolled(y > 0)
   }
   const items = monthItems(cards, subscriptions, payments)
@@ -85,13 +89,15 @@ export function HomeScreen({ nav }: { nav: Nav }) {
 
   return (
     <div ref={top} className="relative -mb-24 flex min-h-0 flex-1 flex-col">
-      <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
+      <div className="relative z-20" style={PULL}>
+        <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
+      </div>
       {/* Üstteki blok (toplam, sıradaki, iki küçük kart) yerinde sabit kalır ve kaydırınca birlikte küçülür.
           Arkası küçük kartların ortasına kadar opak zemin: aradaki boşluklardan içerik görünmez. Liste sadece küçük kartların
           alt yarısının arkasından geçer, kesimi kartların yuvarlak köşeleri yapar. Son 30px'te zemin %60'a iner; kaydırınca
           altına alttaki menüdeki gibi 40px'lik solma eklenir (%60 → şeffaf). */}
       <div className="relative flex min-h-0 flex-1 flex-col">
-      <div ref={block} className="absolute inset-x-0 top-0 z-10 -mx-3 px-3 pb-2">
+      <div ref={block} className="absolute inset-x-0 top-0 z-10 -mx-3 px-3 pb-2" style={PULL}>
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10"
