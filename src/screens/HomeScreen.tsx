@@ -1,5 +1,5 @@
 import { CheckIcon } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { HomeQuickStart } from '@/components/QuickStart'
@@ -23,8 +23,15 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   // Kaydırınca üst blok (toplam, sıradaki, iki küçük kart) birlikte küçülür; tarih başlığı sabit. --p 0 (en üstte) → 1 (COLLAPSE px kaydırınca). Her karede yeniden çizmemek için CSS değişkeni.
   const top = useRef<HTMLDivElement>(null)
   const [scrolled, setScrolled] = useState(false)
-  // Uçlarda esneme + en üstte aşağı çekip yenileme
-  const { scroller, content, refreshing } = useElasticScroll(refresh)
+  // Uçlarda esneme + en üstte aşağı çekip yenileme (çekince bütün sayfa aşağı iner)
+  const { scroller, content, stage, refreshing, trigger } = useElasticScroll(refresh)
+  const pageRef = useCallback(
+    (n: HTMLDivElement | null) => {
+      top.current = n
+      stage(n)
+    },
+    [stage],
+  )
   function onScroll(e: React.UIEvent<HTMLDivElement>) {
     const y = e.currentTarget.scrollTop
     top.current?.style.setProperty('--p', String(Math.min(1, y / COLLAPSE)))
@@ -69,7 +76,34 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   }
 
   return (
-    <div ref={top} className="contents">
+    <div ref={pageRef} className="relative -mb-24 flex min-h-0 flex-1 flex-col">
+      {/* Aşağı çekip yenileme halkası: sayfa inince en üstte açılan boşluğun ortasında; çektikçe dolar,
+          dolunca hafifçe büyür ("bırakırsan yenilenir"), yenilerken döner */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 flex justify-center"
+        style={{ transform: 'translateY(calc(var(--pull, 0) * -0.5px - 16px))', opacity: refreshing ? 1 : `min(1, calc(var(--pull, 0) / ${trigger / 2}))` }}
+      >
+        <svg
+          viewBox="0 0 32 32"
+          className={cn('size-8', refreshing && 'animate-spin')}
+          style={refreshing ? undefined : { transform: `scale(calc(1 + 0.15 * clamp(0, (var(--pull, 0) - ${trigger - 4}) / 4, 1)))` }}
+        >
+          <circle cx="16" cy="16" r="12" fill="none" strokeWidth="3.5" className="stroke-line" />
+          <circle
+            cx="16"
+            cy="16"
+            r="12"
+            fill="none"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            className="stroke-bh-yellow"
+            transform="rotate(-90 16 16)"
+            strokeDasharray="75.4"
+            style={{ strokeDashoffset: refreshing ? 50 : `calc(75.4px * (1 - min(1, var(--pull, 0) / ${trigger})))` }}
+          />
+        </svg>
+      </div>
       <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
       {/* Üstteki blok (toplam, sıradaki, iki küçük kart) yerinde sabit kalır ve kaydırınca birlikte küçülür.
           Arkası küçük kartların ortasına kadar opak zemin: aradaki boşluklardan içerik görünmez. Liste sadece küçük kartların
@@ -172,19 +206,8 @@ export function HomeScreen({ nav }: { nav: Nav }) {
       <div
         ref={scroller}
         onScroll={onScroll}
-        className="relative -mt-[72px] -mb-24 min-h-0 flex-1 overflow-y-auto overscroll-none pt-[72px] pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-mt-[72px] min-h-0 flex-1 overflow-y-auto overscroll-none pt-[72px] pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {/* Aşağı çekip yenileme göstergesi: çektikçe belirip döner, yenilerken sürekli döner */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-[72px] flex justify-center"
-          style={{ opacity: refreshing ? 1 : 'min(1, calc(var(--pull, 0) / 72))', transform: 'translateY(calc(var(--pull, 0) * 0.5px - 14px))' }}
-        >
-          <span
-            className={cn('size-7 rounded-full border-[3px] border-bh-yellow border-t-transparent', refreshing && 'animate-spin')}
-            style={refreshing ? undefined : { transform: 'rotate(calc(var(--pull, 0) * 4deg))' }}
-          />
-        </div>
         <div ref={content}>
           {/* Bu ayın bütün ödemeleri; soldaki yuvarlak "ödendi" işareti */}
           <h2 className="label mt-3 mb-2 px-1 text-subtle">{formatDate(new Date(), 'LLLL')} ödemeleri</h2>

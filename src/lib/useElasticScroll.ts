@@ -1,20 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
 
 // Liste uçlarında iOS gibi esneme + en üstte aşağı çekip yenileme.
-// İçerik parmağı yavaşlayarak takip eder (çektikçe zorlaşır), bırakınca yay gibi yerine döner.
-const MAX = 140 // en fazla bu kadar esner (px)
-const TRIGGER = 72 // bu kadar çekip bırakınca yenilenir
-const HOLD = 56 // yenilenirken içerik bu kadar aşağıda bekler
-const rubber = (d: number) => MAX * (1 - 1 / ((d * 0.55) / MAX + 1))
+// En üstte çekince bütün sayfa (stage) aşağı iner, üstte açılan boşlukta yenileme halkası belirir.
+// En altta çekince sadece liste (content) hafifçe yukarı esner. Bırakınca yumuşakça yerine döner (sekmeden).
+const TOP_MAX = 180 // en üstte en fazla bu kadar esner (px)
+const TRIGGER = 90 // bu kadar çekip bırakınca yenilenir (parmakla ~300px)
+const HOLD = 60 // yenilenirken sayfa bu kadar aşağıda bekler
+const BOTTOM_MAX = 70 // en altta en fazla bu kadar esner
+const SPRING = 'transform 550ms cubic-bezier(0.22, 1, 0.36, 1)'
+
+/** Çektikçe zorlaşan esneme: d = parmağın gittiği yol, max = sınır, k = ne kadar yolda yarıya ulaşacağı */
+const rubber = (d: number, max: number, k: number) => max * (1 - 1 / (d / k + 1))
 
 /**
- * `scroller` kayan alanın, `content` onun içindeki sarmalayıcının `ref`'ine verilir.
- * Çekme miktarı kayan alana `--pull` (px, sayı) olarak yazılır; yenileme göstergesi bunu okur.
+ * Üç ref: `scroller` kayan alan (dokunuşları dinler), `content` onun içindeki sarmalayıcı (altta esner),
+ * `stage` bütün sayfa (üstte aşağı iner). Çekme miktarı `stage`'e `--pull` (sayı) olarak yazılır.
  */
 export function useElasticScroll(onRefresh?: () => Promise<void>) {
   // Ref yerine state: liste sonradan ekrana gelirse (ör. ilk kayıttan sonra) dinleyiciler o an bağlanır
   const [el, scroller] = useState<HTMLDivElement | null>(null)
   const [inner, content] = useState<HTMLDivElement | null>(null)
+  const [page, stage] = useState<HTMLDivElement | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   // Her çizimde dinleyicileri yeniden kurmamak için en güncel işlevi ref'te tut
   const refresh = useRef(onRefresh)
@@ -23,18 +29,22 @@ export function useElasticScroll(onRefresh?: () => Promise<void>) {
   })
 
   useEffect(() => {
-    if (!el || !inner) return
+    if (!el || !inner || !page) return
     let startY = 0
-    let pull = 0
+    let pull = 0 // + üstte (sayfa aşağı), - altta (liste yukarı)
     let edge: 'top' | 'bottom' | null = null
     let busy = false
+    let wheelRaw = 0
     let wheelTimer = 0
 
-    const set = (v: number, animate: boolean) => {
+    const set = (v: number, transition: string) => {
       pull = v
-      inner.style.transition = animate ? 'transform 500ms cubic-bezier(0.2, 0.9, 0.25, 1.1)' : 'none'
-      inner.style.transform = v ? `translateY(${v}px)` : ''
-      el.style.setProperty('--pull', String(Math.max(0, v)))
+      const top = Math.max(0, v)
+      const bottom = Math.min(0, v)
+      page.style.transition = inner.style.transition = transition
+      page.style.transform = top ? `translateY(${top}px)` : ''
+      inner.style.transform = bottom ? `translateY(${bottom}px)` : ''
+      page.style.setProperty('--pull', String(top))
     }
     const atTop = () => el.scrollTop <= 0
     const atBottom = () => el.scrollTop + el.clientHeight >= el.scrollHeight - 1
@@ -56,35 +66,39 @@ export function useElasticScroll(onRefresh?: () => Promise<void>) {
       }
       const d = y - startY
       if ((edge === 'top' && d <= 0) || (edge === 'bottom' && d >= 0)) {
-        set(0, false)
+        set(0, 'none')
         edge = null
         return
       }
       e.preventDefault()
-      set(edge === 'top' ? rubber(d) : -rubber(-d), false)
+      set(edge === 'top' ? rubber(d, TOP_MAX, 300) : -rubber(-d, BOTTOM_MAX, 200), 'none')
     }
     const onEnd = async () => {
       if (edge === 'top' && pull >= TRIGGER && refresh.current) {
         busy = true
         setRefreshing(true)
-        set(HOLD, true)
+        set(HOLD, SPRING)
         // Yenileme çok hızlı bitse de halka bir an görünsün
-        await Promise.all([refresh.current(), new Promise((r) => setTimeout(r, 700))])
+        await Promise.all([refresh.current(), new Promise((r) => setTimeout(r, 800))])
         setRefreshing(false)
         busy = false
       }
       edge = null
-      set(0, true)
+      set(0, SPRING)
     }
-    // Bilgisayarda fare tekerleği: uçta küçük bir esneme, kısa süre sonra geri döner
+    // Bilgisayarda fare tekerleği / dokunmatik yüzey: uçta küçük, akıcı bir esneme; hareket bitince yumuşakça döner
     const onWheel = (e: WheelEvent) => {
       if (busy) return
       const down = e.deltaY > 0
-      if ((down && atBottom()) || (!down && atTop())) {
-        set(Math.max(-40, Math.min(40, pull - e.deltaY * 0.2)), false)
-        clearTimeout(wheelTimer)
-        wheelTimer = window.setTimeout(() => set(0, true), 120)
-      }
+      if (!((down && atBottom()) || (!down && atTop()))) return
+      wheelRaw = Math.max(-600, Math.min(600, wheelRaw + e.deltaY))
+      const v = rubber(Math.abs(wheelRaw), BOTTOM_MAX, 200) * (wheelRaw > 0 ? -1 : 1)
+      set(v, 'transform 120ms ease-out')
+      clearTimeout(wheelTimer)
+      wheelTimer = window.setTimeout(() => {
+        wheelRaw = 0
+        set(0, SPRING)
+      }, 160)
     }
 
     el.addEventListener('touchstart', onStart, { passive: true })
@@ -100,7 +114,7 @@ export function useElasticScroll(onRefresh?: () => Promise<void>) {
       el.removeEventListener('touchcancel', onEnd)
       el.removeEventListener('wheel', onWheel)
     }
-  }, [el, inner])
+  }, [el, inner, page])
 
-  return { scroller, content, refreshing }
+  return { scroller, content, stage, refreshing, trigger: TRIGGER }
 }
