@@ -10,6 +10,7 @@ import { formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import { CURRENCIES } from '@/lib/types'
 import { useElasticScroll } from '@/lib/useElasticScroll'
+import { TOP_FOG, fog } from '@/lib/fog'
 import { cn } from '@/lib/utils'
 import { BankMark } from '@/components/BankMark'
 import type { Nav } from '@/App'
@@ -112,13 +113,18 @@ export function HomeScreen({ nav }: { nav: Nav }) {
           alt yarısının arkasından geçer, kesimi kartların yuvarlak köşeleri yapar. Son 30px'te zemin %60'a iner; kaydırınca
           altına alttaki menüdeki gibi 40px'lik solma eklenir (%60 → şeffaf). */}
       <div className="relative z-10 -mx-3 shrink-0 px-3 pb-2">
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-b from-page from-[calc(100%-30px)] to-page/60" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10"
+          style={{ background: `linear-gradient(to bottom, var(--page) calc(100% - 30px), ${fog(TOP_FOG.normal)})` }}
+        />
         <div
           aria-hidden
           className={cn(
-            'pointer-events-none absolute inset-x-0 top-full h-10 bg-linear-to-b from-page/60 to-transparent transition-opacity',
+            'pointer-events-none absolute inset-x-0 top-full h-8 transition-opacity',
             scrolled ? 'opacity-100' : 'opacity-0',
           )}
+          style={{ background: `linear-gradient(to bottom, ${fog(TOP_FOG.normal)}, transparent)` }}
         />
       {/* Bu ayın toplamı: 128 → 64px */}
       <section className="mb-2 flex h-[calc(128px-64px*var(--p,0))] flex-col overflow-hidden rounded-[22px] bg-hero px-3.5 py-[calc(14px-4px*var(--p,0))] text-hero-fg">
