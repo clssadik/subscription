@@ -10,7 +10,7 @@ import { formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import { CURRENCIES } from '@/lib/types'
 import { useElasticScroll } from '@/lib/useElasticScroll'
-import { TOP_FOG, fogAlpha, fogLayer } from '@/lib/fog'
+import { TOP_FOG, fog } from '@/lib/fog'
 import { cn } from '@/lib/utils'
 import { BankMark } from '@/components/BankMark'
 import type { Nav } from '@/App'
@@ -116,7 +116,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10"
-          style={fogLayer('to bottom', `black calc(100% - 30px), ${fogAlpha(TOP_FOG.normal)}`)}
+          style={{ background: `linear-gradient(to bottom, var(--page) calc(100% - 30px), ${fog(TOP_FOG.normal)})` }}
         />
         <div
           aria-hidden
@@ -124,7 +124,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
             'pointer-events-none absolute inset-x-0 top-full h-8 transition-opacity',
             scrolled ? 'opacity-100' : 'opacity-0',
           )}
-          style={fogLayer('to bottom', `${fogAlpha(TOP_FOG.normal)}, transparent`)}
+          style={{ background: `linear-gradient(to bottom, ${fog(TOP_FOG.normal)}, transparent)` }}
         />
       {/* Bu ayın toplamı: 128 → 64px */}
       <section className="mb-2 flex h-[calc(128px-64px*var(--p,0))] flex-col overflow-hidden rounded-[22px] bg-hero px-3.5 py-[calc(14px-4px*var(--p,0))] text-hero-fg">

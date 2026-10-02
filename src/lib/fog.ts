@@ -14,15 +14,5 @@ export const BOTTOM_FOG: Record<FogLevel, { solid: number; above: number }> = {
   light: { solid: 35, above: 0 },
 }
 
-/**
- * Sis katmanı: renk her yerde birebir zemin rengi, sadece saydamlık maskeyle değişir.
- * (color-mix ile yarı saydam renk karıştırmak iPhone Safari'de zeminden açık bir hale bırakıyordu.)
- * `stops` maskenin gradyan durakları, örn. `black 50%, transparent`.
- */
-export const fogLayer = (direction: string, stops: string) => {
-  const mask = `linear-gradient(${direction}, ${stops})`
-  return { background: 'var(--page)', maskImage: mask, WebkitMaskImage: mask }
-}
-
-/** Verilen sis seviyesinde maske rengi (siyah = görünür) */
-export const fogAlpha = (level: number) => `rgb(0 0 0 / ${level})`
+/** Zemin rengi, verilen oranda saydam */
+export const fog = (level: number) => `color-mix(in srgb, var(--page) ${Math.round(level * 100)}%, transparent)`
