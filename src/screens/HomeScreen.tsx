@@ -1,4 +1,5 @@
 import { CheckIcon } from 'lucide-react'
+import { useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { HomeQuickStart } from '@/components/QuickStart'
@@ -12,9 +13,16 @@ import { cn } from '@/lib/utils'
 import { BankMark } from '@/components/BankMark'
 import type { Nav } from '@/App'
 
+// Kayan alanın kenar solmaları: üstte 28px (sadece kaydırınca); altta menünün üst kenarında (alt boşluk + 60px menü) tamamen kaybolur
+const NAV_TOP = 'calc(max(0.75rem, env(safe-area-inset-bottom)) + 60px)'
+const fade = (top: boolean) =>
+  `linear-gradient(to bottom, ${top ? 'transparent' : '#000'}, #000 28px, #000 calc(100% - ${NAV_TOP} - 28px), transparent calc(100% - ${NAV_TOP}))`
+
 export function HomeScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const { cards, subscriptions, payments } = state
+  // Liste kaydırılınca üst kenarda da solma görünür
+  const [scrolled, setScrolled] = useState(false)
   const items = monthItems(cards, subscriptions, payments)
   const subItems = items.filter((i) => i.kind === 'subscription')
 
@@ -71,10 +79,12 @@ export function HomeScreen({ nav }: { nav: Nav }) {
           </div>
       </section>
 
-      {/* Toplamın altındaki her şey birlikte kayar. Alttaki solma "devamı var" der. */}
+      {/* Toplamın altındaki her şey birlikte kayar. Alan menünün arkasına kadar uzanır;
+          üstte ve altta (menünün hemen üstünde) aynı yumuşak solma var. */}
       <div
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        style={{ maskImage: 'linear-gradient(to bottom, #000 calc(100% - 28px), transparent)' }}
+        onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
+        className="-mb-24 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+96px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{ maskImage: fade(scrolled), WebkitMaskImage: fade(scrolled) }}
       >
         <div className="grid grid-cols-2 gap-2">
           {/* Sıradaki ödeme: geniş sarı şerit, solda büyük geri sayım */}
@@ -148,7 +158,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
             const key = `${i.kind}-${i.kind === 'card' ? i.card.id : i.subscription.id}-${i.date.getTime()}`
             const past = daysUntil(i.date) < 0
             return (
-              <li key={key} className={cn('flex items-center gap-3 rounded-[18px] bg-surface py-2 pr-3 pl-1.5', i.paid && 'opacity-50')}>
+              <li key={key} className="flex items-center gap-3 rounded-[18px] bg-surface py-2 pr-3 pl-1.5">
                 <button
                   onClick={() => toggle(i)}
                   aria-label={i.paid ? 'Ödenmedi olarak işaretle' : 'Ödendi olarak işaretle'}
