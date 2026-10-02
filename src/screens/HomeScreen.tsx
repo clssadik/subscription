@@ -8,7 +8,7 @@ import { ShareBar } from '@/components/ShareBar'
 import { daysUntil, dueLabel, hasDue, monthItems, nextCardDue, nextRenewal, type MonthItem } from '@/lib/dates'
 import { formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
-import { useBottomBounce } from '@/lib/useBottomBounce'
+import { useScrollLimit } from '@/lib/useScrollLimit'
 import { CURRENCIES } from '@/lib/types'
 import { TOP_FOG, fog } from '@/lib/fog'
 import { cn } from '@/lib/utils'
@@ -40,9 +40,10 @@ export function HomeScreen({ nav }: { nav: Nav }) {
     ro.observe(el)
     return () => ro.disconnect()
   })
-  // Listenin sonunda bütün sayfa birlikte esner (src/lib/useBottomBounce.ts)
+  // iPhone iki uçta da esnetince başlık ve blok listeyle birlikte hareket eder (src/lib/useScrollLimit.ts)
   const scroller = useRef<HTMLDivElement>(null)
-  useBottomBounce(scroller, top, subscriptions.length === 0 && cards.length === 0)
+  const content = useRef<HTMLDivElement>(null)
+  const limit = useScrollLimit(scroller, content)
   function onScroll(e: React.UIEvent<HTMLDivElement>) {
     const y = e.currentTarget.scrollTop
     progress.current = Math.min(1, Math.max(0, y / COLLAPSE))
@@ -94,14 +95,16 @@ export function HomeScreen({ nav }: { nav: Nav }) {
       <div
         ref={scroller}
         onScroll={onScroll}
-        className="-mx-3 min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative -mx-3 min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {/* Üstteki blok (toplam, sıradaki, iki küçük kart) yerinde sabit kalır ve kaydırınca birlikte küçülür.
             Arkası küçük kartların ortasına kadar opak zemin: aradaki boşluklardan içerik görünmez. Liste sadece küçük kartların
             alt yarısının arkasından geçer, kesimi kartların yuvarlak köşeleri yapar. Son 30px'te zemin %60'a iner; kaydırınca
             altına alttaki menüdeki gibi 40px'lik solma eklenir (%60 → şeffaf). */}
         {/* Yüksekliği sıfır: akışta yer kaplamaz, blok küçülürken liste alanı değişmez (hızlı kaydırmada zıplama olmaz) */}
-        <div className="sticky top-0 z-10 -mx-3 h-0">
+        {/* Blok, kaydırma sınırı kadar yüksek bir kutunun içinde yapışık: liste sona gelip esneyince blok da onunla gider */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10" style={{ height: limit }}>
+        <div className="pointer-events-auto sticky top-0 h-0">
           <div ref={block} className="absolute inset-x-0 top-0 px-3 pb-2">
             <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
             <div
@@ -206,8 +209,9 @@ export function HomeScreen({ nav }: { nav: Nav }) {
             </div>
           </div>
         </div>
+        </div>
         {/* Listenin üst boşluğu bloğun açık haldeki yüksekliği kadar */}
-        <div style={{ paddingTop: blockHeight }}>
+        <div ref={content} style={{ paddingTop: blockHeight }}>
             {/* Bu ayın bütün ödemeleri; soldaki yuvarlak "ödendi" işareti */}
             <h2 className="label mt-3 mb-2 px-1 text-subtle">{formatDate(new Date(), 'LLLL')} ödemeleri</h2>
             <ul className="grid gap-1.5">
