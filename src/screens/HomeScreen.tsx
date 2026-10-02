@@ -22,8 +22,7 @@ const AMOUNT_SIZE = 'calc(42px - 16px * var(--p, 0))'
 export function HomeScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const { cards, subscriptions, payments } = state
-  // Kaydırınca üst blok (toplam, sıradaki, iki küçük kart) birlikte küçülür: --p 0 (en üstte) → 1 (COLLAPSE px kaydırınca).
-  // Sonrasında tarih başlığı ve blok listeyle birlikte yukarı kayar (--y). Her karede yeniden çizmemek için CSS değişkenleri.
+  // Kaydırınca üst blok (toplam, sıradaki, iki küçük kart) birlikte küçülür; tarih başlığı sabit. --p 0 (en üstte) → 1 (COLLAPSE px kaydırınca). Her karede yeniden çizmemek için CSS değişkeni.
   // Blok listenin üstüne bindirilir (akışta yer kaplamaz): küçülürken liste alanının boyutu değişmez, hızlı kaydırmada zıplama olmaz.
   // Listenin üst boşluğu bloğun açık haldeki yüksekliği kadardır; blok boyu değişirse (ör. yazı tipi yüklenince) en üstteyken yeniden ölçülür.
   const top = useRef<HTMLDivElement>(null)
@@ -44,8 +43,6 @@ export function HomeScreen({ nav }: { nav: Nav }) {
     const y = e.currentTarget.scrollTop
     progress.current = Math.min(1, Math.max(0, y / COLLAPSE))
     top.current?.style.setProperty('--p', String(progress.current))
-    // Katlanma bitince tarih başlığı ve blok listeyle birlikte yukarı kayıp gider
-    top.current?.style.setProperty('--y', String(Math.max(0, y - COLLAPSE)))
     setScrolled(y > 0)
   }
   const items = monthItems(cards, subscriptions, payments)
@@ -88,13 +85,13 @@ export function HomeScreen({ nav }: { nav: Nav }) {
 
   return (
     <div ref={top} className="relative -mb-24 flex min-h-0 flex-1 flex-col">
+      <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
       {/* Üstteki blok (toplam, sıradaki, iki küçük kart) yerinde sabit kalır ve kaydırınca birlikte küçülür.
           Arkası küçük kartların ortasına kadar opak zemin: aradaki boşluklardan içerik görünmez. Liste sadece küçük kartların
           alt yarısının arkasından geçer, kesimi kartların yuvarlak köşeleri yapar. Son 30px'te zemin %60'a iner; kaydırınca
           altına alttaki menüdeki gibi 40px'lik solma eklenir (%60 → şeffaf). */}
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-y-clip">
-      <div ref={block} className="absolute inset-x-0 top-0 z-10 -mx-3 px-3 pb-2" style={{ transform: 'translateY(calc(var(--y, 0) * -1px))' }}>
-        <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
+      <div className="relative flex min-h-0 flex-1 flex-col">
+      <div ref={block} className="absolute inset-x-0 top-0 z-10 -mx-3 px-3 pb-2">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10"
