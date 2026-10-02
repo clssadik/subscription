@@ -1,5 +1,5 @@
 import { CheckIcon } from 'lucide-react'
-import { useCallback, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { HomeQuickStart } from '@/components/QuickStart'
@@ -9,7 +9,6 @@ import { daysUntil, dueLabel, hasDue, monthItems, nextCardDue, nextRenewal, type
 import { formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import { CURRENCIES } from '@/lib/types'
-import { useElasticScroll } from '@/lib/useElasticScroll'
 import { TOP_FOG, fog } from '@/lib/fog'
 import { cn } from '@/lib/utils'
 import { BankMark } from '@/components/BankMark'
@@ -21,20 +20,11 @@ const COLLAPSE = 220
 const AMOUNT_SIZE = 'calc(42px - 16px * var(--p, 0))'
 
 export function HomeScreen({ nav }: { nav: Nav }) {
-  const { state, dispatch, refresh } = useStore()
+  const { state, dispatch } = useStore()
   const { cards, subscriptions, payments } = state
   // Kaydırınca üst blok (toplam, sıradaki, iki küçük kart) birlikte küçülür; tarih başlığı sabit. --p 0 (en üstte) → 1 (COLLAPSE px kaydırınca). Her karede yeniden çizmemek için CSS değişkeni.
   const top = useRef<HTMLDivElement>(null)
   const [scrolled, setScrolled] = useState(false)
-  // En üstte esneme + aşağı çekip yenileme (çekince bütün sayfa aşağı iner)
-  const { scroller, stage, refreshing, trigger } = useElasticScroll(refresh)
-  const pageRef = useCallback(
-    (n: HTMLDivElement | null) => {
-      top.current = n
-      stage(n)
-    },
-    [stage],
-  )
   function onScroll(e: React.UIEvent<HTMLDivElement>) {
     const y = e.currentTarget.scrollTop
     top.current?.style.setProperty('--p', String(Math.min(1, y / COLLAPSE)))
@@ -79,34 +69,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   }
 
   return (
-    <div ref={pageRef} className="relative -mb-24 flex min-h-0 flex-1 flex-col">
-      {/* Aşağı çekip yenileme halkası: sayfa inince en üstte açılan boşluğun ortasında; çektikçe dolar,
-          dolunca hafifçe büyür ("bırakırsan yenilenir"), yenilerken döner */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 flex justify-center"
-        style={{ transform: 'translateY(calc(var(--pull, 0) * -0.5px - 16px))', opacity: refreshing ? 1 : `min(1, calc(var(--pull, 0) / ${trigger / 2}))` }}
-      >
-        <svg
-          viewBox="0 0 32 32"
-          className={cn('size-8', refreshing && 'animate-spin')}
-          style={refreshing ? undefined : { transform: `scale(calc(1 + 0.15 * clamp(0, (var(--pull, 0) - ${trigger - 4}) / 4, 1)))` }}
-        >
-          <circle cx="16" cy="16" r="12" fill="none" strokeWidth="3.5" className="stroke-line" />
-          <circle
-            cx="16"
-            cy="16"
-            r="12"
-            fill="none"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-            className="stroke-bh-yellow"
-            transform="rotate(-90 16 16)"
-            strokeDasharray="75.4"
-            style={{ strokeDashoffset: refreshing ? 50 : `calc(75.4px * (1 - min(1, var(--pull, 0) / ${trigger})))` }}
-          />
-        </svg>
-      </div>
+    <div ref={top} className="relative -mb-24 flex min-h-0 flex-1 flex-col">
       <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
       {/* Üstteki blok (toplam, sıradaki, iki küçük kart) yerinde sabit kalır ve kaydırınca birlikte küçülür.
           Arkası küçük kartların ortasına kadar opak zemin: aradaki boşluklardan içerik görünmez. Liste sadece küçük kartların
@@ -218,7 +181,6 @@ export function HomeScreen({ nav }: { nav: Nav }) {
       {/* Sadece bu ayın ödemeleri kayar. Yukarıda bloğun alt kısmının arkasına (72px: küçük kartlar + boşluklar, sarı şeridin içine kadar),
           aşağıda cam menünün arkasına kadar uzanır. */}
       <div
-        ref={scroller}
         onScroll={onScroll}
         className="-mt-[72px] min-h-0 flex-1 overflow-y-auto overscroll-none pt-[72px] pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
