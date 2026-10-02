@@ -56,9 +56,8 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   return (
     <>
       <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
-      <div className="grid grid-cols-2 gap-2">
-        {/* Bu ayın toplamı */}
-        <section className="col-span-2 flex h-32 flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg">
+      {/* Bu ayın toplamı: yerinde sabit kalır */}
+      <section className="mb-2 flex h-32 shrink-0 flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg">
           <div className="label opacity-70">Bu ay ödenecek</div>
           <div className="mt-1 leading-none">
             <Money amount={tryTotal.total} size={42} />
@@ -70,117 +69,120 @@ export function HomeScreen({ nav }: { nav: Nav }) {
             <ShareBar subscriptions={subscriptions} />
             <div className="mt-1.5 text-[11px] opacity-70">{formatMoney(tryTotal.paid)} ödendi</div>
           </div>
-        </section>
+      </section>
 
-        {/* Sıradaki ödeme: geniş sarı şerit, solda büyük geri sayım */}
-        {first ? (
-          <button
-            onClick={() => nav.openSubscription(first.s.id)}
-            className="pressable col-span-2 flex items-center gap-4 rounded-[22px] bg-bh-yellow p-3.5 text-left text-[#141414]"
-          >
-            <span className="min-w-16 text-center leading-none">
-              {daysUntil(first.date) === 0 ? (
-                <span className="num num-bold text-[30px]">Bugün</span>
-              ) : (
-                <>
-                  <span className="num num-bold block text-[56px] leading-[0.85]">{daysUntil(first.date)}</span>
-                  <span className="label">gün</span>
-                </>
-              )}
-            </span>
-            <span aria-hidden className="w-px self-stretch bg-black/15" />
-            <span className="min-w-0 flex-1">
-              <span className="label block opacity-70">Sıradaki</span>
-              <span className="mt-1.5 flex items-center gap-2.5">
-                <Logo serviceKey={first.s.serviceKey} name={first.s.name} size={36} />
-                <span className="min-w-0">
-                  <span className="block truncate font-medium">{first.s.name}</span>
-                  <span className="num block">{formatMoney(first.s.amount, first.s.currency)}</span>
-                </span>
-              </span>
-            </span>
-          </button>
-        ) : (
-          <button onClick={() => nav.add()} className="pressable col-span-2 flex min-h-20 items-center justify-center rounded-[22px] bg-surface text-sm text-subtle">
-            + Abonelik ekle
-          </button>
-        )}
-
-        {/* Altında: sonraki abonelik ve en yakın kart son ödemesi */}
-        {second ? (
-          <button onClick={() => nav.openSubscription(second.s.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-surface p-2.5 text-left">
-            <Logo serviceKey={second.s.serviceKey} name={second.s.name} size={32} />
-            <span className="min-w-0">
-              <span className="block truncate text-[13px] font-medium">{second.s.name}</span>
-              <span className="block truncate text-[11px] text-subtle">{dueLabel(second.date)} · {formatMoney(second.s.amount, second.s.currency)}</span>
-            </span>
-          </button>
-        ) : (
-          <button onClick={() => nav.add()} className="pressable flex min-h-[52px] items-center justify-center rounded-[18px] bg-surface text-sm text-subtle">
-            + Abonelik ekle
-          </button>
-        )}
-
-        {nextCard ? (
-          <button onClick={() => nav.openCard(nextCard.c.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-bh-red p-2.5 text-left text-white">
-            <BankMark bankName={nextCard.c.bankName} color="rgb(0 0 0 / 0.25)" size={32} />
-            <span className="min-w-0">
-              <span className="block truncate text-[13px] font-medium">{nextCard.c.bankName}</span>
-              <span className="block truncate text-[11px] opacity-85">{dueLabel(nextCard.date)} · son ödeme</span>
-            </span>
-          </button>
-        ) : (
-          <button onClick={() => nav.addCard()} className="pressable flex min-h-[52px] items-center justify-center rounded-[18px] bg-surface text-sm text-subtle">
-            + Kart ekle
-          </button>
-        )}
-      </div>
-
-      {/* Bu ayın bütün ödemeleri; soldaki yuvarlak "ödendi" işareti */}
-      <h2 className="label mt-5 mb-2 px-1 text-subtle">{formatDate(new Date(), 'LLLL')} ödemeleri</h2>
-      {/* Liste kendi içinde kaydırılır; üstteki kartlar yerinde kalır. Alttaki solma "devamı var" der. */}
-      <ul
-        className="grid min-h-48 flex-1 content-start gap-1.5 overflow-y-auto overscroll-contain pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      {/* Toplamın altındaki her şey birlikte kayar. Alttaki solma "devamı var" der. */}
+      <div
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ maskImage: 'linear-gradient(to bottom, #000 calc(100% - 28px), transparent)' }}
       >
-        {items.map((i) => {
-          const key = `${i.kind}-${i.kind === 'card' ? i.card.id : i.subscription.id}-${i.date.getTime()}`
-          const past = daysUntil(i.date) < 0
-          return (
-            <li key={key} className={cn('flex items-center gap-3 rounded-[18px] bg-surface py-2 pr-3 pl-1.5', i.paid && 'opacity-50')}>
-              <button
-                onClick={() => toggle(i)}
-                aria-label={i.paid ? 'Ödenmedi olarak işaretle' : 'Ödendi olarak işaretle'}
-                aria-pressed={i.paid}
-                className="flex size-11 shrink-0 items-center justify-center"
-              >
-                <span className={cn('flex size-6 items-center justify-center rounded-full border-[1.5px]', i.paid ? 'border-bh-green bg-bh-green text-white' : 'border-subtle/50')}>
-                  {i.paid && <CheckIcon className="size-4" strokeWidth={2.5} />}
+        <div className="grid grid-cols-2 gap-2">
+          {/* Sıradaki ödeme: geniş sarı şerit, solda büyük geri sayım */}
+          {first ? (
+            <button
+              onClick={() => nav.openSubscription(first.s.id)}
+              className="pressable col-span-2 flex items-center gap-4 rounded-[22px] bg-bh-yellow p-3.5 text-left text-[#141414]"
+            >
+              <span className="min-w-16 text-center leading-none">
+                {daysUntil(first.date) === 0 ? (
+                  <span className="num num-bold text-[30px]">Bugün</span>
+                ) : (
+                  <>
+                    <span className="num num-bold block text-[56px] leading-[0.85]">{daysUntil(first.date)}</span>
+                    <span className="label">gün</span>
+                  </>
+                )}
+              </span>
+              <span aria-hidden className="w-px self-stretch bg-black/15" />
+              <span className="min-w-0 flex-1">
+                <span className="label block opacity-70">Sıradaki</span>
+                <span className="mt-1.5 flex items-center gap-2.5">
+                  <Logo serviceKey={first.s.serviceKey} name={first.s.name} size={36} />
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{first.s.name}</span>
+                    <span className="num block">{formatMoney(first.s.amount, first.s.currency)}</span>
+                  </span>
                 </span>
-              </button>
-              {i.kind === 'subscription' ? (
-                <button onClick={() => nav.openSubscription(i.subscription.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                  <Logo serviceKey={i.subscription.serviceKey} name={i.subscription.name} size={30} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{i.subscription.name}</span>
-                    <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · {i.paid ? 'ödendi' : past ? 'geçti' : dueLabel(i.date)}</span>
+              </span>
+            </button>
+          ) : (
+            <button onClick={() => nav.add()} className="pressable col-span-2 flex min-h-20 items-center justify-center rounded-[22px] bg-surface text-sm text-subtle">
+              + Abonelik ekle
+            </button>
+          )}
+
+          {/* Altında: sonraki abonelik ve en yakın kart son ödemesi */}
+          {second ? (
+            <button onClick={() => nav.openSubscription(second.s.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-surface p-2.5 text-left">
+              <Logo serviceKey={second.s.serviceKey} name={second.s.name} size={32} />
+              <span className="min-w-0">
+                <span className="block truncate text-[13px] font-medium">{second.s.name}</span>
+                <span className="block truncate text-[11px] text-subtle">{dueLabel(second.date)} · {formatMoney(second.s.amount, second.s.currency)}</span>
+              </span>
+            </button>
+          ) : (
+            <button onClick={() => nav.add()} className="pressable flex min-h-[52px] items-center justify-center rounded-[18px] bg-surface text-sm text-subtle">
+              + Abonelik ekle
+            </button>
+          )}
+
+          {nextCard ? (
+            <button onClick={() => nav.openCard(nextCard.c.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-bh-red p-2.5 text-left text-white">
+              <BankMark bankName={nextCard.c.bankName} color="rgb(0 0 0 / 0.25)" size={32} />
+              <span className="min-w-0">
+                <span className="block truncate text-[13px] font-medium">{nextCard.c.bankName}</span>
+                <span className="block truncate text-[11px] opacity-85">{dueLabel(nextCard.date)} · son ödeme</span>
+              </span>
+            </button>
+          ) : (
+            <button onClick={() => nav.addCard()} className="pressable flex min-h-[52px] items-center justify-center rounded-[18px] bg-surface text-sm text-subtle">
+              + Kart ekle
+            </button>
+          )}
+        </div>
+
+        {/* Bu ayın bütün ödemeleri; soldaki yuvarlak "ödendi" işareti */}
+        <h2 className="label mt-5 mb-2 px-1 text-subtle">{formatDate(new Date(), 'LLLL')} ödemeleri</h2>
+        <ul className="grid gap-1.5">
+          {items.map((i) => {
+            const key = `${i.kind}-${i.kind === 'card' ? i.card.id : i.subscription.id}-${i.date.getTime()}`
+            const past = daysUntil(i.date) < 0
+            return (
+              <li key={key} className={cn('flex items-center gap-3 rounded-[18px] bg-surface py-2 pr-3 pl-1.5', i.paid && 'opacity-50')}>
+                <button
+                  onClick={() => toggle(i)}
+                  aria-label={i.paid ? 'Ödenmedi olarak işaretle' : 'Ödendi olarak işaretle'}
+                  aria-pressed={i.paid}
+                  className="flex size-11 shrink-0 items-center justify-center"
+                >
+                  <span className={cn('flex size-6 items-center justify-center rounded-full border-[1.5px]', i.paid ? 'border-bh-green bg-bh-green text-white' : 'border-subtle/50')}>
+                    {i.paid && <CheckIcon className="size-4" strokeWidth={2.5} />}
                   </span>
-                  <span className="num text-[15px]">{formatMoney(i.subscription.amount, i.subscription.currency)}</span>
                 </button>
-              ) : (
-                <button onClick={() => nav.openCard(i.card.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                  <BankMark bankName={i.card.bankName} color={i.card.color} size={30} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{i.card.bankName}</span>
-                    <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · son ödeme · {i.paid ? 'ödendi' : past ? 'geçti' : dueLabel(i.date)}</span>
-                  </span>
-                  <span className="num text-[13px] text-subtle">•• {i.card.last4}</span>
-                </button>
-              )}
-            </li>
-          )
-        })}
-      </ul>
+                {i.kind === 'subscription' ? (
+                  <button onClick={() => nav.openSubscription(i.subscription.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                    <Logo serviceKey={i.subscription.serviceKey} name={i.subscription.name} size={30} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">{i.subscription.name}</span>
+                      <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · {i.paid ? 'ödendi' : past ? 'geçti' : dueLabel(i.date)}</span>
+                    </span>
+                    <span className="num text-[15px]">{formatMoney(i.subscription.amount, i.subscription.currency)}</span>
+                  </button>
+                ) : (
+                  <button onClick={() => nav.openCard(i.card.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                    <BankMark bankName={i.card.bankName} color={i.card.color} size={30} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">{i.card.bankName}</span>
+                      <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · son ödeme · {i.paid ? 'ödendi' : past ? 'geçti' : dueLabel(i.date)}</span>
+                    </span>
+                    <span className="num text-[13px] text-subtle">•• {i.card.last4}</span>
+                  </button>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      </div>
     </>
   )
 }
