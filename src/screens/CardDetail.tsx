@@ -48,14 +48,14 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
 
       <Gauge color={card.color} due={due} previousDue={cycle?.previousDue ?? null} />
 
-      <div className="mt-2 grid grid-cols-2 gap-2">
+      <div className={cn('mt-2 grid gap-2', cycle ? 'grid-cols-3' : 'grid-cols-1')}>
         {cycle && (
           <>
             <Stat label="Kesim" value={formatDate(cycle.statement, 'd MMM')} sub={formatDate(cycle.statement, 'EEEE')} />
             <Stat label="Son ödeme" value={formatDate(cycle.due, 'd MMM')} sub={formatDate(cycle.due, 'EEEE')} />
           </>
         )}
-        <Stat label="Bu karttan" value={formatMoney(monthlyTry)} sub={`${onCard.length} abonelik`} className="col-span-2" />
+        <Stat label="Bu karttan" value={formatMoney(monthlyTry)} sub={`${onCard.length} abonelik`} />
       </div>
 
       {/* Gelecek ayın ekstresi, ay değişmeden işaretlenemez */}
@@ -137,10 +137,10 @@ function Gauge({ color, due, previousDue }: { color: string; due: Date | null; p
 
 function Stat({ label, value, sub, className }: { label: string; value: string; sub?: string; className?: string }) {
   return (
-    <div className={cn('flex h-[76px] flex-col rounded-[20px] bg-surface p-3', className)}>
+    <div className={cn('flex h-[76px] min-w-0 flex-col rounded-[20px] bg-surface p-3', className)}>
       <span className="label text-subtle">{label}</span>
-      <span className="num mt-auto text-xl">{value}</span>
-      {sub && <span className="text-[11px] text-subtle">{sub}</span>}
+      <span className="num mt-auto truncate text-lg">{value}</span>
+      {sub && <span className="truncate text-[11px] text-subtle">{sub}</span>}
     </div>
   )
 }
