@@ -1,37 +1,70 @@
-import { useState, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { TOP_FOG, fog, type FogLevel } from '@/lib/fog'
+import { useBottomBounce } from '@/lib/useBottomBounce'
 import { cn } from '@/lib/utils'
 
 /**
- * Üstte sabit duran blok ve altından kayan liste (Anasayfa'daki geçişin aynısı).
- * Blok opak zemin üzerindedir; son 30px'te zemin sis seviyesine iner. Liste bloğun 24px altına kadar uzanır, böylece satırlar
- * kartın yuvarlak alt köşelerinin arkasından geçer. Kaydırınca bloğun altına 32px'lik solma eklenir (sis → şeffaf).
+ * Üstte sabit duran başlık + blok ve altından kayan liste (Anasayfa'daki yapının aynısı).
+ * Tek kayan alan var: başlık ve blok da onun içinde, en üste yapışık (sticky). Böylece sayfanın neresinden tutulursa tutulsun
+ * liste kayar; iPhone en üstte esnetince başlık ve blok listeyle birlikte iner, en altta bütün sayfa birlikte esner.
+ * Blok opak zemin üzerindedir; son 30px'te zemin sis seviyesine iner. Kaydırınca bloğun altına 32px'lik solma eklenir (sis → şeffaf).
  * Liste cam menünün arkasına kadar uzanır. Sis seviyesi src/lib/fog.ts içinde.
  */
-export function PinnedLayout({ top, children, fogLevel = 'normal' }: { top: ReactNode; children: ReactNode; fogLevel?: FogLevel }) {
+export function PinnedLayout({
+  header,
+  top,
+  children,
+  fogLevel = 'normal',
+}: {
+  header: ReactNode
+  top: ReactNode
+  children: ReactNode
+  fogLevel?: FogLevel
+}) {
+  const page = useRef<HTMLDivElement>(null)
+  const scroller = useRef<HTMLDivElement>(null)
+  const block = useRef<HTMLDivElement>(null)
+  // Listenin üst boşluğu bloğun yüksekliği kadar; blok boyu değişirse (ör. yazı tipi yüklenince, sekme değişince) yeniden ölçülür
+  const [blockHeight, setBlockHeight] = useState(0)
   const [scrolled, setScrolled] = useState(false)
   const edge = fog(TOP_FOG[fogLevel])
+  useBottomBounce(scroller, page)
+  useLayoutEffect(() => {
+    const el = block.current
+    if (!el) return
+    const measure = () => setBlockHeight(el.offsetHeight)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   return (
-    <>
-      <div className="relative z-10 -mx-3 shrink-0 px-3 pb-2">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10"
-          style={{ background: `linear-gradient(to bottom, var(--page) calc(100% - 30px), ${edge})` }}
-        />
-        <div
-          aria-hidden
-          className={cn('pointer-events-none absolute inset-x-0 top-full h-8 transition-opacity', scrolled ? 'opacity-100' : 'opacity-0')}
-          style={{ background: `linear-gradient(to bottom, ${edge}, transparent)` }}
-        />
-        {top}
-      </div>
+    <div ref={page} className="relative -mb-24 flex min-h-0 flex-1 flex-col">
       <div
+        ref={scroller}
         onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
-        className="-mt-8 -mb-24 min-h-48 flex-1 overflow-y-auto overscroll-contain pt-8 pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-mx-3 min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {children}
+        {/* Yüksekliği sıfır: akışta yer kaplamaz, liste altından geçer */}
+        <div className="sticky top-0 z-10 -mx-3 h-0">
+          <div ref={block} className="absolute inset-x-0 top-0 px-3 pb-2">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 -z-10"
+              style={{ background: `linear-gradient(to bottom, var(--page) calc(100% - 30px), ${edge})` }}
+            />
+            <div
+              aria-hidden
+              className={cn('pointer-events-none absolute inset-x-0 top-full h-8 transition-opacity', scrolled ? 'opacity-100' : 'opacity-0')}
+              style={{ background: `linear-gradient(to bottom, ${edge}, transparent)` }}
+            />
+            {header}
+            {top}
+          </div>
+        </div>
+        <div style={{ paddingTop: blockHeight }}>{children}</div>
       </div>
-    </>
+    </div>
   )
 }

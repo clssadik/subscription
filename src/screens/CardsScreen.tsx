@@ -42,9 +42,8 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
 
   return (
     <>
-      <ScreenHeader title="Kartlar" action={<AddButton label="Kart ekle" onClick={() => nav.addCard()} />} />
-
       <PinnedLayout
+        header={<ScreenHeader title="Kartlar" action={<AddButton label="Kart ekle" onClick={() => nav.addCard()} />} />}
         fogLevel="light"
         top={
           <>

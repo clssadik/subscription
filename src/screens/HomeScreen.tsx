@@ -1,5 +1,5 @@
 import { CheckIcon } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { HomeQuickStart } from '@/components/QuickStart'
@@ -8,6 +8,7 @@ import { ShareBar } from '@/components/ShareBar'
 import { daysUntil, dueLabel, hasDue, monthItems, nextCardDue, nextRenewal, type MonthItem } from '@/lib/dates'
 import { formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
+import { useBottomBounce } from '@/lib/useBottomBounce'
 import { CURRENCIES } from '@/lib/types'
 import { TOP_FOG, fog } from '@/lib/fog'
 import { cn } from '@/lib/utils'
@@ -18,10 +19,6 @@ import type { Nav } from '@/App'
 const COLLAPSE = 220
 // Tüm para birimleri aynı tipografiyi kullanır: virgülden önceki ana kısım aynı boyut/renk, sonrası küçük ve soluk
 const AMOUNT_SIZE = 'calc(42px - 16px * var(--p, 0))'
-// Listenin sonundaki esneme: en fazla bu kadar (px) çıkar, çektikçe zorlaşır; bırakınca bu geçişle döner
-const BOUNCE_MAX = 140
-const BOUNCE_SOFT = 220
-const BOUNCE_BACK = 'transform 420ms cubic-bezier(0.25, 1, 0.5, 1)'
 
 export function HomeScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
@@ -43,56 +40,9 @@ export function HomeScreen({ nav }: { nav: Nav }) {
     ro.observe(el)
     return () => ro.disconnect()
   })
-  // Listenin sonunda iPhone sadece listeyi esnetir ve bunu sayfaya bildirmez. Orada telefonun esnemesi durdurulur,
-  // yerine bütün sayfa (başlık, blok, liste) birlikte yukarı esner; bırakınca yumuşakça yerine döner.
+  // Listenin sonunda bütün sayfa birlikte esner (src/lib/useBottomBounce.ts)
   const scroller = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const el = scroller.current
-    const page = top.current
-    if (!el || !page) return
-    let startY = 0
-    let pulling = false
-    const atBottom = () => el.scrollTop + el.clientHeight >= el.scrollHeight - 1
-    const set = (v: number, transition: string) => {
-      page.style.transition = transition
-      page.style.transform = v ? `translateY(${-v}px)` : ''
-    }
-    const onStart = (e: TouchEvent) => {
-      startY = e.touches[0].clientY
-      pulling = false
-    }
-    const onMove = (e: TouchEvent) => {
-      const y = e.touches[0].clientY
-      if (!pulling) {
-        if (!(y < startY && atBottom())) return
-        pulling = true
-        startY = y
-        return
-      }
-      const d = startY - y
-      if (d <= 0) {
-        set(0, 'none')
-        pulling = false
-        return
-      }
-      e.preventDefault()
-      set(BOUNCE_MAX * (1 - 1 / (d / BOUNCE_SOFT + 1)), 'none')
-    }
-    const onEnd = () => {
-      if (pulling) set(0, BOUNCE_BACK)
-      pulling = false
-    }
-    el.addEventListener('touchstart', onStart, { passive: true })
-    el.addEventListener('touchmove', onMove, { passive: false })
-    el.addEventListener('touchend', onEnd)
-    el.addEventListener('touchcancel', onEnd)
-    return () => {
-      el.removeEventListener('touchstart', onStart)
-      el.removeEventListener('touchmove', onMove)
-      el.removeEventListener('touchend', onEnd)
-      el.removeEventListener('touchcancel', onEnd)
-    }
-  }, [subscriptions.length === 0 && cards.length === 0])
+  useBottomBounce(scroller, top, subscriptions.length === 0 && cards.length === 0)
   function onScroll(e: React.UIEvent<HTMLDivElement>) {
     const y = e.currentTarget.scrollTop
     progress.current = Math.min(1, Math.max(0, y / COLLAPSE))

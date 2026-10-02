@@ -73,13 +73,18 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
     )
   }
 
+  const header = <ScreenHeader title="Abonelikler" action={<AddButton label="Abonelik ekle" onClick={() => nav.add()} />} />
+
   return (
     <>
-      <ScreenHeader title="Abonelikler" action={<AddButton label="Abonelik ekle" onClick={() => nav.add()} />} />
       {subscriptions.length === 0 ? (
-        <SubscriptionQuickStart nav={nav} />
+        <>
+          {header}
+          <SubscriptionQuickStart nav={nav} />
+        </>
       ) : (
         <PinnedLayout
+          header={header}
           top={
             /* Koyu temada beyaz kart: siyah zeminde öne çıksın */
             <section className="rounded-[22px] bg-surface p-3.5 dark:bg-[#F2F2F2] dark:text-[#141414]">

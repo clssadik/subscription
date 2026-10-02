@@ -48,8 +48,8 @@ export function HistoryScreen() {
 
   return (
     <>
-      <ScreenHeader title="Geçmiş" />
       <PinnedLayout
+        header={<ScreenHeader title="Geçmiş" />}
         top={
           <section className="flex h-[176px] flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg">
             <div className="flex justify-between gap-2">
