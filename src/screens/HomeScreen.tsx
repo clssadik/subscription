@@ -69,10 +69,11 @@ export function HomeScreen({ nav }: { nav: Nav }) {
     <div ref={top} className="contents">
       <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
       {/* Üstteki blok (toplam, sıradaki, iki küçük kart) yerinde sabit kalır ve kaydırınca birlikte küçülür.
-          Alttaki cam menü gibi: liste kartların arkasından geçer (kesimi kartların yuvarlak şekli yapar). Arkada yukarıdan
-          aşağı zemin renginden %60'a inen bir perde var; kaydırınca altına 40px'lik solma eklenir (%60 → şeffaf). */}
+          Arkası küçük kartların ortasına kadar opak zemin: aradaki boşluklardan içerik görünmez. Liste sadece küçük kartların
+          alt yarısının arkasından geçer, kesimi kartların yuvarlak köşeleri yapar. Son 30px'te zemin %60'a iner; kaydırınca
+          altına alttaki menüdeki gibi 40px'lik solma eklenir (%60 → şeffaf). */}
       <div className="relative z-10 -mx-3 shrink-0 px-3 pb-2">
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-b from-page from-50% to-page/60" />
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-b from-page from-[calc(100%-30px)] to-page/60" />
         <div
           aria-hidden
           className={cn(
