@@ -6,11 +6,10 @@ interface Props {
   /** Kutunun zemini: genelde kartın rengi */
   color: string
   size: number
-  /** Köşe şekli burada verilir (ör. kemer: rounded-[15px_15px_5px_5px]) */
   className?: string
 }
 
-/** Küçük banka kutusu: banka renginde zemin, üstünde beyaz sembol. Sembol yoksa baş harf. */
+/** Küçük banka kutusu: servis logolarıyla aynı yuvarlak kare; banka renginde zemin, üstünde beyaz sembol. Sembol yoksa baş harf. */
 export function BankMark({ bankName, color, size, className }: Props) {
   const { symbol, letter } = bankLogo(bankName)
   const inner = Math.round(size * 0.6)
@@ -18,7 +17,7 @@ export function BankMark({ bankName, color, size, className }: Props) {
     <span
       aria-hidden
       className={cn('flex shrink-0 items-center justify-center', className)}
-      style={{ width: size, height: size, background: color }}
+      style={{ width: size, height: size, borderRadius: Math.round(size * 0.24), background: color }}
     >
       {symbol ? (
         <img src={symbol} alt="" className="object-contain" style={{ width: inner, height: inner }} />

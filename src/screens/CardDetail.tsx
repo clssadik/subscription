@@ -38,7 +38,7 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
       </div>
 
       <div className="flex items-center gap-2.5 px-1">
-        <BankMark bankName={card.bankName} color={card.color} size={36} className="rounded-[18px_18px_6px_6px]" />
+        <BankMark bankName={card.bankName} color={card.color} size={36} />
         <div className="min-w-0">
           <h1 className="num num-bold truncate text-xl leading-tight">{card.bankName}</h1>
           <p className="text-xs text-subtle">•••• {card.last4}</p>
