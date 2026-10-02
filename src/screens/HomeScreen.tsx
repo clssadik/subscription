@@ -198,7 +198,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
           aşağıda cam menünün arkasına kadar uzanır. */}
       <div
         onScroll={onScroll}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-none pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ paddingTop: blockHeight }}
       >
         <div>
