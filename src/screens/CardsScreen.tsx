@@ -73,7 +73,8 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
             { value: 'credit', label: `Kredi kartları · ${credit.length}` },
             { value: 'debit', label: `Banka kartları · ${debit.length}` },
           ]}
-          className="mb-1 bg-surface"
+          className="mb-1 bg-line"
+          activeClass="bg-white text-[#141414] dark:bg-[#F2F2F2]"
         />
       )}
 
@@ -126,7 +127,7 @@ function DebitRow({ card, onClick }: { card: CreditCard; onClick: () => void }) 
   )
 }
 
-/** Afişin şekil yerleri (150px genişliğinde siyah panel). İlk yer daire: en yakın son ödeme oraya gelir ve sarı halka alır. */
+/** Afişin şekil yerleri (kartın içinde 142×180 yuvarlak köşeli siyah kutu). İlk yer daire: en yakın son ödeme oraya gelir ve sarı halka alır. */
 const POSTER = [
   'top-3.5 left-3.5 size-14 rounded-full',
   'top-3.5 left-20 size-14 rounded-bl-full',
@@ -140,7 +141,7 @@ const POSTER = [
 /** Bu ay ödenecek kartlar Bauhaus şekilleri olarak, son ödemesi en yakın olan başta. Boş kalan yerler koyu gri. */
 function Poster({ cards }: { cards: CreditCard[] }) {
   return (
-    <div aria-hidden className="relative bg-[#141414]">
+    <div aria-hidden className="relative my-2 mr-2 rounded-[20px] bg-[#141414]">
       {POSTER.map((shape, i) => (
         // Siyah kartlar (Papara) siyah panelde kaybolmasın: ince açık kenar
         <span key={i} className={cn('absolute', shape, cards[i] && luminance(cards[i].color) < 0.12 && 'ring-1 ring-white/30')} style={{ background: cards[i]?.color ?? '#262626' }} />

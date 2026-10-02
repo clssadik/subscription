@@ -34,11 +34,14 @@ export function Segmented<T extends string>({
   options,
   onChange,
   className,
+  activeClass = 'bg-bh-yellow text-[#141414]',
 }: {
   value: T
   options: { value: T; label: string }[]
   onChange: (v: T) => void
   className?: string
+  /** Seçili düğmenin rengi */
+  activeClass?: string
 }) {
   return (
     <div className={cn('flex rounded-xl bg-page p-0.5 text-sm', className)} role="radiogroup">
@@ -51,7 +54,7 @@ export function Segmented<T extends string>({
           onClick={() => onChange(o.value)}
           className={cn(
             'min-h-9 flex-1 rounded-[10px] px-2 transition-colors',
-            value === o.value ? 'bg-bh-yellow font-medium text-[#141414]' : 'text-subtle',
+            value === o.value ? cn('font-medium', activeClass) : 'text-subtle',
           )}
         >
           {o.label}
