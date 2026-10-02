@@ -69,9 +69,10 @@ export function HomeScreen({ nav }: { nav: Nav }) {
     <div ref={top} className="contents">
       <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
       {/* Üstteki blok (toplam, sıradaki, iki küçük kart) yerinde sabit kalır ve kaydırınca birlikte küçülür.
-          Zemin renginde: liste altına girince aradaki boşluklardan görünmez. Kaydırınca alt kenarda alttaki menünün
-          kenar solmasının aynısı belirir: 40px boyunca, kenarda %60 zemin renginden şeffafa. */}
-      <div className="relative z-10 -mx-3 shrink-0 bg-page px-3 pb-2">
+          Alttaki cam menü gibi: liste kartların arkasından geçer (kesimi kartların yuvarlak şekli yapar). Arkada yukarıdan
+          aşağı zemin renginden %60'a inen bir perde var; kaydırınca altına 40px'lik solma eklenir (%60 → şeffaf). */}
+      <div className="relative z-10 -mx-3 shrink-0 px-3 pb-2">
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-b from-page from-50% to-page/60" />
         <div
           aria-hidden
           className={cn(
@@ -162,10 +163,11 @@ export function HomeScreen({ nav }: { nav: Nav }) {
         </div>
       </div>
 
-      {/* Sadece bu ayın ödemeleri kayar; üstteki bloğun altına girer, aşağıda cam menünün arkasına kadar uzanır */}
+      {/* Sadece bu ayın ödemeleri kayar. Yukarıda bloğun alt kısmının arkasına (72px: küçük kartlar + boşluklar, sarı şeridin içine kadar),
+          aşağıda cam menünün arkasına kadar uzanır. */}
       <div
         onScroll={onScroll}
-        className="-mb-24 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+96px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-mt-[72px] -mb-24 min-h-0 flex-1 overflow-y-auto overscroll-contain pt-[72px] pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+96px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {/* Bu ayın bütün ödemeleri; soldaki yuvarlak "ödendi" işareti */}
         <h2 className="label mt-3 mb-2 px-1 text-subtle">{formatDate(new Date(), 'LLLL')} ödemeleri</h2>
