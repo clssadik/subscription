@@ -79,8 +79,9 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
         <SubscriptionQuickStart nav={nav} />
       ) : (
         <>
-          <section className="mb-2 rounded-[22px] bg-surface p-3.5">
-            <div className="flex justify-between text-subtle">
+          {/* Koyu temada beyaz kart: siyah zeminde öne çıksın */}
+          <section className="mb-2 rounded-[22px] bg-surface p-3.5 dark:bg-[#F2F2F2] dark:text-[#141414]">
+            <div className="flex justify-between text-subtle dark:text-[#141414]/60">
               <span className="label">Aylık toplam</span>
               <span className="label">{subscriptions.length} abonelik</span>
             </div>
