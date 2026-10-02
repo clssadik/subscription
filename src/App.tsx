@@ -98,11 +98,11 @@ function Main({
 
   return (
     <>
-      {/* Özet ekranı ekrana sığar (sayfa kaymaz); orada sadece ödeme listesi kayar */}
+      {/* Özet ve Abonelikler ekrana sığar (sayfa kaymaz); orada sadece liste kayar */}
       <main
         className={cn(
           'mx-auto max-w-md px-3 pt-[max(1rem,env(safe-area-inset-top))]',
-          tab === 'home' && !detailId && ready ? 'flex h-svh flex-col overflow-y-auto pb-24' : 'min-h-svh pb-32',
+          (tab === 'home' || tab === 'subscriptions') && !detailId && ready ?'flex h-svh flex-col overflow-y-auto pb-24' : 'min-h-svh pb-32',
         )}
       >
         {!ready ? (
