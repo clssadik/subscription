@@ -50,13 +50,13 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
         top={
           <>
             {/* Bauhaus afiş: solda sayı, sağda her ödenecek kart için kendi renginde bir şekil. Beyaz zemin (koyu temada da).
-                Kaydırınca Anasayfa'daki gibi katlanır: 196 → 96px, afiş orantılı küçülür, alt satır kaybolur. */}
-            <section className="grid h-[calc(196px-100px*var(--p,0))] shrink-0 grid-cols-[1fr_calc(150px-79px*var(--p,0))] overflow-hidden rounded-[26px] bg-surface dark:bg-[#F2F2F2] dark:text-[#141414]">
+                Kaydırınca katlanır: 196 → 68px, afiş ve alt satır solup kaybolur, geriye "Bu ay ödenecek · 7 kart" şeridi kalır. */}
+            <section className="grid h-[calc(196px-128px*var(--p,0))] shrink-0 grid-cols-[1fr_calc(150px-150px*var(--p,0))] overflow-hidden rounded-[26px] bg-surface dark:bg-[#F2F2F2] dark:text-[#141414]">
               <div className="flex min-w-0 flex-col py-[calc(16px-4px*var(--p,0))] pl-[18px]">
                 <div className="label text-subtle dark:text-[#141414]/60">Bu ay ödenecek</div>
                 {upcoming.length > 0 ? (
                   <div className="mt-0.5 flex items-baseline gap-2">
-                    <span className="num num-bold text-[length:calc(96px-50px*var(--p,0))] leading-[0.9]">{upcoming.length}</span>
+                    <span className="num num-bold text-[length:calc(96px-66px*var(--p,0))] leading-[0.9]">{upcoming.length}</span>
                     <span className="text-lg font-medium">kart</span>
                   </div>
                 ) : (
@@ -136,7 +136,7 @@ function DebitRow({ card, onClick }: { card: CreditCard; onClick: () => void }) 
 
 /** Afişin şekil yerleri (kartın içinde 142×180 yuvarlak köşeli siyah kutu). İlk yer daire: en yakın son ödeme oraya gelir ve sarı halka alır. */
 // Kartın tamamen katlanması için gereken kaydırma (px): kartın küçülme mesafesi kadar
-const COLLAPSE = 100
+const COLLAPSE = 128
 
 const POSTER = [
   'top-3.5 left-3.5 size-14 rounded-full',
@@ -151,9 +151,9 @@ const POSTER = [
 /** Bu ay ödenecek kartlar Bauhaus şekilleri olarak, son ödemesi en yakın olan başta. Boş kalan yerler koyu gri. */
 function Poster({ cards }: { cards: CreditCard[] }) {
   return (
-    <div aria-hidden className="relative my-2 mr-2 overflow-hidden rounded-[calc(20px-8px*var(--p,0))] bg-[#141414]">
-      {/* Şekiller tam boyda çizilir, katlanınca panelle birlikte orantılı küçülür (180 → 80px) */}
-      <div className="absolute top-0 left-0 h-[180px] w-[142px] origin-top-left scale-[calc(1-0.556*var(--p,0))]">
+    <div aria-hidden className="relative my-2 mr-2 overflow-hidden rounded-[20px] bg-[#141414] opacity-[calc(1-2.5*var(--p,0))]">
+      {/* Şekiller sabit boyda; katlanırken panel solar ve sütunu daralır */}
+      <div className="absolute top-0 left-0 h-[180px] w-[142px]">
         {POSTER.map((shape, i) => (
           // Siyah kartlar (Papara) siyah panelde kaybolmasın: ince açık kenar
           <span key={i} className={cn('absolute', shape, cards[i] && luminance(cards[i].color) < 0.12 && 'ring-1 ring-white/30')} style={{ background: cards[i]?.color ?? '#262626' }} />
