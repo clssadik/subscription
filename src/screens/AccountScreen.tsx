@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js'
-import { FlaskConicalIcon, LogOutIcon, Trash2Icon } from 'lucide-react'
+import { FlaskConicalIcon, LogOutIcon, MoonIcon, SmartphoneIcon, SunIcon, Trash2Icon } from 'lucide-react'
 import { toast } from 'sonner'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { formatDate, initial } from '@/lib/format'
@@ -8,6 +8,8 @@ import { DEMO_ID, demoSignOut } from '@/lib/demo'
 import { randomCards, randomSubscriptions } from '@/lib/seed'
 import { useUndoable } from '@/lib/undo'
 import { supabase } from '@/lib/supabase'
+import { type ThemePref, useTheme } from '@/lib/theme'
+import { cn } from '@/lib/utils'
 
 export function AccountScreen({ user }: { user: User }) {
   const { state, dispatch } = useStore()
@@ -46,6 +48,8 @@ export function AccountScreen({ user }: { user: User }) {
         <Stat label="Kart" value={state.cards.length} />
       </div>
 
+      <ThemePicker />
+
       <p className="mt-4 px-1 text-sm text-subtle">
         {demo
           ? 'Test hesabı: veriler sadece bu cihazda saklanıyor.'
@@ -71,6 +75,40 @@ export function AccountScreen({ user }: { user: User }) {
         <LogOutIcon className="size-[18px]" /> Çıkış yap
       </button>
     </>
+  )
+}
+
+const THEMES: { value: ThemePref; label: string; Icon: typeof SunIcon }[] = [
+  { value: 'auto', label: 'Otomatik', Icon: SmartphoneIcon },
+  { value: 'light', label: 'Açık', Icon: SunIcon },
+  { value: 'dark', label: 'Koyu', Icon: MoonIcon },
+]
+
+// Otomatik = telefonun ayarını izler. Seçim bu cihazda saklanır.
+function ThemePicker() {
+  const { pref, setPref } = useTheme()
+  return (
+    <section className="mt-4">
+      <h2 className="label px-1 text-subtle">Tema</h2>
+      <div className="mt-2 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Tema">
+        {THEMES.map(({ value, label, Icon }) => (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={pref === value}
+            onClick={() => setPref(value)}
+            className={cn(
+              'pressable flex h-16 flex-col items-center justify-center gap-1 rounded-[18px] font-label text-sm',
+              pref === value ? 'bg-bh-yellow font-medium text-[#141414]' : 'bg-surface text-subtle',
+            )}
+          >
+            <Icon className="size-[18px]" />
+            {label}
+          </button>
+        ))}
+      </div>
+    </section>
   )
 }
 

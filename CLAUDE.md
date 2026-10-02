@@ -26,7 +26,7 @@ Logosu olmayan bir servis eklendiğinde uygulama bunu Supabase'deki `missing_log
 ## Tasarım kuralları (Gündüz / Gece Bauhaus bento)
 
 - Renkler `src/index.css` içinde: Bauhaus sarı/mavi/kırmızı + temaya göre değişen yüzeyler.
-  Tema telefonun ayarını izler (açık = krem zemin, koyu = OLED siyah).
+  Tema varsayılan olarak telefonun ayarını izler (açık = krem zemin, koyu = OLED siyah); Hesap ekranından elle seçilebilir (`src/lib/theme.ts`).
 - Kalın yazı (700, `.num-bold`) sadece sayfa başlıkları, büyük toplamlar ve acil uyarılar için.
   İsimler ve tutarlar 500, geri kalan 400.
 - Rakamlar Space Grotesk (`.num`), etiketler Outfit büyük harf (`.label`), metin DM Sans.

@@ -9,8 +9,9 @@
 @import "@fontsource/outfit/500.css";
 @import "@fontsource/outfit/600.css";
 
-/* Tema telefonun ayarını izler: açık = "Gündüz Bauhaus", koyu = "Gece Bauhaus" */
-@custom-variant dark (@media (prefers-color-scheme: dark));
+/* Tema: açık = "Gündüz Bauhaus", koyu = "Gece Bauhaus". Varsayılan telefonun ayarını izler;
+   Hesap ekranından elle seçilebilir. <html class="dark"> src/lib/theme.ts ve index.html'deki betikle konur. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
     --font-sans: 'DM Sans', -apple-system, sans-serif;
@@ -94,19 +95,17 @@
     --radius: 0.875rem;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --page: #000000;
-        --ink: #F2F2F2;
-        --subtle: #858585;
-        --surface: #141414;
-        --line: #262626;
-        --hero: #1F4FB4;
-        --hero-fg: #FFFFFF;
-        --nav: #141414;
-        --nav-off: #5C5C5C;
-        color-scheme: dark;
-    }
+:root.dark {
+    --page: #000000;
+    --ink: #F2F2F2;
+    --subtle: #858585;
+    --surface: #141414;
+    --line: #262626;
+    --hero: #1F4FB4;
+    --hero-fg: #FFFFFF;
+    --nav: #141414;
+    --nav-off: #5C5C5C;
+    color-scheme: dark;
 }
 
 @layer base {
@@ -156,7 +155,7 @@
 }
 
 :root { --logo-tile: #141414; }
-@media (prefers-color-scheme: dark) { :root { --logo-tile: #000000; } }
+:root.dark { --logo-tile: #000000; }
 
 /* Giriş ekranı kutuları: yeni renk ortadan daire olarak büyür */
 @keyframes bloom {
@@ -181,7 +180,7 @@
   background: rgb(255 255 255 / 0.75);
   box-shadow: inset 0 1px 1px #fff, 0 2px 8px rgb(0 0 0 / 0.08);
 }
-@media (prefers-color-scheme: dark) {
+.dark {
   .glass {
     background: rgb(40 40 40 / 0.42);
     box-shadow:
