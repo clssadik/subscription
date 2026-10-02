@@ -2,7 +2,6 @@ import { CardQuickStart } from '@/components/QuickStart'
 import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
 import { BankBrand } from '@/components/BankMark'
 import { daysUntil, hasDue, nextCardDue } from '@/lib/dates'
-import { dayOf } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import type { CreditCard } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -72,8 +71,8 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
 }
 
 function Tile({ card, size, shape, onClick }: { card: CreditCard; size: Size; shape: string; onClick: () => void }) {
-  const big = size !== 'small'
-  const note = hasDue(card) ? `son ödeme ${dayOf(card.dueDay)}` : 'banka kartı'
+  // Büyük karolarda sadece banka kartı yazılır; son ödeme günü karoda gösterilmez
+  const debitNote = size !== 'small' && !hasDue(card)
   return (
     <button
       onClick={onClick}
@@ -87,8 +86,8 @@ function Tile({ card, size, shape, onClick }: { card: CreditCard; size: Size; sh
       <span aria-hidden className={cn('absolute bg-black/20', shape)} />
       {/* Hem yükseklik hem genişlik sınırı: uzun yazılı logolar (Akbank) küçülür, hepsi aynı ağırlıkta durur */}
       <BankBrand bankName={card.bankName} className={size === 'tall' ? 'h-5 max-w-[116px]' : 'h-4 max-w-[96px]'} />
-      <span className={cn('num absolute bottom-3 left-3 leading-none! tracking-[0.02em]',size === 'tall' ? 'bottom-[30px] text-[22px]' : 'text-lg')}>•• {card.last4}</span>
-      {big && <span className={cn('absolute text-[11px] opacity-85', size === 'tall' ? 'bottom-2.5 left-3' : 'right-3 bottom-3')}>{note}</span>}
+      <span className={cn('num absolute bottom-3 left-3 leading-none! tracking-[0.02em]',size === 'tall' ? 'text-[22px]' : 'text-lg', debitNote && size === 'tall' && 'bottom-[30px]')}>•• {card.last4}</span>
+      {debitNote && <span className={cn('absolute text-[11px] opacity-85', size === 'tall' ? 'bottom-2.5 left-3' : 'right-3 bottom-3')}>banka kartı</span>}
     </button>
   )
 }
