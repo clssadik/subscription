@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { TOP_FOG, fog, type FogLevel } from '@/lib/fog'
+import { TOP_FOG, fogAlpha, fogLayer, type FogLevel } from '@/lib/fog'
 import { cn } from '@/lib/utils'
 
 /**
@@ -10,19 +10,19 @@ import { cn } from '@/lib/utils'
  */
 export function PinnedLayout({ top, children, fogLevel = 'normal' }: { top: ReactNode; children: ReactNode; fogLevel?: FogLevel }) {
   const [scrolled, setScrolled] = useState(false)
-  const edge = fog(TOP_FOG[fogLevel])
+  const edge = fogAlpha(TOP_FOG[fogLevel])
   return (
     <>
       <div className="relative z-10 -mx-3 shrink-0 px-3 pb-2">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10"
-          style={{ background: `linear-gradient(to bottom, var(--page) calc(100% - 30px), ${edge})` }}
+          style={fogLayer('to bottom', `black calc(100% - 30px), ${edge}`)}
         />
         <div
           aria-hidden
           className={cn('pointer-events-none absolute inset-x-0 top-full h-8 transition-opacity', scrolled ? 'opacity-100' : 'opacity-0')}
-          style={{ background: `linear-gradient(to bottom, ${edge}, transparent)` }}
+          style={fogLayer('to bottom', `${edge}, transparent`)}
         />
         {top}
       </div>

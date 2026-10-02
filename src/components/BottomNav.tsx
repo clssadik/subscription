@@ -1,5 +1,5 @@
 import { CreditCardIcon, HistoryIcon, HomeIcon, RepeatIcon, UserIcon, type LucideIcon } from 'lucide-react'
-import { BOTTOM_FOG } from '@/lib/fog'
+import { BOTTOM_FOG, fogLayer } from '@/lib/fog'
 import { cn } from '@/lib/utils'
 
 export type Tab = 'home' | 'subscriptions' | 'account' | 'cards' | 'history'
@@ -25,7 +25,7 @@ export function BottomNav({ tab, onTab, initial }: { tab: Tab; onTab: (t: Tab) =
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 bottom-0 -z-10"
-        style={{ height: `calc(100% + ${bottomFog.above}px)`, background: `linear-gradient(to top, var(--page) ${bottomFog.solid}%, transparent)` }}
+        style={{ height: `calc(100% + ${bottomFog.above}px)`, ...fogLayer('to top', `black ${bottomFog.solid}%, transparent`) }}
       />
       <div className="mx-auto flex max-w-md items-center gap-2.5">
         <div className="glass flex flex-1 items-center justify-around rounded-full p-1.5">
