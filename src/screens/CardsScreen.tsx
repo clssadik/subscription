@@ -1,8 +1,10 @@
 import { CardQuickStart } from '@/components/QuickStart'
 import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
-import { BankMark } from '@/components/BankMark'
+import { useState } from 'react'
+import { BankBrand, BankMark } from '@/components/BankMark'
+import { Segmented } from '@/components/FormBits'
 import { luminance } from '@/lib/color'
-import { daysUntil, dueLabel, hasDue, nextCardDue } from '@/lib/dates'
+import { daysUntil, hasDue, nextCardDue, nextStatement } from '@/lib/dates'
 import { formatDate } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import type { CreditCard } from '@/lib/types'
@@ -12,6 +14,7 @@ import type { Nav } from '@/App'
 export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string) => void }) {
   const { state } = useStore()
   const { cards, payments } = state
+  const [tab, setTab] = useState<'credit' | 'debit'>('credit')
 
   if (cards.length === 0) {
     return (
@@ -28,15 +31,13 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
     .map((card) => ({ card, due: nextCardDue(card, payments) }))
     .filter(({ due }) => daysUntil(due) >= 0 && due.getMonth() === new Date().getMonth())
     .sort((a, b) => a.due.getTime() - b.due.getTime())
-  // Liste: önce kredi kartları (son ödemesi en yakın olan üstte), sonra banka kartları
+  // Liste: kredi kartları (hesap kesimi en yakın olan üstte) ya da banka kartları; üstteki seçiciyle
   const credit = cards
     .filter(hasDue)
-    .map((card) => ({ card, due: nextCardDue(card, payments) }))
-    .sort((a, b) => a.due.getTime() - b.due.getTime())
-  const groups = [
-    { title: 'Kredi kartları', list: credit },
-    { title: 'Banka kartları', list: cards.filter((c) => !hasDue(c)).map((card) => ({ card, due: null })) },
-  ].filter((g) => g.list.length > 0)
+    .map((card) => ({ card, statement: nextStatement(card) }))
+    .sort((a, b) => a.statement.getTime() - b.statement.getTime())
+  const debit = cards.filter((c) => !hasDue(c))
+  const shown = credit.length === 0 ? 'debit' : debit.length === 0 ? 'credit' : tab
 
   return (
     <>
@@ -64,41 +65,63 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
         <Poster cards={upcoming.map((u) => u.card)} />
       </section>
 
+      {credit.length > 0 && debit.length > 0 && (
+        <Segmented
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: 'credit', label: `Kredi kartları · ${credit.length}` },
+            { value: 'debit', label: `Banka kartları · ${debit.length}` },
+          ]}
+          className="mb-1 bg-surface"
+        />
+      )}
+
       {/* Liste kendi içinde kaydırılır; üstteki özet yerinde kalır. Alan cam menünün arkasına kadar uzanır. */}
-      <div className="-mb-24 min-h-48 flex-1 overflow-y-auto overscroll-contain pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {groups.map((g) => (
-          <section key={g.title}>
-            <h2 className="label mt-4 mb-1 px-1 text-subtle">{g.title}</h2>
-            <ul className="grid gap-1.5">
-              {g.list.map(({ card, due }) => (
+      <div className="-mb-24 min-h-48 flex-1 overflow-y-auto overscroll-contain pt-1 pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ul className="grid gap-1.5">
+          {shown === 'credit'
+            ? credit.map(({ card, statement }) => (
                 <li key={card.id}>
-                  <CardRow card={card} due={due} onClick={() => onSelect(card.id)} />
+                  <CreditRow card={card} statement={statement} onClick={() => onSelect(card.id)} />
+                </li>
+              ))
+            : debit.map((card) => (
+                <li key={card.id}>
+                  <DebitRow card={card} onClick={() => onSelect(card.id)} />
                 </li>
               ))}
-            </ul>
-          </section>
-        ))}
+        </ul>
       </div>
     </>
   )
 }
 
-function CardRow({ card, due, onClick }: { card: CreditCard; due: Date | null; onClick: () => void }) {
+/** Kredi kartı: bankanın renginde satır, orijinal logo ve son 4 hane; sağda sıradaki hesap kesimi */
+function CreditRow({ card, statement, onClick }: { card: CreditCard; statement: Date; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="pressable flex min-h-14 w-full items-center gap-3 rounded-[18px] px-3.5 py-2 text-left text-white" style={{ background: card.color }}>
+      <span className="flex min-w-0 flex-1 items-center gap-2.5">
+        <BankBrand bankName={card.bankName} className="h-4 max-w-[120px]" />
+        <span className="num shrink-0 text-[15px] opacity-90">•• {card.last4}</span>
+      </span>
+      <span className="shrink-0 text-right leading-tight">
+        <span className="label block text-[9px] opacity-75">Kesim</span>
+        <span className="num text-[15px]">{formatDate(statement, 'd MMM')}</span>
+      </span>
+    </button>
+  )
+}
+
+function DebitRow({ card, onClick }: { card: CreditCard; onClick: () => void }) {
   return (
     <button onClick={onClick} className="pressable flex w-full items-center gap-3 rounded-[18px] bg-surface py-2 pr-3 pl-2 text-left">
       <BankMark bankName={card.bankName} color={card.color} size={36} />
       <span className="min-w-0 flex-1">
         <span className="block truncate font-medium">{card.bankName}</span>
-        <span className="block text-[11px] text-subtle">{due ? 'Kredi kartı' : 'Banka kartı'}</span>
+        <span className="block text-[11px] text-subtle">Banka kartı</span>
       </span>
-      {due ? (
-        <span className="text-right">
-          <span className="num block text-[15px]">•• {card.last4}</span>
-          <span className="block text-[11px] text-subtle">{formatDate(due, 'd MMM')} · {dueLabel(due)}</span>
-        </span>
-      ) : (
-        <span className="num text-[15px]">•• {card.last4}</span>
-      )}
+      <span className="num text-[15px]">•• {card.last4}</span>
     </button>
   )
 }
