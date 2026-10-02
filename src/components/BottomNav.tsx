@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 export type Tab = 'home' | 'subscriptions' | 'account' | 'cards' | 'history'
 
 const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
-  { id: 'home', label: 'Özet', icon: HomeIcon },
+  { id: 'home', label: 'Anasayfa', icon: HomeIcon },
   { id: 'subscriptions', label: 'Abonelikler', icon: RepeatIcon },
   { id: 'cards', label: 'Kartlar', icon: CreditCardIcon },
   { id: 'history', label: 'Geçmiş', icon: HistoryIcon },
