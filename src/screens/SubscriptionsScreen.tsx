@@ -47,16 +47,15 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
     return (
       <SwipeRow
         key={s.id}
-        surface="bg-page"
         onTap={() => nav.openSubscription(s.id)}
         onDelete={() => undoable(`${s.name} silindi`, () => dispatch({ type: 'subscription/delete', id: s.id }))}
       >
-        <div className="flex items-center gap-3 px-1 py-1.5">
+        <div className="flex items-center gap-3 py-1.5 pr-3 pl-1.5">
           {/* Takvim yaprağı gibi gün kutusu; bugün sarı */}
           <div
             className={cn(
               'flex h-12 w-11 shrink-0 flex-col items-center justify-center rounded-xl',
-              isToday ? 'bg-bh-yellow text-[#141414]' : 'bg-surface',
+              isToday ? 'bg-bh-yellow text-[#141414]' : 'bg-page',
             )}
           >
             <span className="num num-bold text-lg leading-none">{next.getDate()}</span>
@@ -99,7 +98,7 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
             {groups.map((g) => (
               <section key={g.title}>
                 <h2 className="label mt-4 mb-1 px-1 text-subtle">{g.title}</h2>
-                <div className="grid gap-0.5">{g.list.map(row)}</div>
+                <div className="grid gap-1.5">{g.list.map(row)}</div>
               </section>
             ))}
           </div>
