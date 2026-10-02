@@ -18,6 +18,8 @@ export function BottomNav({ tab, onTab, initial }: { tab: Tab; onTab: (t: Tab) =
   const onAccount = tab === 'account'
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 px-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      {/* Kenar solması (iOS'taki gibi): içerik menüye yaklaşırken zemin rengine karışır, cam sadece hafif izi bulanıklaştırır */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[calc(100%+40px)] bg-linear-to-t from-page from-45% to-transparent" />
       <div className="mx-auto flex max-w-md items-center gap-2.5">
         <div className="glass flex flex-1 items-center justify-around rounded-full p-1.5">
           {TABS.map(({ id, label, icon: Icon }) => (
