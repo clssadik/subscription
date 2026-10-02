@@ -9,6 +9,7 @@ import { initial } from '@/lib/format'
 import { StoreProvider, useStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { AccountScreen } from '@/screens/AccountScreen'
+import { CardDetail } from '@/screens/CardDetail'
 import { CardsScreen } from '@/screens/CardsScreen'
 import { HistoryScreen } from '@/screens/HistoryScreen'
 import { HomeScreen } from '@/screens/HomeScreen'
@@ -102,7 +103,7 @@ function Main({
       <main
         className={cn(
           'mx-auto max-w-md px-3 pt-[max(1rem,env(safe-area-inset-top))]',
-          (tab === 'home' || tab === 'subscriptions') && !detailId && ready ?'flex h-svh flex-col overflow-y-auto pb-24' : 'min-h-svh pb-32',
+          (tab === 'home' || tab === 'subscriptions' || (tab === 'cards' && !cardId)) && !detailId && ready ? 'flex h-svh flex-col overflow-y-auto pb-24' : 'min-h-svh pb-32',
         )}
       >
         {!ready ? (
@@ -114,7 +115,8 @@ function Main({
             {tab === 'home' && <HomeScreen nav={nav} />}
             {tab === 'subscriptions' && <SubscriptionsScreen nav={nav} />}
             {tab === 'account' && (user ? <AccountScreen user={user} /> : <LoginScreen />)}
-            {tab === 'cards' && <CardsScreen nav={nav} selectedId={cardId} onSelect={setCardId} />}
+            {tab === 'cards' &&
+              (cardId ? <CardDetail id={cardId} nav={nav} onBack={() => setCardId(null)} /> : <CardsScreen nav={nav} onSelect={setCardId} />)}
             {tab === 'history' && <HistoryScreen />}
           </>
         )}
@@ -125,6 +127,7 @@ function Main({
         onTab={(t) => {
           setTab(t)
           setDetailId(null)
+          setCardId(null)
           if (t !== 'account') savePending(null)
         }}
       />

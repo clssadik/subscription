@@ -1,19 +1,30 @@
-import { CheckCircle2Icon, PencilIcon } from 'lucide-react'
-import { toast } from 'sonner'
-import { Logo } from '@/components/Logo'
 import { CardQuickStart } from '@/components/QuickStart'
 import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
-import { BigDays } from '@/screens/HomeScreen'
-import { NETWORKS } from '@/lib/banks'
-import { hasDue, monthlyCost, nextCardDue, toKey } from '@/lib/dates'
-import { dayOf, formatDate, formatMoney } from '@/lib/format'
+import { daysUntil, hasDue, nextCardDue } from '@/lib/dates'
+import { dayOf } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import type { CreditCard } from '@/lib/types'
+import { cn } from '@/lib/utils'
 import type { Nav } from '@/App'
 
-export function CardsScreen({ nav, selectedId, onSelect }: { nav: Nav; selectedId: string | null; onSelect: (id: string) => void }) {
-  const { state, dispatch } = useStore()
-  const { cards, subscriptions, payments } = state
+/** Mozaik düzeni: 7 karolu bir blok (2 + 1 + 2 satır) boşluksuz dolar. Az kartta hepsi geniş. */
+const BLOCK = ['tall', 'small', 'small', 'wide', 'small', 'tall', 'small'] as const
+type Size = (typeof BLOCK)[number]
+
+/** Karo köşelerindeki geometrik süsler; sırayla döner */
+const SHAPES = [
+  '-right-6 -bottom-6 size-[90px] rounded-full',
+  '-top-2.5 -right-2.5 size-10 rounded-bl-full',
+  '-right-3 -bottom-3 size-10 rounded-full',
+  'top-[-14px] right-5 size-11 rounded-b-full',
+  '-top-3 -right-3 size-10 rounded-full',
+  '-bottom-2.5 -left-2.5 size-[60px] rounded-tr-full',
+  '-right-2.5 -bottom-2.5 size-10 rounded-tl-full',
+]
+
+export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string) => void }) {
+  const { state } = useStore()
+  const { cards, payments } = state
 
   if (cards.length === 0) {
     return (
@@ -24,125 +35,58 @@ export function CardsScreen({ nav, selectedId, onSelect }: { nav: Nav; selectedI
     )
   }
 
-  // Seçili kart en altta, açık hâlde; diğerleri üstte cüzdan gibi üst üste
-  const selected = cards.find((c) => c.id === selectedId) ?? cards[0]
-  const stack = cards.filter((c) => c.id !== selected.id)
-  // Banka kartında son ödeme yok
-  const due = hasDue(selected) ? nextCardDue(selected, payments) : null
-  const onCard = subscriptions.filter((s) => s.cardId === selected.id)
-  const monthlyTry = onCard.filter((s) => s.currency === 'TRY').reduce((sum, s) => sum + monthlyCost(s), 0)
-
-  function markPaid() {
-    if (!due) return
-    const dueDate = toKey(due)
-    dispatch({ type: 'payment/toggle', kind: 'card', refId: selected.id, dueDate })
-    toast(`${selected.bankName} ${formatDate(due, 'LLLL')} ödemesi işaretlendi`, {
-      action: { label: 'Geri al', onClick: () => dispatch({ type: 'payment/toggle', kind: 'card', refId: selected.id, dueDate }) },
-    })
-  }
+  // Bu ay son ödemesi gelmemiş kredi kartları
+  const upcoming = cards.filter(hasDue).filter((c) => daysUntil(nextCardDue(c, payments)) >= 0 && nextCardDue(c, payments).getMonth() === new Date().getMonth())
+  const sizeOf = (i: number): Size => (cards.length < 4 ? 'wide' : BLOCK[i % BLOCK.length])
 
   return (
     <>
       <ScreenHeader title="Kartlar" action={<AddButton label="Kart ekle" onClick={() => nav.addCard()} />} />
-      <div>
-        {stack.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => onSelect(c.id)}
-            className="pressable -mb-3.5 flex h-[60px] w-full items-start justify-between rounded-[20px] px-3.5 pt-3 text-white"
-            style={{ background: c.color }}
-          >
-            <span className="font-label text-sm font-medium">{c.bankName}</span>
-            <span className="num text-xs opacity-85">•• {c.last4}</span>
-          </button>
-        ))}
-        <BigCard card={selected} onEdit={() => nav.edit({ kind: 'card', id: selected.id })} />
-      </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        {due ? (
-          <div className="flex h-[108px] flex-col rounded-[22px_52px_22px_22px] bg-bh-red p-3 text-white">
-            <span className="label opacity-85">Son ödeme</span>
-            <span className="mt-auto leading-none"><BigDays date={due} small /></span>
-            <span className="text-[11px] opacity-80">{formatDate(due, 'd MMMM EEEE')}</span>
-          </div>
-        ) : (
-          <div className="flex h-[108px] flex-col rounded-[22px_52px_22px_22px] bg-bh-blue p-3 text-white">
-            <span className="label opacity-85">Tür</span>
-            <span className="mt-auto font-label text-lg font-medium">Banka kartı</span>
-            <span className="text-[11px] opacity-80">son ödeme yok</span>
-          </div>
-        )}
-        <div className="flex h-[108px] flex-col rounded-[22px] bg-surface p-3">
-          <span className="label text-subtle">Bu karttan</span>
-          <span className="num mt-auto text-xl">{formatMoney(monthlyTry)}</span>
-          <div className="mt-1 flex">
-            {onCard.slice(0, 5).map((s, i) => (
-              <span key={s.id} className="rounded-[9px] border-2 border-surface" style={{ marginLeft: i ? -6 : 0 }}>
-                <Logo serviceKey={s.serviceKey} name={s.name} size={20} />
-              </span>
-            ))}
-            {onCard.length === 0 && <span className="text-[11px] text-subtle">abonelik yok</span>}
-          </div>
+      <section className="mb-2 flex h-[68px] shrink-0 items-center justify-between rounded-[22px] bg-hero px-3.5 text-hero-fg">
+        <div>
+          <div className="label opacity-70">Bu ay son ödeme</div>
+          <div className="num num-bold mt-0.5 text-[24px] leading-none">{upcoming.length > 0 ? `${upcoming.length} kart` : 'Yok'}</div>
+        </div>
+        <div aria-hidden className="flex gap-1">
+          {upcoming.slice(0, 6).map((c) => (
+            <span key={c.id} className="h-7 w-2.5 rounded-[5px_5px_2px_2px] ring-1 ring-white/25" style={{ background: c.color }} />
+          ))}
+        </div>
+      </section>
+
+      {/* Mozaik kendi içinde kaydırılır; üstteki özet yerinde kalır */}
+      <div
+        className="min-h-48 flex-1 overflow-y-auto overscroll-contain pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{ maskImage: 'linear-gradient(to bottom, #000 calc(100% - 28px), transparent)' }}
+      >
+        <div className="grid auto-rows-[64px] grid-flow-dense grid-cols-2 gap-2">
+          {cards.map((c, i) => (
+            <Tile key={c.id} card={c} size={sizeOf(i)} shape={SHAPES[i % SHAPES.length]} onClick={() => onSelect(c.id)} />
+          ))}
         </div>
       </div>
-
-      {due && (
-        <button onClick={markPaid} className="pressable mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-ink font-semibold text-page">
-          <CheckCircle2Icon className="size-[18px] text-bh-yellow" />
-          {formatDate(due, 'LLLL')} ekstresi ödendi
-        </button>
-      )}
-
-      {onCard.length > 0 && (
-        <>
-          <h2 className="label mt-5 mb-2 px-1 text-subtle">Bu karttan çekilenler</h2>
-          <ul className="grid gap-1.5">
-            {onCard.map((s) => (
-              <li key={s.id}>
-                <button onClick={() => nav.openSubscription(s.id)} className="flex w-full items-center gap-3 rounded-[18px] bg-surface px-3 py-2.5 text-left">
-                  <Logo serviceKey={s.serviceKey} name={s.name} size={30} />
-                  <span className="flex-1 truncate font-medium">{s.name}</span>
-                  <span className="num text-[15px]">{formatMoney(s.amount, s.currency)}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
     </>
   )
 }
 
-function BigCard({ card, onEdit }: { card: CreditCard; onEdit: () => void }) {
-  const network = NETWORKS.find((n) => n.key === card.network)
+function Tile({ card, size, shape, onClick }: { card: CreditCard; size: Size; shape: string; onClick: () => void }) {
+  const big = size !== 'small'
+  const note = hasDue(card) ? `son ödeme ${dayOf(card.dueDay)}` : 'banka kartı'
   return (
-    <div className="relative flex h-[168px] flex-col overflow-hidden rounded-[20px] px-3.5 py-3 text-white" style={{ background: card.color }}>
-      <span aria-hidden className="absolute -right-10 -bottom-10 size-[130px] rounded-full bg-black/18" />
-      <span aria-hidden className="absolute -top-[30px] right-[60px] size-[60px] rotate-90 rounded-br-full bg-bh-yellow/90" />
-      <div className="relative flex items-start justify-between">
-        <span className="font-label text-[15px] font-medium">{card.bankName}</span>
-        <div className="flex items-center gap-1">
-          {network &&
-            (network.path ? (
-              <svg viewBox="0 0 24 24" className="size-8" fill="currentColor" aria-label={network.label}><path d={network.path} /></svg>
-            ) : (
-              <span className="text-[13px] italic">{network.label}</span>
-            ))}
-          <button onClick={onEdit} aria-label="Kartı düzenle" className="-mr-2 flex size-10 items-center justify-center">
-            <PencilIcon className="size-4" />
-          </button>
-        </div>
-      </div>
-      <div className="num relative mt-auto text-base tracking-[0.15em]">•••• {card.last4}</div>
-      <div className="relative mt-1 flex justify-between text-[11px] opacity-85">
-        <span>
-          {card.kind === 'credit' && card.statementDay && card.dueDay
-            ? `Kesim ${dayOf(card.statementDay)} · Son ödeme ${dayOf(card.dueDay)}`
-            : 'Banka kartı'}
-        </span>
-        {card.limit > 0 && <span>{formatMoney(card.limit).replace(/,00$/, '')}</span>}
-      </div>
-    </div>
+    <button
+      onClick={onClick}
+      className={cn(
+        'pressable relative flex flex-col justify-start overflow-hidden rounded-[18px] p-3 text-left text-white',
+        size === 'tall' && 'row-span-2',
+        size === 'wide' && 'col-span-2',
+      )}
+      style={{ background: card.color }}
+    >
+      <span aria-hidden className={cn('absolute bg-black/20', shape)} />
+      <span className="relative block truncate font-label text-[13px] font-medium">{card.bankName}</span>
+      <span className={cn('num absolute bottom-3 left-3 leading-none! tracking-[0.02em]',big ? 'text-[22px]' : 'text-lg', size === 'tall' && 'bottom-[30px]')}>•• {card.last4}</span>
+      {big && <span className={cn('absolute text-[11px] opacity-85', size === 'tall' ? 'bottom-2.5 left-3' : 'right-3 bottom-3')}>{note}</span>}
+    </button>
   )
 }
