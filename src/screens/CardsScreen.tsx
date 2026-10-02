@@ -1,28 +1,13 @@
 import { CardQuickStart } from '@/components/QuickStart'
 import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
-import { BankBrand } from '@/components/BankMark'
+import { BankMark } from '@/components/BankMark'
 import { luminance } from '@/lib/color'
-import { daysUntil, hasDue, nextCardDue } from '@/lib/dates'
+import { daysUntil, dueLabel, hasDue, nextCardDue } from '@/lib/dates'
 import { formatDate } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import type { CreditCard } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import type { Nav } from '@/App'
-
-/** Mozaik düzeni: 7 karolu bir blok (2 + 1 + 2 satır) boşluksuz dolar. Az kartta hepsi geniş. */
-const BLOCK = ['tall', 'small', 'small', 'wide', 'small', 'tall', 'small'] as const
-type Size = (typeof BLOCK)[number]
-
-/** Karo köşelerindeki geometrik süsler; sırayla döner */
-const SHAPES = [
-  '-right-6 -bottom-6 size-[90px] rounded-full',
-  '-top-2.5 -right-2.5 size-10 rounded-bl-full',
-  '-right-3 -bottom-3 size-10 rounded-full',
-  'top-[-14px] right-5 size-11 rounded-b-full',
-  '-top-3 -right-3 size-10 rounded-full',
-  '-bottom-2.5 -left-2.5 size-[60px] rounded-tr-full',
-  '-right-2.5 -bottom-2.5 size-10 rounded-tl-full',
-]
 
 export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string) => void }) {
   const { state } = useStore()
@@ -43,7 +28,15 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
     .map((card) => ({ card, due: nextCardDue(card, payments) }))
     .filter(({ due }) => daysUntil(due) >= 0 && due.getMonth() === new Date().getMonth())
     .sort((a, b) => a.due.getTime() - b.due.getTime())
-  const sizeOf = (i: number): Size => (cards.length < 4 ? 'wide' : BLOCK[i % BLOCK.length])
+  // Liste: önce kredi kartları (son ödemesi en yakın olan üstte), sonra banka kartları
+  const credit = cards
+    .filter(hasDue)
+    .map((card) => ({ card, due: nextCardDue(card, payments) }))
+    .sort((a, b) => a.due.getTime() - b.due.getTime())
+  const groups = [
+    { title: 'Kredi kartları', list: credit },
+    { title: 'Banka kartları', list: cards.filter((c) => !hasDue(c)).map((card) => ({ card, due: null })) },
+  ].filter((g) => g.list.length > 0)
 
   return (
     <>
@@ -71,36 +64,41 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
         <Poster cards={upcoming.map((u) => u.card)} />
       </section>
 
-      {/* Mozaik kendi içinde kaydırılır; üstteki özet yerinde kalır. Alan cam menünün arkasına kadar uzanır. */}
+      {/* Liste kendi içinde kaydırılır; üstteki özet yerinde kalır. Alan cam menünün arkasına kadar uzanır. */}
       <div className="-mb-24 min-h-48 flex-1 overflow-y-auto overscroll-contain pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="grid auto-rows-[64px] grid-flow-dense grid-cols-2 gap-2">
-          {cards.map((c, i) => (
-            <Tile key={c.id} card={c} size={sizeOf(i)} shape={SHAPES[i % SHAPES.length]} onClick={() => onSelect(c.id)} />
-          ))}
-        </div>
+        {groups.map((g) => (
+          <section key={g.title}>
+            <h2 className="label mt-4 mb-1 px-1 text-subtle">{g.title}</h2>
+            <ul className="grid gap-1.5">
+              {g.list.map(({ card, due }) => (
+                <li key={card.id}>
+                  <CardRow card={card} due={due} onClick={() => onSelect(card.id)} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </div>
     </>
   )
 }
 
-function Tile({ card, size, shape, onClick }: { card: CreditCard; size: Size; shape: string; onClick: () => void }) {
-  // Büyük karolarda sadece banka kartı yazılır; son ödeme günü karoda gösterilmez
-  const debitNote = size !== 'small' && !hasDue(card)
+function CardRow({ card, due, onClick }: { card: CreditCard; due: Date | null; onClick: () => void }) {
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'pressable relative flex flex-col justify-start overflow-hidden rounded-[18px] p-3 text-left text-white',
-        size === 'tall' && 'row-span-2',
-        size === 'wide' && 'col-span-2',
+    <button onClick={onClick} className="pressable flex w-full items-center gap-3 rounded-[18px] bg-surface py-2 pr-3 pl-2 text-left">
+      <BankMark bankName={card.bankName} color={card.color} size={36} />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-medium">{card.bankName}</span>
+        <span className="block text-[11px] text-subtle">{due ? 'Kredi kartı' : 'Banka kartı'}</span>
+      </span>
+      {due ? (
+        <span className="text-right">
+          <span className="num block text-[15px]">•• {card.last4}</span>
+          <span className="block text-[11px] text-subtle">{formatDate(due, 'd MMM')} · {dueLabel(due)}</span>
+        </span>
+      ) : (
+        <span className="num text-[15px]">•• {card.last4}</span>
       )}
-      style={{ background: card.color }}
-    >
-      <span aria-hidden className={cn('absolute bg-black/20', shape)} />
-      {/* Hem yükseklik hem genişlik sınırı: uzun yazılı logolar (Akbank) küçülür, hepsi aynı ağırlıkta durur */}
-      <BankBrand bankName={card.bankName} className={size === 'tall' ? 'h-5 max-w-[116px]' : 'h-4 max-w-[96px]'} />
-      <span className={cn('num absolute bottom-3 left-3 leading-none! tracking-[0.02em]',size === 'tall' ? 'text-[22px]' : 'text-lg', debitNote && size === 'tall' && 'bottom-[30px]')}>•• {card.last4}</span>
-      {debitNote && <span className={cn('absolute text-[11px] opacity-85', size === 'tall' ? 'bottom-2.5 left-3' : 'right-3 bottom-3')}>banka kartı</span>}
     </button>
   )
 }
