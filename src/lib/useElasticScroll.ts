@@ -7,7 +7,7 @@ const TOP_MAX = 180 // en üstte en fazla bu kadar esner (px)
 const TRIGGER = 90 // bu kadar çekip bırakınca yenilenir (parmakla ~300px)
 const HOLD = 60 // yenilenirken sayfa bu kadar aşağıda bekler
 const BOTTOM_MAX = 70 // en altta en fazla bu kadar esner
-const SPRING = 'transform 550ms cubic-bezier(0.22, 1, 0.36, 1)'
+const SPRING = 'transform 320ms cubic-bezier(0.25, 1, 0.5, 1)'
 
 /** Çektikçe zorlaşan esneme: d = parmağın gittiği yol, max = sınır, k = ne kadar yolda yarıya ulaşacağı */
 const rubber = (d: number, max: number, k: number) => max * (1 - 1 / (d / k + 1))
@@ -79,26 +79,26 @@ export function useElasticScroll(onRefresh?: () => Promise<void>) {
         setRefreshing(true)
         set(HOLD, SPRING)
         // Yenileme çok hızlı bitse de halka bir an görünsün
-        await Promise.all([refresh.current(), new Promise((r) => setTimeout(r, 800))])
+        await Promise.all([refresh.current(), new Promise((r) => setTimeout(r, 500))])
         setRefreshing(false)
         busy = false
       }
       edge = null
       set(0, SPRING)
     }
-    // Bilgisayarda fare tekerleği / dokunmatik yüzey: uçta küçük, akıcı bir esneme; hareket bitince yumuşakça döner
+    // Bilgisayarda fare tekerleği / dokunmatik yüzey: uçta küçük bir esneme, hareketi gecikmesiz takip eder; bitince hızla döner
     const onWheel = (e: WheelEvent) => {
       if (busy) return
       const down = e.deltaY > 0
       if (!((down && atBottom()) || (!down && atTop()))) return
       wheelRaw = Math.max(-600, Math.min(600, wheelRaw + e.deltaY))
       const v = rubber(Math.abs(wheelRaw), BOTTOM_MAX, 200) * (wheelRaw > 0 ? -1 : 1)
-      set(v, 'transform 120ms ease-out')
+      set(v, 'none')
       clearTimeout(wheelTimer)
       wheelTimer = window.setTimeout(() => {
         wheelRaw = 0
         set(0, SPRING)
-      }, 160)
+      }, 80)
     }
 
     el.addEventListener('touchstart', onStart, { passive: true })
