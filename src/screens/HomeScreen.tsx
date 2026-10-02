@@ -1,5 +1,5 @@
 import { CheckIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { HomeQuickStart } from '@/components/QuickStart'
@@ -13,11 +13,20 @@ import { cn } from '@/lib/utils'
 import { BankMark } from '@/components/BankMark'
 import type { Nav } from '@/App'
 
+// Üst kısmın tamamen küçülmesi için gereken kaydırma (px): başlık + kartın küçüldüğü toplam mesafe kadar
+const COLLAPSE = 90
+
 export function HomeScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const { cards, subscriptions, payments } = state
-  // Liste kaydırılınca üst kenarda da solma görünür
+  // Kaydırınca üst kısım küçülür: --p 0 (en üstte) → 1 (COLLAPSE px kaydırınca). Her karede yeniden çizmemek için CSS değişkeni.
+  const top = useRef<HTMLDivElement>(null)
   const [scrolled, setScrolled] = useState(false)
+  function onScroll(e: React.UIEvent<HTMLDivElement>) {
+    const y = e.currentTarget.scrollTop
+    top.current?.style.setProperty('--p', String(Math.min(1, y / COLLAPSE)))
+    setScrolled(y > 0)
+  }
   const items = monthItems(cards, subscriptions, payments)
   const subItems = items.filter((i) => i.kind === 'subscription')
 
@@ -57,23 +66,24 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   }
 
   return (
-    <>
+    <div ref={top} className="contents">
       <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
-      {/* Bu ayın toplamı: yerinde sabit kalır; kaydırınca altındaki gölge, içeriğin kartın altına girdiğini gösterir */}
+      {/* Bu ayın toplamı: yerinde sabit kalır, kaydırınca incelir (128 → 64px); altındaki gölge içeriğin kartın altına girdiğini gösterir */}
       <section
         className={cn(
-          'relative z-10 mb-2 flex h-32 shrink-0 flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg transition-shadow',
+          'relative z-10 mb-2 flex h-[calc(128px-64px*var(--p,0))] shrink-0 flex-col overflow-hidden rounded-[22px] bg-hero px-3.5 py-[calc(14px-4px*var(--p,0))] text-hero-fg transition-shadow',
           scrolled && 'shadow-[0_10px_24px_-8px_rgb(0_0_0/0.45)]',
         )}
       >
           <div className="label opacity-70">Bu ay ödenecek</div>
           <div className="mt-1 leading-none">
-            <Money amount={tryTotal.total} size={42} />
+            <Money amount={tryTotal.total} size="calc(42px - 16px * var(--p, 0))" />
             {others.map((o) => (
               <span key={o.currency} className="num ml-2 text-sm opacity-60">+ {formatMoney(o.total, o.currency)}</span>
             ))}
           </div>
-          <div className="mt-auto">
+          {/* Şerit ve "ödendi" satırı küçülmenin ilk yarısında kaybolur */}
+          <div className="mt-auto opacity-[calc(1-2*var(--p,0))]">
             <ShareBar subscriptions={subscriptions} />
             <div className="mt-1.5 text-[11px] opacity-70">{formatMoney(tryTotal.paid)} ödendi</div>
           </div>
@@ -82,7 +92,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
       {/* Toplamın altındaki her şey birlikte kayar. Alan yukarıda kartın yuvarlak köşelerinin arkasına (22px + 8px boşluk),
           aşağıda cam menünün arkasına kadar uzanır; içerik iki kenarda da üstteki katmanın altına girer. */}
       <div
-        onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
+        onScroll={onScroll}
         className="-mt-[30px] -mb-24 min-h-0 flex-1 overflow-y-auto overscroll-contain pt-[30px] pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+96px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <div className="grid grid-cols-2 gap-2">
@@ -192,7 +202,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
           })}
         </ul>
       </div>
-    </>
+    </div>
   )
 }
 

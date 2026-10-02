@@ -11,13 +11,13 @@ export function ScreenHeader({ title, action }: { title: string; action?: ReactN
   )
 }
 
-/** Ana sayfa başlığı: bugünün günü büyük, ay ve gün adı yanında */
+/** Ana sayfa başlığı: bugünün günü büyük, ay ve gün adı yanında. --p (0-1) verilirse kaydırdıkça gün küçülür. */
 export function DateHeader({ action }: { action?: ReactNode }) {
   const today = new Date()
   return (
     <header className="mb-3 flex items-end gap-2.5 px-1">
       <h1 className="flex items-end gap-2.5">
-        <span className="num num-bold text-[64px] leading-[0.8] tracking-[-0.05em]">{today.getDate()}</span>
+        <span className="num num-bold text-[length:calc(64px-28px*var(--p,0))] leading-[0.8] tracking-[-0.05em]">{today.getDate()}</span>
         <span className="pb-0.5">
           <span className="block font-label text-lg leading-tight font-medium">{formatDate(today, 'LLLL')}</span>
           <span className="block text-sm text-subtle">{formatDate(today, 'EEEE')}</span>

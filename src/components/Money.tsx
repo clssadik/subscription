@@ -11,14 +11,15 @@ export function Money({
 }: {
   amount: number
   currency?: Currency
-  size?: number
+  /** Piksel ya da CSS değeri (ör. kaydırmayla küçülen 'calc(...)') */
+  size?: number | string
   className?: string
 }) {
   const { main, cents } = splitMoney(amount, currency)
   return (
     <span className={cn('num whitespace-nowrap', className)}>
       <span className="num-bold" style={{ fontSize: size }}>{main}</span>
-      <span className="opacity-60" style={{ fontSize: Math.round(size * 0.47) }}>{cents}</span>
+      <span className="opacity-60" style={{ fontSize: typeof size === 'number' ? Math.round(size * 0.47) : `calc(${size} * 0.47)` }}>{cents}</span>
     </span>
   )
 }
