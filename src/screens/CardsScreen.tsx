@@ -43,7 +43,7 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
     <>
       <ScreenHeader title="Kartlar" action={<AddButton label="Kart ekle" onClick={() => nav.addCard()} />} />
 
-      <section className="mb-2 flex h-[76px] shrink-0 items-center justify-between overflow-hidden rounded-[22px] bg-hero px-3.5 text-hero-fg">
+      <section className="mb-2 flex h-[76px] shrink-0 items-center justify-between overflow-hidden rounded-[22px] bg-hero pr-1 pl-3.5 text-hero-fg">
         <div>
           <div className="label opacity-70">Bu ay ödenecek</div>
           <div className="num num-bold mt-0.5 text-[28px] leading-none">{upcoming.length > 0 ? `${upcoming.length} kart` : 'Yok'}</div>
@@ -88,23 +88,27 @@ function Tile({ card, size, shape, onClick }: { card: CreditCard; size: Size; sh
   )
 }
 
-/** Özet kartındaki cüzdan: bu ay ödenecek kartlar yelpaze gibi; en yakın son ödeme en üstte (sağda, çipli) */
+/**
+ * Özet kartındaki cüzdan: bu ay ödenecek kartlar el kartı gibi açılır.
+ * Hepsi alttaki ortak bir noktadan döner; en yakın son ödeme en üstte (sağda, çipli).
+ */
 function CardFan({ items }: { items: { card: CreditCard; due: Date }[] }) {
   const fan = [...items].sort((a, b) => b.due.getTime() - a.due.getTime()).slice(-8).map((x) => x.card)
   const n = fan.length
   if (n === 0) return null
+  // Kart azsa yelpaze daralır; çoksa en fazla ±32 derece açılır
+  const spread = Math.min(32, 8 * (n - 1))
   return (
-    <div aria-hidden className="relative h-14 w-[118px] shrink-0">
+    <div aria-hidden className="relative h-[76px] w-[190px] shrink-0 self-end">
       {fan.map((c, i) => {
-        const t = n === 1 ? 1 : i / (n - 1)
-        const angle = n === 1 ? 0 : -14 + 28 * t
+        const angle = n === 1 ? 0 : -spread + (2 * spread * i) / (n - 1)
         return (
           <span
             key={c.id}
-            className="absolute h-[30px] w-[46px] rounded-[6px] ring-1 ring-white/20"
-            style={{ left: n === 1 ? 70 : 70 * t, top: 8 + (angle * angle) / 33, transform: `rotate(${angle}deg)`, background: c.color }}
+            className="absolute top-5 left-[65px] h-10 w-[60px] origin-[50%_300%] rounded-[7px] ring-1 ring-white/25"
+            style={{ transform: `rotate(${angle}deg)`, background: c.color }}
           >
-            {i === n - 1 && <span className="absolute bottom-[5px] left-1.5 h-[7px] w-2.5 rounded-[2px] bg-bh-yellow" />}
+            {i === n - 1 && <span className="absolute top-2 left-2 h-2 w-3 rounded-[2px] bg-bh-yellow" />}
           </span>
         )
       })}
