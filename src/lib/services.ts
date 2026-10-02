@@ -81,6 +81,13 @@ const localLogos = import.meta.glob('../assets/logos/*.svg', {
   import: 'default',
 }) as Record<string, string>
 
+// Beyaz çizilmiş logoların koyu kopyaları: koyu temada logo kutusu beyaz olduğunda kullanılır
+const onLightLogos = import.meta.glob('../assets/logos/on-light/*.svg', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Record<string, string>
+
 function localLogoUrl(key: string) {
   return localLogos[`../assets/logos/${key}.svg`]
 }
@@ -91,7 +98,7 @@ export function getService(key: string | null | undefined) {
 
 export type LogoSource =
   | { type: 'icon'; path: string; color: string }
-  | { type: 'image'; url: string }
+  | { type: 'image'; url: string; onLight?: string }
   | { type: 'letter'; letter: string; color: string }
 
 /** Bir abonelik için ekranda ne gösterileceğini söyler. */
@@ -99,7 +106,7 @@ export function logoFor(serviceKey: string | null, name: string): LogoSource {
   const service = getService(serviceKey)
   if (service) {
     const url = localLogoUrl(service.key)
-    if (url) return { type: 'image', url }
+    if (url) return { type: 'image', url, onLight: onLightLogos[`../assets/logos/on-light/${service.key}.svg`] }
     if (service.icon) return { type: 'icon', path: service.icon.path, color: `#${service.icon.hex}` }
   }
   return {

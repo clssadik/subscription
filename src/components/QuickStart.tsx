@@ -43,7 +43,7 @@ export function HomeQuickStart({ nav }: { nav: Nav }) {
               className={cn('pressable flex flex-col items-center justify-center gap-2', b.cls)}
               style={{ background: serviceColor(s.key, s.name) }}
             >
-              <Logo serviceKey={s.key} name={s.name} size={Math.round(b.glyph / 0.55)} color={b.fg} className="bg-transparent" />
+              <Logo serviceKey={s.key} name={s.name} size={Math.round(b.glyph / 0.55)} color={b.fg} tile={false} />
               {b.name && <span className="text-base font-medium" style={{ color: b.fg }}>{s.name}</span>}
             </button>
           )
@@ -103,7 +103,8 @@ export function SubscriptionQuickStart({ nav }: { nav: Nav }) {
                 serviceKey={s.key}
                 name={s.name}
                 size={56}
-                className={cn('bg-transparent', dark && 'text-ink')}
+                tile={false}
+                className={cn(dark && 'text-ink')}
                 color={dark ? 'currentColor' : undefined}
               />
             </AppIcon>

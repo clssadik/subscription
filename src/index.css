@@ -154,8 +154,9 @@
   }
 }
 
-:root { --logo-tile: #141414; }
-:root.dark { --logo-tile: #000000; }
+/* Logo kutusu: açık temada siyah, koyu temada beyaz. --logo-ink = kutudaki siyah/beyaz logoların rengi */
+:root { --logo-tile: #141414; --logo-ink: #FFFFFF; }
+:root.dark { --logo-tile: #FFFFFF; --logo-ink: #141414; }
 
 /* Giriş ekranı kutuları: yeni renk ortadan daire olarak büyür */
 @keyframes bloom {

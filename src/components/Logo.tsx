@@ -10,10 +10,12 @@ interface Props {
   className?: string
   /** Logonun rengini zorla (ör. marka renkli kutuda beyaz) */
   color?: string
+  /** false = kutusuz, sadece logo (zemin rengi çağıran yerde) */
+  tile?: boolean
 }
 
-/** Servis logosu: koyu kare üzerinde markanın kendi renginde. Logo yoksa renkli harf. */
-export function Logo({ serviceKey, name, size = 34, className, color }: Props) {
+/** Servis logosu: kutu içinde markanın kendi renginde (kutu açık temada siyah, koyu temada beyaz). Logo yoksa renkli harf. */
+export function Logo({ serviceKey, name, size = 34, className, color, tile = true }: Props) {
   const logo = logoFor(serviceKey, name)
   const inner = Math.round(size * 0.55)
   const style = { width: size, height: size, borderRadius: Math.round(size * 0.24) }
@@ -30,11 +32,14 @@ export function Logo({ serviceKey, name, size = 34, className, color }: Props) {
     )
   }
   return (
-    <div aria-hidden className={cn('flex shrink-0 items-center justify-center bg-[var(--logo-tile)]', className)} style={style}>
+    <div aria-hidden className={cn('flex shrink-0 items-center justify-center', tile && 'bg-[var(--logo-tile)]', className)} style={style}>
       {logo.type === 'image' ? (
-        <img src={logo.url} alt="" style={{ width: inner, height: inner }} />
+        <>
+          <img src={logo.url} alt="" className={cn(tile && logo.onLight && 'dark:hidden')} style={{ width: inner, height: inner }} />
+          {tile && logo.onLight && <img src={logo.onLight} alt="" className="hidden dark:block" style={{ width: inner, height: inner }} />}
+        </>
       ) : (
-        <svg viewBox="0 0 24 24" width={inner} height={inner} fill={color ?? (luminance(logo.color) < 0.2 ? '#fff' : logo.color)}>
+        <svg viewBox="0 0 24 24" width={inner} height={inner} style={{ fill: color ?? (luminance(logo.color) < 0.2 ? (tile ? 'var(--logo-ink)' : '#fff') : logo.color) }}>
           <path d={logo.path} />
         </svg>
       )}

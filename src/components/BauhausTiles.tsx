@@ -103,7 +103,7 @@ export function BauhausTiles({ children }: { children: React.ReactNode }) {
           />
           {t.logo && (
             <span key={t.logo} className="relative animate-in fade-in zoom-in-75 duration-500">
-              <Logo serviceKey={t.logo} name={t.logo} size={44} className="bg-transparent" />
+              <Logo serviceKey={t.logo} name={t.logo} size={44} tile={false} />
             </span>
           )}
         </div>
