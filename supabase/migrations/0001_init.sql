@@ -7,7 +7,7 @@ create table public.cards (
   bank_name text not null,
   last4 text not null check (last4 ~ '^[0-9]{4}$'),
   kind text not null default 'credit' check (kind in ('credit', 'debit')),
-  -- Debit cards have no statement day. The due date is computed: statement + 10 days, moved to the next business day.
+  -- Debit cards have no statement day. The due date is computed: statement + 10 days.
   statement_day smallint check (statement_day between 1 and 31),
   credit_limit numeric(14, 2) not null default 0,
   color text not null,

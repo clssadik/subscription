@@ -12,7 +12,6 @@ import {
   startOfDay,
   startOfMonth,
 } from 'date-fns'
-import { nextBusinessDay } from './holidays'
 import type { CreditCard, Payment, Subscription } from './types'
 
 export const toKey = (d: Date) => format(d, 'yyyy-MM-dd')
@@ -44,14 +43,14 @@ export function renewalsBetween(sub: Subscription, start: Date, end: Date) {
 export type DueCard = CreditCard & { statementDay: number }
 export const hasDue = (c: CreditCard): c is DueCard => c.kind === 'credit' && c.statementDay != null
 
-/** O ayın hesap kesimi: kesim günü tatile ya da hafta sonuna denk gelirse ilk iş günü */
+/** O ayın hesap kesimi (ay kısaysa, ör. Şubat'ta 30, ayın son günü) */
 export function statementInMonth(card: DueCard, month: Date) {
-  return nextBusinessDay(dayInMonth(month.getFullYear(), month.getMonth(), card.statementDay))
+  return dayInMonth(month.getFullYear(), month.getMonth(), card.statementDay)
 }
 
-/** Son ödeme: kesimden 10 gün sonra; tatile ya da hafta sonuna denk gelirse ilk iş günü */
+/** Son ödeme: kesimden tam 10 gün sonra. Hafta sonu ya da tatil olması değiştirmez. */
 export function dueForStatement(statement: Date) {
-  return nextBusinessDay(addDays(statement, 10))
+  return addDays(statement, 10)
 }
 
 /** Bir ekstre dönemi: kesim ve ona ait son ödeme */
