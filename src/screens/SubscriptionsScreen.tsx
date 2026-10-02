@@ -95,7 +95,7 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
           </section>
 
           {/* Liste kendi içinde kaydırılır; üstteki toplam kartı yerinde kalır. Alan cam menünün arkasına kadar uzanır. */}
-          <div className="-mb-24 min-h-48 flex-1 overflow-y-auto overscroll-contain pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+96px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="-mb-24 min-h-48 flex-1 overflow-y-auto overscroll-contain pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {groups.map((g) => (
               <section key={g.title}>
                 <h2 className="label mt-4 mb-1 px-1 text-subtle">{g.title}</h2>

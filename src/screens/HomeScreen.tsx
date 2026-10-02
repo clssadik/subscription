@@ -9,6 +9,7 @@ import { daysUntil, dueLabel, hasDue, monthItems, nextCardDue, nextRenewal, type
 import { formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import { CURRENCIES } from '@/lib/types'
+import { useElasticScroll } from '@/lib/useElasticScroll'
 import { cn } from '@/lib/utils'
 import { BankMark } from '@/components/BankMark'
 import type { Nav } from '@/App'
@@ -17,11 +18,13 @@ import type { Nav } from '@/App'
 const COLLAPSE = 110
 
 export function HomeScreen({ nav }: { nav: Nav }) {
-  const { state, dispatch } = useStore()
+  const { state, dispatch, refresh } = useStore()
   const { cards, subscriptions, payments } = state
   // Kaydırınca üst blok (toplam, sıradaki, iki küçük kart) birlikte küçülür; tarih başlığı sabit. --p 0 (en üstte) → 1 (COLLAPSE px kaydırınca). Her karede yeniden çizmemek için CSS değişkeni.
   const top = useRef<HTMLDivElement>(null)
   const [scrolled, setScrolled] = useState(false)
+  // Uçlarda esneme + en üstte aşağı çekip yenileme
+  const { scroller, content, refreshing } = useElasticScroll(refresh)
   function onScroll(e: React.UIEvent<HTMLDivElement>) {
     const y = e.currentTarget.scrollTop
     top.current?.style.setProperty('--p', String(Math.min(1, y / COLLAPSE)))
@@ -167,50 +170,64 @@ export function HomeScreen({ nav }: { nav: Nav }) {
       {/* Sadece bu ayın ödemeleri kayar. Yukarıda bloğun alt kısmının arkasına (72px: küçük kartlar + boşluklar, sarı şeridin içine kadar),
           aşağıda cam menünün arkasına kadar uzanır. */}
       <div
+        ref={scroller}
         onScroll={onScroll}
-        className="-mt-[72px] -mb-24 min-h-0 flex-1 overflow-y-auto overscroll-contain pt-[72px] pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+96px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative -mt-[72px] -mb-24 min-h-0 flex-1 overflow-y-auto overscroll-none pt-[72px] pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {/* Bu ayın bütün ödemeleri; soldaki yuvarlak "ödendi" işareti */}
-        <h2 className="label mt-3 mb-2 px-1 text-subtle">{formatDate(new Date(), 'LLLL')} ödemeleri</h2>
-        <ul className="grid gap-1.5">
-          {items.map((i) => {
-            const key = `${i.kind}-${i.kind === 'card' ? i.card.id : i.subscription.id}-${i.date.getTime()}`
-            const past = daysUntil(i.date) < 0
-            return (
-              <li key={key} className="flex items-center gap-3 rounded-[18px] bg-surface py-2 pr-3 pl-1.5">
-                <button
-                  onClick={() => toggle(i)}
-                  aria-label={i.paid ? 'Ödenmedi olarak işaretle' : 'Ödendi olarak işaretle'}
-                  aria-pressed={i.paid}
-                  className="flex size-11 shrink-0 items-center justify-center"
-                >
-                  <span className={cn('flex size-6 items-center justify-center rounded-full border-[1.5px]', i.paid ? 'border-bh-green bg-bh-green text-white' : 'border-subtle/50')}>
-                    {i.paid && <CheckIcon className="size-4" strokeWidth={2.5} />}
-                  </span>
-                </button>
-                {i.kind === 'subscription' ? (
-                  <button onClick={() => nav.openSubscription(i.subscription.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                    <Logo serviceKey={i.subscription.serviceKey} name={i.subscription.name} size={30} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{i.subscription.name}</span>
-                      <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · {i.paid ? 'ödendi' : past ? 'geçti' : dueLabel(i.date)}</span>
+        {/* Aşağı çekip yenileme göstergesi: çektikçe belirip döner, yenilerken sürekli döner */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-[72px] flex justify-center"
+          style={{ opacity: refreshing ? 1 : 'min(1, calc(var(--pull, 0) / 72))', transform: 'translateY(calc(var(--pull, 0) * 0.5px - 14px))' }}
+        >
+          <span
+            className={cn('size-7 rounded-full border-[3px] border-bh-yellow border-t-transparent', refreshing && 'animate-spin')}
+            style={refreshing ? undefined : { transform: 'rotate(calc(var(--pull, 0) * 4deg))' }}
+          />
+        </div>
+        <div ref={content}>
+          {/* Bu ayın bütün ödemeleri; soldaki yuvarlak "ödendi" işareti */}
+          <h2 className="label mt-3 mb-2 px-1 text-subtle">{formatDate(new Date(), 'LLLL')} ödemeleri</h2>
+          <ul className="grid gap-1.5">
+            {items.map((i) => {
+              const key = `${i.kind}-${i.kind === 'card' ? i.card.id : i.subscription.id}-${i.date.getTime()}`
+              const past = daysUntil(i.date) < 0
+              return (
+                <li key={key} className="flex items-center gap-3 rounded-[18px] bg-surface py-2 pr-3 pl-1.5">
+                  <button
+                    onClick={() => toggle(i)}
+                    aria-label={i.paid ? 'Ödenmedi olarak işaretle' : 'Ödendi olarak işaretle'}
+                    aria-pressed={i.paid}
+                    className="flex size-11 shrink-0 items-center justify-center"
+                  >
+                    <span className={cn('flex size-6 items-center justify-center rounded-full border-[1.5px]', i.paid ? 'border-bh-green bg-bh-green text-white' : 'border-subtle/50')}>
+                      {i.paid && <CheckIcon className="size-4" strokeWidth={2.5} />}
                     </span>
-                    <span className="num text-[15px]">{formatMoney(i.subscription.amount, i.subscription.currency)}</span>
                   </button>
-                ) : (
-                  <button onClick={() => nav.openCard(i.card.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                    <BankMark bankName={i.card.bankName} color={i.card.color} size={30} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{i.card.bankName}</span>
-                      <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · son ödeme · {i.paid ? 'ödendi' : past ? 'geçti' : dueLabel(i.date)}</span>
-                    </span>
-                    <span className="num text-[13px] text-subtle">•• {i.card.last4}</span>
-                  </button>
-                )}
-              </li>
-            )
-          })}
-        </ul>
+                  {i.kind === 'subscription' ? (
+                    <button onClick={() => nav.openSubscription(i.subscription.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                      <Logo serviceKey={i.subscription.serviceKey} name={i.subscription.name} size={30} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium">{i.subscription.name}</span>
+                        <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · {i.paid ? 'ödendi' : past ? 'geçti' : dueLabel(i.date)}</span>
+                      </span>
+                      <span className="num text-[15px]">{formatMoney(i.subscription.amount, i.subscription.currency)}</span>
+                    </button>
+                  ) : (
+                    <button onClick={() => nav.openCard(i.card.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                      <BankMark bankName={i.card.bankName} color={i.card.color} size={30} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium">{i.card.bankName}</span>
+                        <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · son ödeme · {i.paid ? 'ödendi' : past ? 'geçti' : dueLabel(i.date)}</span>
+                      </span>
+                      <span className="num text-[13px] text-subtle">•• {i.card.last4}</span>
+                    </button>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </div>
       </div>
     </div>
   )

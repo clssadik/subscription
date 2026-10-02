@@ -124,7 +124,7 @@ export function clearCache(userId: string) {
   }
 }
 
-const StoreContext = createContext<{ state: State; dispatch: React.Dispatch<Action>; ready: boolean } | null>(null)
+const StoreContext = createContext<{ state: State; dispatch: React.Dispatch<Action>; ready: boolean; refresh: () => Promise<void> } | null>(null)
 
 /** userId null ise (giriş yok) veriler boş kalır ve hiçbir yere yazılmaz.
  *  Test hesabında veriler sadece cihazda tutulur, Supabase'e gitmez. */
@@ -183,7 +183,23 @@ export function StoreProvider({ userId, children }: { userId: string | null; chi
     )
   }, [state, userId, remote])
 
-  return <StoreContext value={{ state, dispatch, ready }}>{children}</StoreContext>
+  /** Aşağı çekip yenileme: girişliyse veritabanından yeniden yükler; yerelde sadece ekranı tazeler (ör. gün değiştiyse) */
+  async function refresh() {
+    if (!remote) {
+      dispatch({ type: 'state/load', state: { ...state } })
+      return
+    }
+    try {
+      const data = await loadAll()
+      const fresh = migrate(data)
+      server.current = { ...fresh, missingLogos: data.missingLogos }
+      dispatch({ type: 'state/load', state: fresh })
+    } catch {
+      toast.error('Veriler yenilenemedi. İnternet bağlantını kontrol et.')
+    }
+  }
+
+  return <StoreContext value={{ state, dispatch, ready, refresh }}>{children}</StoreContext>
 }
 
 // eslint-disable-next-line react/only-export-components
