@@ -5,7 +5,7 @@ import { FEATURED_SERVICES, type Service } from '@/lib/services'
 import { cn } from '@/lib/utils'
 
 // Giriş ekranındaki logo duvarı: 3x3 kutu, her biri bir servisin kendi renginde ve logolu.
-// Birkaç saniyede bir rastgele bir kutu başka bir servise döner: yeni renk ortadan daire olarak büyür, şekil de değişir.
+// Yaklaşık her saniye 2-3 rastgele kutu, kısa arayla sırayla başka bir servise döner: yeni renk ortadan daire olarak büyür, şekil de değişir.
 
 // Bauhaus şekilleri: kemer, çeyrek daireler, yuvarlak, kare
 const SHAPES = [
@@ -64,15 +64,20 @@ export function LogoWall() {
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     let timer: number
+    const swaps: number[] = []
     const tick = () => {
-      setTiles((prev) => {
-        const i = Math.floor(Math.random() * prev.length)
-        return prev.map((t, j) => (j === i ? nextTile(prev, i) : t))
+      // 2 ya da 3 farklı kutu, aralarında 140ms ile
+      const order = [...Array(COUNT).keys()].sort(() => Math.random() - 0.5).slice(0, 2 + Math.floor(Math.random() * 2))
+      order.forEach((i, k) => {
+        swaps.push(window.setTimeout(() => setTiles((prev) => prev.map((t, j) => (j === i ? nextTile(prev, i) : t))), k * 140))
       })
-      timer = window.setTimeout(tick, 1400 + Math.random() * 1400)
+      timer = window.setTimeout(tick, 1000 + Math.random() * 500)
     }
-    timer = window.setTimeout(tick, 1800)
-    return () => window.clearTimeout(timer)
+    timer = window.setTimeout(tick, 900)
+    return () => {
+      window.clearTimeout(timer)
+      swaps.forEach((t) => window.clearTimeout(t))
+    }
   }, [])
 
   return (
@@ -80,7 +85,7 @@ export function LogoWall() {
       {tiles.map((t, i) => (
         <div
           key={i}
-          className="relative flex h-[clamp(68px,13svh,116px)] items-center justify-center overflow-hidden transition-[border-radius] duration-700 ease-out"
+          className="relative flex h-[clamp(68px,13svh,116px)] items-center justify-center overflow-hidden transition-[border-radius] duration-500 ease-out"
           style={{ background: t.prev, borderRadius: t.shape }}
         >
           <span
@@ -90,7 +95,7 @@ export function LogoWall() {
             // Animasyon bitince alttaki eski rengi de güncelle; kenarda ince çizgi kalmasın
             onAnimationEnd={() => setTiles((all) => all.map((x, j) => (j === i ? { ...x, prev: x.color } : x)))}
           />
-          <span key={t.key} className="relative animate-in fade-in zoom-in-75 duration-500">
+          <span key={t.key} className="relative animate-in fade-in zoom-in-75 duration-300">
             <Logo serviceKey={t.key} name={t.key} size={46} tile={false} color={luminance(t.color) > 0.55 ? '#141414' : '#FFFFFF'} />
           </span>
         </div>

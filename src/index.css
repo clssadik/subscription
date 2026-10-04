@@ -163,7 +163,7 @@
   from { transform: scale(0); }
   to { transform: scale(1); }
 }
-.bloom { animation: bloom 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bloom { animation: bloom 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
 /* Sayfa geçişleri: sekme değişince hafif yukarı süzülerek belirir; detay sağdan kayarak gelir, geri dönünce soldan */
 @keyframes screen-fade {
