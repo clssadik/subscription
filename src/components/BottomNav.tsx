@@ -38,10 +38,10 @@ export function BottomNav({ tab, onTab, initial }: { tab: Tab; onTab: (t: Tab) =
               aria-current={tab === id ? 'page' : undefined}
               className={cn(
                 'pressable flex h-[54px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full transition-colors',
-                tab === id ? 'glass-on text-ink' : 'text-ink/75',
+                tab === id ? 'glass-on text-ink' : 'text-ink/60',
               )}
             >
-              <Icon className={cn('size-[22px]', tab === id && 'text-[#C9930A] dark:text-bh-yellow')} strokeWidth={1.8} />
+              <Icon className="size-[22px]" strokeWidth={tab === id ? 2.1 : 1.8} />
               <span className="font-label text-[10px] font-medium">{label}</span>
             </button>
           ))}
@@ -52,7 +52,7 @@ export function BottomNav({ tab, onTab, initial }: { tab: Tab; onTab: (t: Tab) =
           aria-current={onAccount ? 'page' : undefined}
           className={cn('glass pressable flex size-[62px] shrink-0 items-center justify-center rounded-full', onAccount && 'glass-on')}
         >
-          <span className="flex size-10 items-center justify-center rounded-full bg-bh-yellow font-label text-lg font-medium text-[#141414]">
+          <span className="flex size-10 items-center justify-center rounded-full bg-ink font-label text-lg font-medium text-page">
             {initial ?? <UserIcon className="size-[22px]" strokeWidth={1.8} />}
           </span>
         </button>
