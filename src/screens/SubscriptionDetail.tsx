@@ -1,10 +1,12 @@
 import { CheckCircle2Icon, ChevronLeftIcon, PencilIcon } from 'lucide-react'
 import { parseISO } from 'date-fns'
-import { toast } from 'sonner'
+import { useCallback, useState } from 'react'
 import { play } from '@/lib/sound'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { PaidNote } from '@/components/PaidNote'
+import { PaidOverlay } from '@/components/PaidOverlay'
+import { haptic } from '@/lib/haptics'
 import { RoundButton } from '@/components/ScreenHeader'
 import { TearTicket } from '@/components/TearTicket'
 import { canMarkPaid, daysUntil, dueLabel, nextRenewal, paidThisMonth, toKey } from '@/lib/dates'
@@ -15,6 +17,9 @@ import type { Nav } from '@/App'
 
 export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
   const { state, dispatch } = useStore()
+  // Koçan koparılınca açılan "Ödendi" ekranı
+  const [paid, setPaid] = useState<{ title: string; detail: string } | null>(null)
+  const closePaid = useCallback(() => setPaid(null), [])
   const sub = state.subscriptions.find((s) => s.id === id)
   if (!sub) return null
 
@@ -26,15 +31,21 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
   const totalPaid = history.reduce((s, p) => s + (p.amount ?? 0), 0)
   const anchor = parseISO(sub.renewalDate)
 
-  // Titreşim koçan koparken (dokunuşun içinde) verilir; burada ses ve kayıt
+  // Titreşim koçan koparken (dokunuşun içinde) verilir; burada ses, kayıt ve "Ödendi" ekranı
   function markPaid() {
     play('paid')
     const dueDate = toKey(next)
-    const label = formatDate(next, 'd MMMM')
     dispatch({ type: 'payment/toggle', kind: 'subscription', refId: sub!.id, dueDate, amount: sub!.amount, currency: sub!.currency })
-    toast(`${label} ödemesi işaretlendi`, {
-      action: { label: 'Geri al', onClick: () => dispatch({ type: 'payment/toggle', kind: 'subscription', refId: sub!.id, dueDate }) },
-    })
+    setPaid({ title: `${sub!.name} · ${formatMoney(sub!.amount, sub!.currency)}`, detail: `${formatDate(next, 'd MMMM')} ödemesi` })
+  }
+
+  // Bu ayın işaretli ödemesi (sayfadaki "Geri al" bunu kaldırır, koçan geri gelir)
+  const thisMonth = toKey(new Date()).slice(0, 7)
+  const paidNow = history.find((p) => p.dueDate.startsWith(thisMonth))
+  function undoPaid() {
+    if (!paidNow) return
+    haptic()
+    dispatch({ type: 'payment/toggle', kind: 'subscription', refId: sub!.id, dueDate: paidNow.dueDate })
   }
 
   return (
@@ -85,7 +96,7 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
       </div>
 
       {/* Bu ayın ödemesi yapıldıysa not; işaretleme fişin koçanını koparmakla olur */}
-      {!canMarkPaid(next) && paidThisMonth(state.payments, sub.id) && <PaidNote month={new Date()} />}
+      {!canMarkPaid(next) && paidThisMonth(state.payments, sub.id) && <PaidNote month={new Date()} onUndo={undoPaid} />}
 
       <div className="mt-5 mb-2 flex items-baseline justify-between px-1 text-subtle">
         <h2 className="label">Geçmiş</h2>
@@ -104,6 +115,7 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
           ))}
         </ul>
       )}
+      {paid && <PaidOverlay title={paid.title} detail={paid.detail} onClose={closePaid} />}
     </>
   )
 }

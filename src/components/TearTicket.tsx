@@ -9,8 +9,8 @@ import { cn } from '@/lib/utils'
 // Yeterince kesip bırakınca koçan kopar, dönerek ve öne devrilerek düşer; ardından onTear çalışır (ödendi işaretlenir).
 // Yarıda bırakınca yerine oturur. canTear değilse sabittir.
 
-/** Bu orandan fazla kesilip bırakılırsa kopar */
-const TEAR_AT = 0.38
+/** Bu orana kadar kesilince parmak kaldırılmadan kendiliğinden kopar (geri alınamaz) */
+const TEAR_AT = 0.5
 const FALL_MS = 900
 
 // Özelliği tanıtma: ilk kez görünce koçan kendiliğinden biraz kesilip geri açılır ve altında tek cümlelik bir açıklama çıkar.
@@ -59,7 +59,6 @@ export function TearTicket({
   const [tip, setTip] = useState(() => !tipSeen())
   const showTip = tip && canTear
   const start = useRef<{ x: number; y: number; dir: 'h' | 'v' | null } | null>(null)
-  const passed = useRef(false)
   const tween = useRef(0)
   const progress = Math.min(1, cut / width)
 
@@ -95,13 +94,13 @@ export function TearTicket({
     setTip(false)
   }
 
-  function tear() {
+  function tear(from = cut) {
     if (falling) return
     haptic()
     closeTip()
     setFalling(true)
     // Kesik sona kadar tamamlanır, sonra kopan kâğıt sallanarak süzülüp düşer
-    animateCut(cut, width, 160, () => {
+    animateCut(from, width, 160, () => {
       const el = root.current
       if (!el) return
       const fall = el.animate(
@@ -185,7 +184,6 @@ export function TearTicket({
           cancelAnimationFrame(tween.current)
           setWidth(e.currentTarget.offsetWidth)
           start.current = { x: e.clientX, y: e.clientY, dir: null }
-          passed.current = false
         }}
         onPointerMove={(e) => {
           const s = start.current
@@ -198,19 +196,18 @@ export function TearTicket({
           }
           if (s.dir !== 'h') return
           const next = Math.min(width, Math.max(0, mx))
-          setCut(next)
-          // Kopma eşiği geçilince (ve geri dönülünce) hafif titreşim
-          const over = next / width > TEAR_AT
-          if (over !== passed.current) {
-            passed.current = over
-            haptic()
+          // Eşiğe gelince hemen kopar: parmak daha fazla çekmeden ya da geri gelmeden
+          if (next / width >= TEAR_AT) {
+            start.current = null
+            tear(next)
+            return
           }
+          setCut(next)
         }}
         onPointerUp={() => {
           const s = start.current
           start.current = null
-          if (s?.dir === 'h' && cut / width > TEAR_AT) tear()
-          else if (cut > 0) animateCut(cut, 0, 480)
+          if (s && cut > 0) animateCut(cut, 0, 480)
         }}
         onPointerCancel={() => {
           start.current = null

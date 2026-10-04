@@ -284,6 +284,23 @@ html[data-motion='fade']::view-transition-new(root) { animation-name: vt-fade-in
   .tear-hint { animation: none; }
 }
 
+/* "Ödendi" ekranı (PaidOverlay): yeşil daire zıplayarak büyür, tik kendini çizer */
+@keyframes paid-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes paid-check {
+  from { stroke-dashoffset: 60; }
+  to { stroke-dashoffset: 0; }
+}
+.paid-pop { animation: paid-pop 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.paid-check { stroke-dasharray: 60; stroke-dashoffset: 60; animation: paid-check 360ms 260ms ease-out forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .paid-pop { animation: none; }
+  .paid-check { animation: none; stroke-dashoffset: 0; }
+}
+
 /* "Ödendi" işareti dolunca küçük bir zıplama */
 @keyframes check-pop {
   0% { transform: scale(0.6); }
