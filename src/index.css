@@ -280,11 +280,10 @@ html[data-motion='fade']::view-transition-new(root) { animation-name: vt-fade-in
   30% { transform: translateX(5px); }
 }
 .tear-hint { display: inline-block; animation: tear-hint 1.8s ease-in-out infinite; }
-/* İlk kez: koçan kendiliğinden biraz kopar gibi kayıp geri gelir (iki kez) */
+/* İlk kez: koçanın sol ucu kendiliğinden biraz sarkıp geri gelir (iki kez); dönme noktası sağ üst köşe */
 @keyframes tear-demo {
-  0%, 100% { transform: translateX(0) rotate(0); }
-  40% { transform: translateX(64px) rotate(4deg); }
-  60% { transform: translateX(64px) rotate(4deg); }
+  0%, 100% { transform: rotate(0); }
+  40%, 60% { transform: rotate(-9deg); }
 }
 .tear-demo { animation: tear-demo 1.4s 0.7s cubic-bezier(0.32, 0.72, 0, 1) 2; }
 @media (prefers-reduced-motion: reduce) {
