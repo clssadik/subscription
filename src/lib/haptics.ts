@@ -1,26 +1,32 @@
 /**
- * Hafif titreşim (dokunma hissi). Android'de navigator.vibrate kullanılır.
- * iPhone Safari vibrate desteklemiyor; iOS 18'den beri gizli bir "switch" kutucuğuna tıklamak hafif bir titreşim veriyor.
- * Sadece bir dokunuşun içinden (onClick) çağrılınca çalışır.
+ * Hafif titreşim (dokunma hissi).
+ * iPhone'da Safari titreşim komutunu (navigator.vibrate) desteklemiyor; iOS 18'den beri bir "switch" kutucuğunun
+ * etiketine tıklamak telefonun kendi hafif titreşimini veriyor. Her seferinde yeni bir gizli kutucuk eklenip tıklanır
+ * ve hemen kaldırılır. Android'de navigator.vibrate kullanılır.
+ * Sadece bir dokunuşun içinden (onClick vb.) çağrılınca çalışır. iPhone'da Ayarlar > Sesler ve Dokunuş >
+ * Sistem Dokunuşları kapalıysa titreşim olmaz.
  */
-let label: HTMLLabelElement | null = null
+const isIOS =
+  typeof navigator !== 'undefined' &&
+  (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
 
 export function haptic() {
-  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-    navigator.vibrate(10)
-    return
-  }
-  if (!label) {
+  try {
+    if (!isIOS && typeof navigator.vibrate === 'function') {
+      navigator.vibrate(10)
+      return
+    }
+    const label = document.createElement('label')
+    label.setAttribute('aria-hidden', 'true')
+    label.style.display = 'none'
     const input = document.createElement('input')
     input.type = 'checkbox'
     input.setAttribute('switch', '')
-    input.id = 'haptic-switch'
-    label = document.createElement('label')
-    label.htmlFor = input.id
-    label.setAttribute('aria-hidden', 'true')
-    label.style.display = 'none'
     label.appendChild(input)
-    document.body.appendChild(label)
+    document.head.appendChild(label)
+    label.click()
+    label.remove()
+  } catch {
+    // titreşim desteklenmiyorsa sessizce geç
   }
-  label.click()
 }
