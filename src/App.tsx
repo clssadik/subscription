@@ -121,7 +121,7 @@ function Main({ user }: { user: User }) {
               inert={!active}
               aria-hidden={!active || undefined}
               className={cn(
-                'app-screen mx-auto flex max-w-md flex-col bg-page px-3 pt-[max(1rem,calc(env(safe-area-inset-top)+14px))] pb-24',
+                'app-screen mx-auto flex max-w-md flex-col bg-page px-3 pt-[var(--top-gap)] pb-24',
                 // Görünmeyen sekme ekranın dışında bekler: iPhone görünmez de olsa üstteki listeye parmağı verip kaydırmayı/esnemeyi yutuyordu
                 !active && 'pointer-events-none invisible -translate-x-[200vw]',
               )}
@@ -140,7 +140,7 @@ function Main({ user }: { user: User }) {
           // Liste sekmeleri gibi sabit ve kendi kayan alanı var: sayfanın kendisi kaymaz (iPhone'da yukarıdan çekince yenileme olmaz, iki uçta esner)
           className={cn(
             cssMotion && `screen-${cssMotion}`,
-            'app-screen mx-auto flex max-w-md flex-col bg-page px-3 pt-[max(1rem,calc(env(safe-area-inset-top)+14px))] pb-24',
+            'app-screen mx-auto flex max-w-md flex-col bg-page px-3 pt-[var(--top-gap)] pb-24',
           )}
         >
           <ScrollPage>
@@ -156,12 +156,12 @@ function Main({ user }: { user: User }) {
           </ScrollPage>
         </main>
       )}
-      {/* Saat/pil çubuğu: iOS 26 orayı şeffaf bırakmıyor, en üstteki sabit öğenin rengiyle dolduruyor. Bu katman zemin renginde:
-          çubuk sayfayla tek parça görünür, yukarı kayan liste çubuğa varmadan 14px'te solar. İçerik bu katmanın altından başlar. */}
+      {/* Üst kenar: yukarı kayan liste en üste varmadan zemin rengine solar (keskin kesim ve iOS'un kenar bulanıklığı görünmez).
+          İçerik bu katmanın altından başlar (--top-gap, src/index.css). */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-x-0 top-0 z-30 h-[calc(env(safe-area-inset-top)+14px)]"
-        style={{ background: 'linear-gradient(to bottom, var(--page) env(safe-area-inset-top), transparent)' }}
+        className="pointer-events-none fixed inset-x-0 top-0 z-30 h-[var(--top-gap)]"
+        style={{ background: 'linear-gradient(to bottom, var(--page) calc(100% - 14px), transparent)' }}
       />
       <BottomNav
         tab={tab}

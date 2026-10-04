@@ -184,6 +184,11 @@
 /* Tam ekran sayfalar ve alt menü. Safari'de görünen alana sabit (inset 0 / bottom 0).
    Ana ekran uygulamasında iPhone, uygulamadan çıkıp dönünce görünen alanı kısa hesaplıyor ve alta sabit her şey yukarı kayıyordu;
    orada ekranın tam boyu (100lvh) kullanılır. Safari'de lvh alt araç çubuğunun arkasına taştığı için sadece ana ekranda. */
+/* Sayfa içeriğinin üstten boşluğu. Ana ekran uygulamasında iOS 26 üst kenara bulanık bir geçiş çiziyor; başlık onun altında kalsın diye daha geniş. */
+:root { --top-gap: max(1rem, calc(env(safe-area-inset-top) + 14px)); }
+@media (display-mode: standalone) {
+  :root { --top-gap: max(2.75rem, calc(env(safe-area-inset-top) + 14px)); }
+}
 .app-screen { position: fixed; inset: 0; }
 .app-bottom { position: fixed; left: 0; right: 0; bottom: 0; }
 @media (display-mode: standalone) {

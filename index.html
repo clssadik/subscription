@@ -19,14 +19,17 @@
       } catch (e) {}
     </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <!-- Saat/pil çubuğu şeffaf; sayfa altından başlar. Çubuğun arkasına kendi buzlu camımız çizilir (App.tsx StatusGlass):
-         kayan liste çubuğun altından bulanık geçer. -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- Saat/pil çubuğu standart (düz, tema renginde). "black-translucent" iOS 26'da çubuğu yine de bir renkle dolduruyor ve
+         uygulamaya geri dönünce sayfa yüksekliğini kısa hesaplatıp alt menüyü yukarı kaydırıyordu. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Subly" />
     <title>Subly</title>
     <!-- Açılış ekranı: uygulama kodu yüklenmeden görünür, src/main.tsx hazır olunca soldurup kaldırır.
          Renkler burada: ana stil dosyası henüz yüklenmemiş olabilir. -->
     <style>
+      /* Sayfanın zemini en baştan: uygulama kodu yüklenene kadar kenarlarda beyaz görünmesin */
+      html, body { margin: 0; background: #F1ECE2; }
+      html.dark, html.dark body { background: #000; }
       #splash {
         position: fixed; inset: 0; z-index: 100;
         display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
