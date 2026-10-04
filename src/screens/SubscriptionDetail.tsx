@@ -45,31 +45,39 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
         <RoundButton label="Düzenle" onClick={() => nav.edit({ kind: 'subscription', id: sub.id })}><PencilIcon className="size-[18px]" /></RoundButton>
       </div>
 
-      <section className="flex h-[200px] flex-col items-center rounded-[120px_120px_22px_22px] bg-bh-yellow px-4 pt-6 pb-3.5 text-center text-[#141414]">
-        <Logo serviceKey={sub.serviceKey} name={sub.name} size={50} />
-        <h1 className="mt-1.5 font-label text-xl font-medium">{sub.name}</h1>
-        <p className="text-[11px] opacity-75">{CYCLE_LABELS[sub.cycle]} · {card ? `${card.bankName} •• ${card.last4}` : 'kart seçilmedi'}</p>
-        <div className="mt-auto flex items-baseline gap-3">
-          <Money amount={sub.amount} currency={sub.currency} size={34} />
-          <span className="label rounded-lg bg-[#141414] px-2 py-1 text-bh-yellow">{dueLabel(next)}</span>
+      {/* Ödeme kartı (fiş): tutar en büyük şey. Kesik çizgide iki yanda zemin renginde yarım daire, fiş koçanı gibi. */}
+      <section className="relative overflow-hidden rounded-[22px] bg-hero px-4 pt-4 pb-3.5 text-hero-fg">
+        <span aria-hidden className="absolute -top-8 -right-8 size-28 rounded-full bg-bh-blue dark:bg-bh-yellow" />
+        <Logo serviceKey={sub.serviceKey} name={sub.name} size={44} className="relative" />
+        <h1 className="relative mt-3 truncate font-label text-lg font-medium">{sub.name}</h1>
+        <div className="relative leading-tight">
+          <Money amount={sub.amount} currency={sub.currency} size={46} />
+        </div>
+        <div aria-hidden className="relative -mx-4 my-3 flex items-center">
+          <span className="-ml-3 size-6 shrink-0 rounded-full bg-page" />
+          <span className="mx-1.5 flex-1 border-t border-dashed border-current opacity-25" />
+          <span className="-mr-3 size-6 shrink-0 rounded-full bg-page" />
+        </div>
+        <div className="flex justify-between gap-3 text-[11px] opacity-75">
+          <span className="truncate">{card ? `${card.bankName} •• ${card.last4}` : 'kart seçilmedi'}</span>
+          <span className="shrink-0">
+            {CYCLE_LABELS[sub.cycle]} · {sub.cycle === 'monthly' ? `her ayın ${dayOf(anchor.getDate())}` : `her yıl ${formatDate(anchor, 'd MMMM')}`}
+          </span>
         </div>
       </section>
 
       <div className="mt-2 grid grid-cols-2 gap-2">
-        <Stat label="Sonraki" value={formatDate(next, 'd MMMM')} sub={formatDate(next, 'EEEE')} />
-        <Stat
-          label="Periyot"
-          value={CYCLE_LABELS[sub.cycle]}
-          sub={sub.cycle === 'monthly' ? `her ayın ${dayOf(anchor.getDate())}` : `her yıl ${formatDate(anchor, 'd MMMM')}`}
-          shape={<span aria-hidden className="absolute -top-[18px] -right-[18px] size-[50px] rounded-full bg-bh-blue/90" />}
-        />
+        <div className="flex h-[92px] flex-col rounded-[22px] bg-bh-yellow p-3 text-[#141414]">
+          <span className="label">Sonraki</span>
+          <span className="num mt-auto text-lg">{formatDate(next, 'd MMMM')}</span>
+          <span className="text-[11px]">{dueLabel(next)} · {formatDate(next, 'EEEE')}</span>
+        </div>
         <Stat
           label="Yıllık maliyet"
           value={formatMoney(sub.cycle === 'monthly' ? sub.amount * 12 : sub.amount, sub.currency)}
           sub="bu fiyatla"
           shape={<span aria-hidden className="absolute right-0 bottom-0 size-[34px] rounded-tl-full bg-bh-red" />}
         />
-        <Stat label="Toplam ödenen" value={formatMoney(totalPaid, sub.currency)} sub={`${history.length} ödeme`} />
       </div>
 
       {/* Gelecek ayın ödemesi, ay değişmeden işaretlenemez */}
@@ -82,9 +90,12 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
         paidThisMonth(state.payments, sub.id) && <PaidNote month={new Date()} />
       )}
 
-      <h2 className="label mt-5 mb-2 px-1 text-subtle">Geçmiş</h2>
+      <div className="mt-5 mb-2 flex items-baseline justify-between px-1 text-subtle">
+        <h2 className="label">Geçmiş</h2>
+        {history.length > 0 && <span className="num text-[11px]">{formatMoney(totalPaid, sub.currency)} · {history.length} ödeme</span>}
+      </div>
       {history.length === 0 ? (
-        <p className="rounded-[18px] bg-surface px-3.5 py-3 text-sm text-subtle">Henüz ödendi işaretlenmiş bir ödeme yok.</p>
+        <p className="rounded-[18px] bg-surface px-3.5 py-3 text-sm text-subtle">Sıradaki ödeme {formatDate(next, 'd MMMM')}. Ödendi işaretleyince burada görünür.</p>
       ) : (
         <ul className="grid gap-1.5">
           {history.map((p) => (
