@@ -9,7 +9,7 @@
 @import "@fontsource/outfit/500.css";
 @import "@fontsource/outfit/600.css";
 
-/* Tema: açık = soğuk açık gri, koyu = grafit; vurgu titanyum (.metal). Bauhaus mavi/kırmızı süslemelerde kalır. Varsayılan telefonun ayarını izler;
+/* Tema: açık = "Gündüz Bauhaus", koyu = "Gece Bauhaus". Varsayılan telefonun ayarını izler;
    Hesap ekranından elle seçilebilir. <html class="dark"> src/lib/theme.ts ve index.html'deki betikle konur. */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -20,8 +20,6 @@
 
     /* Bauhaus renkleri: iki temada da aynı */
     --color-bh-yellow: #F4C21B;
-    /* Titanyum: vurgu rengi (eski sarının yerine). Düz hali halka, ikon ve çizgiler için; yüzeyler .metal ile parlak metal */
-    --color-metal: #9A9CA1;
     --color-bh-blue: #1F4FB4;
     --color-bh-red: #D9381E;
     --color-bh-green: #22B573;
@@ -66,15 +64,15 @@
 }
 
 :root {
-    --page: #EEEEF0;
-    --ink: #141416;
-    --subtle: #77787E;
+    --page: #F1ECE2;
+    --ink: #141414;
+    --subtle: #857C6D;
     --surface: #FFFFFF;
-    --line: #DEDEE2;
-    --hero: #141416;
+    --line: #E2DBCD;
+    --hero: #141414;
     --hero-fg: #F2F2F2;
-    --nav: #141416;
-    --nav-off: #8A8B91;
+    --nav: #141414;
+    --nav-off: #8A8172;
 
     --background: var(--page);
     --foreground: var(--ink);
@@ -93,20 +91,20 @@
     --destructive: #D9381E;
     --border: var(--line);
     --input: var(--line);
-    --ring: #9A9CA1;
+    --ring: #F4C21B;
     --radius: 0.875rem;
 }
 
 :root.dark {
-    --page: #0E0E10;
-    --ink: #EDEDEF;
-    --subtle: #84858B;
-    --surface: #18181B;
-    --line: #2A2A2E;
-    --hero: #1F1F23;
+    --page: #000000;
+    --ink: #F2F2F2;
+    --subtle: #858585;
+    --surface: #141414;
+    --line: #262626;
+    --hero: #1F4FB4;
     --hero-fg: #FFFFFF;
-    --nav: #18181B;
-    --nav-off: #5E5F64;
+    --nav: #141414;
+    --nav-off: #5C5C5C;
     color-scheme: dark;
 }
 
@@ -158,43 +156,6 @@
   @media (prefers-reduced-motion: reduce) {
     .pressable:active { transform: none; }
   }
-}
-
-/* Titanyum yüzey: fırçalanmış metal geçiş + ince kenar ışığı + birkaç saniyede bir üstünden geçen ışık parıltısı.
-   Koyu temada gümüş (yazı koyu), açık temada koyu titanyum (yazı beyaz): açık zeminde gümüş soluk kalıyordu.
-   Yazı rengi buradan gelir (eski sarı yüzeylerdeki text-[#141414] sınıflarını ezer). */
-.metal {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  color: #FFFFFF;
-  background: linear-gradient(125deg, #5E6066 0%, #2E2F33 34%, #707278 52%, #26272A 78%, #4C4E53 100%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), inset 0 0 0 0.5px rgb(0 0 0 / 0.45);
-  --sheen: rgb(255 255 255 / 0.22);
-}
-.dark .metal {
-  color: #141414;
-  background: linear-gradient(125deg, #F4F4F5 0%, #B4B6BB 34%, #ECEDEF 52%, #9C9EA3 78%, #D4D5D8 100%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7), inset 0 0 0 0.5px rgb(0 0 0 / 0.12);
-  --sheen: rgb(255 255 255 / 0.75);
-}
-/* Işık parıltısı: içeriğin altında, zeminin üstünde çapraz bir ışık şeridi soldan sağa geçer, sonra bir süre bekler */
-.metal::before {
-  content: '';
-  position: absolute;
-  inset: -20% -60%;
-  z-index: -1;
-  pointer-events: none;
-  background: linear-gradient(105deg, transparent 42%, var(--sheen) 50%, transparent 58%);
-  transform: translateX(-70%);
-  animation: metal-sheen 6s cubic-bezier(0.45, 0, 0.25, 1) infinite;
-}
-@keyframes metal-sheen {
-  0% { transform: translateX(-70%); }
-  45%, 100% { transform: translateX(70%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .metal::before { animation: none; opacity: 0; }
 }
 
 /* Logo kutusu: açık temada siyah, koyu temada beyaz. --logo-ink = kutudaki siyah/beyaz logoların rengi */

@@ -25,12 +25,10 @@ Logosu olmayan bir servis eklendiğinde uygulama bunu Supabase'deki `missing_log
 - Banka logoları ayrı: `src/assets/banks/<anahtar>.svg` (beyaz tek renk tam logo) ve `symbols/<anahtar>.svg`
   (sadece sembol, küçük kutular için). Anahtar `BANKS` içindeki `key` (`src/lib/banks.ts`). Sembolü olmayan bankada baş harf görünür.
 
-## Tasarım kuralları (Titanyum bento)
+## Tasarım kuralları (Gündüz / Gece Bauhaus bento)
 
-- Renkler `src/index.css` içinde. Vurgu titanyum: yüzeylerde `.metal` (koyu temada gümüş + koyu yazı, açık temada koyu titanyum + beyaz yazı; üstünden ışık parıltısı geçer),
-  halka/ikon/çizgide düz `metal` rengi (`ring-metal`, `text-metal`). Sarı artık vurgu olarak kullanılmaz;
-  Bauhaus mavi/kırmızı sadece süslemelerde kalır, renk ekrana asıl servis ve banka logolarından gelir.
-  Tema varsayılan olarak telefonun ayarını izler (açık = soğuk açık gri, koyu = grafit); Hesap ekranından elle seçilebilir (`src/lib/theme.ts`).
+- Renkler `src/index.css` içinde: Bauhaus sarı/mavi/kırmızı + temaya göre değişen yüzeyler.
+  Tema varsayılan olarak telefonun ayarını izler (açık = krem zemin, koyu = OLED siyah); Hesap ekranından elle seçilebilir (`src/lib/theme.ts`).
 - Kalın yazı (700, `.num-bold`) sadece sayfa başlıkları, büyük toplamlar ve acil uyarılar için.
   İsimler ve tutarlar 500, geri kalan 400.
 - Rakamlar Space Grotesk (`.num`), etiketler Outfit büyük harf (`.label`), metin DM Sans.

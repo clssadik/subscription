@@ -29,8 +29,8 @@ function seenWelcome() {
   }
 }
 
-const field = 'min-h-12 w-full rounded-2xl bg-surface px-4 text-base outline-none placeholder:text-subtle/70 focus:ring-2 focus:ring-metal'
-const primary = 'pressable flex min-h-12 w-full items-center justify-center rounded-2xl metal font-label text-base font-semibold text-[#141414] disabled:opacity-60'
+const field = 'min-h-12 w-full rounded-2xl bg-surface px-4 text-base outline-none placeholder:text-subtle/70 focus:ring-2 focus:ring-bh-yellow'
+const primary = 'pressable flex min-h-12 w-full items-center justify-center rounded-2xl bg-bh-yellow font-label text-base font-semibold text-[#141414] disabled:opacity-60'
 
 export function AuthFlow() {
   const [step, setStep] = useState<Step>(() => (seenWelcome() ? 'login' : 'welcome'))
@@ -97,7 +97,7 @@ function Welcome({ onStart, onLogin }: { onStart: () => void; onLogin: () => voi
           <button onClick={onLogin} className="min-h-11 text-sm text-subtle underline-offset-4 hover:underline">
             Hesabım var
           </button>
-          <button onClick={onStart} aria-label="Başla" className="pressable flex size-16 items-center justify-center rounded-full metal text-[#141414]">
+          <button onClick={onStart} aria-label="Başla" className="pressable flex size-16 items-center justify-center rounded-full bg-bh-yellow text-[#141414]">
             <ArrowRightIcon className="size-7" strokeWidth={2.2} />
           </button>
         </div>
@@ -303,7 +303,7 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
                   key={i}
                   className={cn(
                     'num flex h-14 items-center justify-center rounded-[14px] bg-surface text-2xl transition-shadow',
-                    active && 'ring-2 ring-metal',
+                    active && 'ring-2 ring-bh-yellow',
                   )}
                 >
                   {code[i] ?? ''}

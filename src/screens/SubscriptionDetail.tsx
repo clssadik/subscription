@@ -47,7 +47,7 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
 
       {/* Ödeme kartı (fiş): tutar en büyük şey. Kesik çizgide iki yanda zemin renginde yarım daire, fiş koçanı gibi. */}
       <section className="relative overflow-hidden rounded-[22px] bg-hero px-4 pt-4 pb-3.5 text-hero-fg">
-        <span aria-hidden className="absolute -top-8 -right-8 size-28 rounded-full bg-bh-blue dark:bg-metal" />
+        <span aria-hidden className="absolute -top-8 -right-8 size-28 rounded-full bg-bh-blue dark:bg-bh-yellow" />
         <Logo serviceKey={sub.serviceKey} name={sub.name} size={44} className="relative" />
         <h1 className="relative mt-3 truncate font-label text-lg font-medium">{sub.name}</h1>
         <div className="relative leading-tight">
@@ -67,7 +67,7 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
       </section>
 
       <div className="mt-2 grid grid-cols-2 gap-2">
-        <div className="flex h-[92px] flex-col rounded-[22px] metal p-3 text-[#141414]">
+        <div className="flex h-[92px] flex-col rounded-[22px] bg-bh-yellow p-3 text-[#141414]">
           <span className="label">Sonraki</span>
           <span className="num mt-auto text-lg">{formatDate(next, 'd MMMM')}</span>
           <span className="text-[11px]">{dueLabel(next)} · {formatDate(next, 'EEEE')}</span>
@@ -83,7 +83,7 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
       {/* Gelecek ayın ödemesi, ay değişmeden işaretlenemez */}
       {canMarkPaid(next) ? (
         <button onClick={markPaid} className="pressable mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-ink font-semibold text-page">
-          <CheckCircle2Icon className="size-[18px] text-metal" />
+          <CheckCircle2Icon className="size-[18px] text-bh-yellow" />
           {daysUntil(next) <= 0 ? 'Ödendi olarak işaretle' : `${formatDate(next, 'd MMMM')} ödendi olarak işaretle`}
         </button>
       ) : (

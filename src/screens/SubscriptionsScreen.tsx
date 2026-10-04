@@ -64,7 +64,7 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
           <div
             className={cn(
               'flex h-12 w-11 shrink-0 flex-col items-center justify-center rounded-xl',
-              isToday ? 'metal text-[#141414]' : 'bg-page dark:bg-bh-blue/30 dark:text-white',
+              isToday ? 'bg-bh-yellow text-[#141414]' : 'bg-page dark:bg-bh-blue/30 dark:text-white',
             )}
           >
             <span className="num num-bold text-lg leading-none">{next.getDate()}</span>

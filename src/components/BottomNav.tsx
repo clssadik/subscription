@@ -40,7 +40,7 @@ export function BottomNav({ tab, onTab, initial }: { tab: Tab; onTab: (t: Tab) =
                 tab === id ? 'glass-on text-ink' : 'text-ink/75',
               )}
             >
-              <Icon className={cn('size-[22px]', tab === id && 'text-ink')} strokeWidth={1.8} />
+              <Icon className={cn('size-[22px]', tab === id && 'text-[#C9930A] dark:text-bh-yellow')} strokeWidth={1.8} />
               <span className="font-label text-[10px] font-medium">{label}</span>
             </button>
           ))}
@@ -51,7 +51,7 @@ export function BottomNav({ tab, onTab, initial }: { tab: Tab; onTab: (t: Tab) =
           aria-current={onAccount ? 'page' : undefined}
           className={cn('glass pressable flex size-[62px] shrink-0 items-center justify-center rounded-full', onAccount && 'glass-on')}
         >
-          <span className="flex size-10 items-center justify-center rounded-full metal font-label text-lg font-medium text-[#141414]">
+          <span className="flex size-10 items-center justify-center rounded-full bg-bh-yellow font-label text-lg font-medium text-[#141414]">
             {initial ?? <UserIcon className="size-[22px]" strokeWidth={1.8} />}
           </span>
         </button>

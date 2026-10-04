@@ -83,7 +83,7 @@ function KindButton({ active, onClick, children }: { active: boolean; onClick: (
       className={cn(
         'pressable flex h-16 flex-1 flex-col items-center justify-center gap-0.5 font-label text-sm',
         'rounded-[14px]',
-        active ? 'metal font-medium text-[#141414]' : 'bg-surface text-subtle',
+        active ? 'bg-bh-yellow font-medium text-[#141414]' : 'bg-surface text-subtle',
       )}
     >
       {children}

@@ -97,7 +97,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
                 {months.map((m, i) => (
                   <div key={i} className="flex-1 text-center">
                     <div
-                      className={cn(i === 5 ? 'rounded-[14px_14px_4px_4px] metal' : 'rounded bg-white/20')}
+                      className={cn(i === 5 ? 'rounded-[14px_14px_4px_4px] bg-bh-yellow' : 'rounded bg-white/20')}
                       style={{ height: Math.max(3, (sums[i] / max) * 52) }}
                     />
                     <div className="mt-1 text-[9px] opacity-70">{formatDate(m, 'LLL')}</div>

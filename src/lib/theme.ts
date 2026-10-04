@@ -26,7 +26,7 @@ function isDark() {
 function apply() {
   const dark = isDark()
   document.documentElement.classList.toggle('dark', dark)
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0E0E10' : '#EEEEF0')
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#000000' : '#F1ECE2')
   listeners.forEach((l) => l())
 }
 

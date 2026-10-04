@@ -34,7 +34,7 @@ export function Segmented<T extends string>({
   options,
   onChange,
   className,
-  activeClass = 'metal text-[#141414]',
+  activeClass = 'bg-bh-yellow text-[#141414]',
 }: {
   value: T
   options: { value: T; label: string }[]
@@ -68,7 +68,7 @@ export function Segmented<T extends string>({
 export function PrimaryButton({ children, className, ...props }: React.ComponentProps<'button'>) {
   return (
     <button
-      className={cn('pressable flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] metal font-label text-base font-semibold text-[#141414]', className)}
+      className={cn('pressable flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-bh-yellow font-label text-base font-semibold text-[#141414]', className)}
       {...props}
     >
       {children}
