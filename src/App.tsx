@@ -121,7 +121,7 @@ function Main({ user }: { user: User }) {
               inert={!active}
               aria-hidden={!active || undefined}
               className={cn(
-                'fixed inset-0 mx-auto flex max-w-md flex-col px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-24',
+                'fixed inset-0 mx-auto flex max-w-md flex-col bg-page px-3 pt-[max(1rem,calc(env(safe-area-inset-top)+14px))] pb-24',
                 // Görünmeyen sekme ekranın dışında bekler: iPhone görünmez de olsa üstteki listeye parmağı verip kaydırmayı/esnemeyi yutuyordu
                 !active && 'pointer-events-none invisible -translate-x-[200vw]',
               )}
@@ -140,7 +140,7 @@ function Main({ user }: { user: User }) {
           // Liste sekmeleri gibi sabit ve kendi kayan alanı var: sayfanın kendisi kaymaz (iPhone'da yukarıdan çekince yenileme olmaz, iki uçta esner)
           className={cn(
             cssMotion && `screen-${cssMotion}`,
-            'fixed inset-0 mx-auto flex max-w-md flex-col px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-24',
+            'fixed inset-0 mx-auto flex max-w-md flex-col bg-page px-3 pt-[max(1rem,calc(env(safe-area-inset-top)+14px))] pb-24',
           )}
         >
           <ScrollPage>
@@ -156,8 +156,13 @@ function Main({ user }: { user: User }) {
           </ScrollPage>
         </main>
       )}
-      {/* Saat/pil çubuğunun arkası: buzlu cam. Kayan liste çubuğun altından bulanık geçer (Safari sekmesinde yüksekliği 0) */}
-      <div aria-hidden className="status-glass pointer-events-none fixed inset-x-0 top-0 z-30 h-[env(safe-area-inset-top)]" />
+      {/* Saat/pil çubuğu: iOS 26 orayı şeffaf bırakmıyor, en üstteki sabit öğenin rengiyle dolduruyor. Bu katman zemin renginde:
+          çubuk sayfayla tek parça görünür, yukarı kayan liste çubuğa varmadan 14px'te solar. İçerik bu katmanın altından başlar. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 top-0 z-30 h-[calc(env(safe-area-inset-top)+14px)]"
+        style={{ background: 'linear-gradient(to bottom, var(--page) env(safe-area-inset-top), transparent)' }}
+      />
       <BottomNav
         tab={tab}
         initial={initials(settings.name, user.email ?? '')}

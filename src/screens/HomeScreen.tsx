@@ -121,7 +121,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
         ref={scroller}
         data-scroller
         onScroll={onScroll}
-        className="relative -mx-3 mt-[calc(-1*max(1rem,env(safe-area-inset-top)))] min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative -mx-3 mt-[calc(-1*max(1rem,calc(env(safe-area-inset-top)+14px)))] min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pt-[max(1rem,calc(env(safe-area-inset-top)+14px))] pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {/* Üstteki blok (toplam, sıradaki, iki küçük kart) yerinde sabit kalır ve kaydırınca birlikte küçülür.
             Arkası küçük kartların ortasına kadar opak zemin: aradaki boşluklardan içerik görünmez. Liste sadece küçük kartların
@@ -129,7 +129,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
             altına alttaki menüdeki gibi 40px'lik solma eklenir (%60 → şeffaf). */}
         {/* Yüksekliği sıfır: akışta yer kaplamaz, blok küçülürken liste alanı değişmez (hızlı kaydırmada zıplama olmaz) */}
         {/* Blok, kaydırma sınırı kadar yüksek bir kutunun içinde yapışık: liste sona gelip esneyince blok da onunla gider */}
-        <div className="pointer-events-none absolute inset-x-0 top-[max(1rem,env(safe-area-inset-top))] z-10" style={{ height: limit }}>
+        <div className="pointer-events-none absolute inset-x-0 top-[max(1rem,calc(env(safe-area-inset-top)+14px))] z-10" style={{ height: limit }}>
         <div className="pointer-events-auto sticky top-0 h-0">
           <div ref={block} className="shrink-block absolute inset-x-0 top-0 px-3 pb-2">
             <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />

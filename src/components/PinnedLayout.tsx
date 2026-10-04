@@ -53,12 +53,12 @@ export function PinnedLayout({
         ref={scroller}
         data-scroller
         onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
-        className="relative -mx-3 mt-[calc(-1*max(1rem,env(safe-area-inset-top)))] min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative -mx-3 mt-[calc(-1*max(1rem,calc(env(safe-area-inset-top)+14px)))] min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pt-[max(1rem,calc(env(safe-area-inset-top)+14px))] pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {pinned ? (
           <>
             {/* Blok, kaydırma sınırı kadar yüksek bir kutunun içinde yapışık: liste sona gelip esneyince blok da onunla gider */}
-            <div className="pointer-events-none absolute inset-x-0 top-[max(1rem,env(safe-area-inset-top))] z-10" style={{ height: limit }}>
+            <div className="pointer-events-none absolute inset-x-0 top-[max(1rem,calc(env(safe-area-inset-top)+14px))] z-10" style={{ height: limit }}>
               {/* Yüksekliği sıfır: akışta yer kaplamaz, liste altından geçer */}
               <div className="pointer-events-auto sticky top-0 h-0">
                 <div ref={block} className="absolute inset-x-0 top-0 px-3 pb-2">
