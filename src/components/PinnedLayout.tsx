@@ -53,18 +53,18 @@ export function PinnedLayout({
         ref={scroller}
         data-scroller
         onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
-        className="relative -mx-3 min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative -mx-3 -mt-8 min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pt-8 pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {pinned ? (
           <>
             {/* Blok, kaydırma sınırı kadar yüksek bir kutunun içinde yapışık: liste sona gelip esneyince blok da onunla gider */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-10" style={{ height: limit }}>
+            <div className="pointer-events-none absolute inset-x-0 top-8 z-10" style={{ height: limit }}>
               {/* Yüksekliği sıfır: akışta yer kaplamaz, liste altından geçer */}
               <div className="pointer-events-auto sticky top-0 h-0">
                 <div ref={block} className="absolute inset-x-0 top-0 px-3 pb-2">
                   <div
                     aria-hidden
-                    className="pointer-events-none absolute inset-0 -z-10"
+                    className="pointer-events-none absolute inset-x-0 -top-8 bottom-0 -z-10"
                     style={{ background: `linear-gradient(to bottom, var(--page) calc(100% - 30px), ${edge})` }}
                   />
                   <div

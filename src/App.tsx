@@ -120,7 +120,7 @@ function Main({ user }: { user: User }) {
               inert={!active}
               aria-hidden={!active || undefined}
               className={cn(
-                'fixed inset-x-0 top-0 mx-auto flex h-svh max-w-md flex-col px-3 pt-[max(1rem,calc(env(safe-area-inset-top)+14px))] pb-24',
+                'fixed inset-x-0 top-0 mx-auto flex h-svh max-w-md flex-col px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-24',
                 // Görünmeyen sekme ekranın dışında bekler: iPhone görünmez de olsa üstteki listeye parmağı verip kaydırmayı/esnemeyi yutuyordu
                 !active && 'pointer-events-none invisible -translate-x-[200vw]',
               )}
@@ -139,7 +139,7 @@ function Main({ user }: { user: User }) {
           // Liste sekmeleri gibi sabit ve kendi kayan alanı var: sayfanın kendisi kaymaz (iPhone'da yukarıdan çekince yenileme olmaz, iki uçta esner)
           className={cn(
             cssMotion && `screen-${cssMotion}`,
-            'fixed inset-x-0 top-0 mx-auto flex h-svh max-w-md flex-col px-3 pt-[max(1rem,calc(env(safe-area-inset-top)+14px))] pb-24',
+            'fixed inset-x-0 top-0 mx-auto flex h-svh max-w-md flex-col px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-24',
           )}
         >
           <ScrollPage>
