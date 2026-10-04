@@ -43,6 +43,7 @@ export function TearTicket({
   hint,
   note,
   onTear,
+  restore = 0,
 }: {
   top: ReactNode
   stub: ReactNode
@@ -52,6 +53,8 @@ export function TearTicket({
   /** Kesilemezken koçanda neden yazar, ör. "19 Şubat ödemesi o ay gelince kesilebilir" */
   note?: string
   onTear: () => void
+  /** Her artışta (ödeme geri alınınca) koçan aşağıdan dönerek uçup fişe geri yapışır */
+  restore?: number
 }) {
   const root = useRef<HTMLDivElement>(null)
   const [cut, setCut] = useState(0)
@@ -77,6 +80,20 @@ export function TearTicket({
     }
     tween.current = requestAnimationFrame(step)
   }
+
+  // Geri alınınca: koptuğu yerden (aşağıdan) dönerek gelip fişe yapışır, yerine otururken hafifçe seker
+  useEffect(() => {
+    if (!restore || !root.current) return
+    root.current.animate(
+      [
+        { transform: 'translate(-30px, 300px) rotate(-26deg) rotateY(-40deg) rotateX(55deg)', opacity: 0 },
+        { transform: `translate(0, -10px) ${pose(0.5)}`, opacity: 1, offset: 0.62 },
+        { transform: pose(-0.12), offset: 0.82 },
+        { transform: pose(0) },
+      ],
+      { duration: 620, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+    )
+  }, [restore])
 
   // Tanıtım: ilk açılışta koçan iki kez biraz kesilip geri açılır
   useEffect(() => {

@@ -20,6 +20,8 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
   // Koçan koparılınca açılan "Ödendi" ekranı
   const [paid, setPaid] = useState<{ title: string; detail: string } | null>(null)
   const closePaid = useCallback(() => setPaid(null), [])
+  // Geri alınınca artar: koçan fişe geri uçar
+  const [restored, setRestored] = useState(0)
   const sub = state.subscriptions.find((s) => s.id === id)
   if (!sub) return null
 
@@ -45,7 +47,9 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
   function undoPaid() {
     if (!paidNow) return
     haptic()
+    play('undo')
     dispatch({ type: 'payment/toggle', kind: 'subscription', refId: sub!.id, dueDate: paidNow.dueDate })
+    setRestored((n) => n + 1)
   }
 
   return (
@@ -61,6 +65,7 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
         canTear={canMarkPaid(next)}
         hint={daysUntil(next) <= 0 ? 'Kesip ödendi işaretle' : `${formatDate(next, 'd MMMM')} ödemesini kesip işaretle`}
         onTear={markPaid}
+        restore={restored}
         // Gelecek ayların ödemesi o ay gelmeden işaretlenemez: koçanda nedeni yazar (bu ay ödendiyse alttaki not yeter)
         note={paidThisMonth(state.payments, sub.id) ? undefined : `${formatDate(next, 'd MMMM')} ödemesi o ay gelince kesilebilir`}
         top={

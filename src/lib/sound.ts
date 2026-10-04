@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 
 // Kısa arayüz sesleri. Ses dosyası yok, notalar Web Audio ile o an üretilir.
 // Tercih bu cihazda saklanır, varsayılan açık. iPhone sessizdeyse ses çıkmaz ("ambient": arkada çalan müziği de kesmez).
-export type Sound = 'paid' | 'save' | 'delete'
+export type Sound = 'paid' | 'save' | 'delete' | 'undo'
 
 const KEY = 'sound'
 const listeners = new Set<() => void>()
@@ -59,6 +59,10 @@ export function play(sound: Sound) {
       // "Ding": iki parlak nota, yukarı doğru
       note(ctx, t, 1047, 0.18)
       note(ctx, t + 0.08, 1568, 0.32)
+    } else if (sound === 'undo') {
+      // Geri alma: "ding"in tersi, iki yumuşak nota aşağı doğru
+      note(ctx, t, 1568, 0.14, { volume: 0.1 })
+      note(ctx, t + 0.07, 1047, 0.24, { volume: 0.1 })
     } else if (sound === 'save') {
       // Yumuşak onay: hafifçe yükselen tek nota
       note(ctx, t, 784, 0.2, { type: 'triangle', volume: 0.1, glide: 988 })
