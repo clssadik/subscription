@@ -30,11 +30,13 @@ function DrawerOverlay({
   className,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Overlay>) {
+  // Karartma vaul'un kendi 0,5 sn'lik solmasıyla panelle aynı hızda gelir ve gider (hızlı solma kapanışta kopuk duruyordu).
+  // Arka plan bulanıklığı yok: iPhone'da kayan panelin arkasında bulanıklık kapanışı takılttırıyor.
   return (
     <DrawerPrimitive.Overlay
       data-slot="drawer-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-black/10 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 z-50 bg-black/30",
         className
       )}
       {...props}
