@@ -1,5 +1,6 @@
 import type { User } from '@supabase/supabase-js'
 import { useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { toast } from 'sonner'
 import { AddSheet, type SheetTarget } from '@/components/AddSheet'
 import { BottomNav, type Tab } from '@/components/BottomNav'
@@ -26,6 +27,8 @@ export interface Nav {
   openCard: (id: string) => void
   back: () => void
 }
+
+type Motion = 'push' | 'pop' | 'fade'
 
 type Pending = { sheet: NonNullable<SheetTarget>; tab: Tab } | null
 
@@ -75,22 +78,28 @@ function Main({
     window.scrollTo(0, 0)
   }, [tab, detailId])
 
-  // Sayfa geçişi: detaya girince sağdan, geri dönünce soldan kayar; sekme değişince hafifçe belirir
+  // Sayfa geçişi (iPhone'daki gibi): detay sağ kenardan gelir, eski sayfa biraz sola kayıp kararır; geri dönünce tersi.
+  // Alt menüden sekme değişince yumuşak geçiş. Animasyonlar src/index.css'te (::view-transition).
+  // View Transitions olmayan tarayıcılarda sadece yeni sayfa kısa bir animasyonla belirir.
   const screen = `${tab}:${detailId ?? ''}:${cardId ?? ''}`
-  const depth = (detailId ? 1 : 0) + (tab === 'cards' && cardId ? 1 : 0)
-  const [last, setLast] = useState({ screen, tab, depth, motion: 'screen-fade' })
-  if (last.screen !== screen) {
-    // Alt menüden başka sekmeye geçmek "geri" sayılmaz, sadece belirir
-    const motion = depth > last.depth ? 'screen-push' : depth < last.depth && tab === last.tab ? 'screen-pop' : 'screen-fade'
-    setLast({ screen, tab, depth, motion })
+  const [motion, setMotion] = useState<Motion>('fade')
+  function go(next: Motion, update: () => void) {
+    if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setMotion(next)
+      return update()
+    }
+    document.documentElement.dataset.motion = next
+    document.startViewTransition(() => flushSync(update))
   }
 
   /** Ekleme/düzenleme girişsiz yapılamaz: önce giriş ekranına götür */
   function openSheet(target: NonNullable<SheetTarget>) {
     if (user) return setSheet(target)
     savePending({ sheet: target, tab })
-    setDetailId(null)
-    setTab('account')
+    go('fade', () => {
+      setDetailId(null)
+      setTab('account')
+    })
     toast('Eklemek için önce giriş yap')
   }
 
@@ -98,13 +107,14 @@ function Main({
     add: (preset) => openSheet({ kind: 'subscription', ...preset }),
     addCard: (bankName) => openSheet({ kind: 'card', bankName }),
     edit: openSheet,
-    openSubscription: (id) => setDetailId(id),
-    openCard: (id) => {
-      setCardId(id)
-      setDetailId(null)
-      setTab('cards')
-    },
-    back: () => setDetailId(null),
+    openSubscription: (id) => go('push', () => setDetailId(id)),
+    openCard: (id) =>
+      go('push', () => {
+        setCardId(id)
+        setDetailId(null)
+        setTab('cards')
+      }),
+    back: () => go('pop', () => setDetailId(null)),
   }
 
   return (
@@ -113,7 +123,7 @@ function Main({
       <main
         key={ready ? screen : 'loading'}
         className={cn(
-          last.motion,
+          !document.startViewTransition && `screen-${motion}`,
           'mx-auto max-w-md px-3 pt-[max(1rem,env(safe-area-inset-top))]',
           (tab === 'home' || tab === 'subscriptions' || tab === 'history' || (tab === 'cards' && !cardId)) && !detailId && ready ? 'flex h-svh flex-col overflow-y-auto pb-24' : 'min-h-svh pb-32',
         )}
@@ -128,7 +138,11 @@ function Main({
             {tab === 'subscriptions' && <SubscriptionsScreen nav={nav} />}
             {tab === 'account' && (user ? <AccountScreen user={user} /> : <LoginScreen />)}
             {tab === 'cards' &&
-              (cardId ? <CardDetail id={cardId} nav={nav} onBack={() => setCardId(null)} /> : <CardsScreen nav={nav} onSelect={setCardId} />)}
+              (cardId ? (
+                <CardDetail id={cardId} nav={nav} onBack={() => go('pop', () => setCardId(null))} />
+              ) : (
+                <CardsScreen nav={nav} onSelect={(id) => go('push', () => setCardId(id))} />
+              ))}
             {tab === 'history' && <HistoryScreen />}
           </>
         )}
@@ -137,10 +151,13 @@ function Main({
         tab={tab}
         initial={user ? initial(user.email ?? '') : null}
         onTab={(t) => {
-          setTab(t)
-          setDetailId(null)
-          setCardId(null)
           if (t !== 'account') savePending(null)
+          if (t === tab && !detailId && !cardId) return
+          go('fade', () => {
+            setTab(t)
+            setDetailId(null)
+            setCardId(null)
+          })
         }}
       />
       <AddSheet target={sheet} onClose={() => setSheet(null)} />

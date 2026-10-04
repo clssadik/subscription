@@ -21,6 +21,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
           "--border-radius": "var(--radius)",
+          viewTransitionName: "toaster",
         } as React.CSSProperties
       }
       toastOptions={{ classNames: { toast: "cn-toast" } }}
