@@ -273,7 +273,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
                           <span className="block truncate font-medium">{i.card.bankName}</span>
                           <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · son ödeme · {i.paid ? 'ödendi' : past ? 'geçti' : dueLabel(i.date)}</span>
                         </span>
-                        <span className="num text-[13px] text-subtle">•• {i.card.last4}</span>
+                        <span className="num text-[15px]">•• {i.card.last4}</span>
                       </button>
                     )}
                   </li>
