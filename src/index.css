@@ -165,6 +165,12 @@
 }
 .bloom { animation: bloom 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
+/* Karşılama ekranındaki örnek bildirim: yukarıdan düşerek gelir */
+@keyframes notif-in {
+  from { opacity: 0; transform: translateY(-20px) scale(0.94); }
+}
+.notif-in { animation: notif-in 500ms cubic-bezier(0.32, 0.72, 0, 1); }
+
 /* Sayfa geçişleri: sekme değişince hafif yukarı süzülerek belirir; detay sağdan kayarak gelir, geri dönünce soldan */
 @keyframes screen-fade {
   from { opacity: 0; transform: translateY(6px); }

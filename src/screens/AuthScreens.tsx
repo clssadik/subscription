@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import logoUrl from '@/assets/subly-logo.svg'
 import { LegalSheet, type LegalPage } from '@/components/LegalSheet'
 import { LogoWall } from '@/components/LogoWall'
+import { NotificationStack } from '@/components/NotificationStack'
 import { RoundButton } from '@/components/ScreenHeader'
 import { DEMO_CODE, DEMO_EMAIL, demoSignIn } from '@/lib/demo'
 import { isConfigured, supabase } from '@/lib/supabase'
@@ -87,13 +88,13 @@ function Welcome({ onStart, onLogin }: { onStart: () => void; onLogin: () => voi
     <>
       <Brand className="mb-4" />
       <LogoWall />
-      <div className="mt-auto pt-8">
+      <NotificationStack className="my-4 min-h-[64px] flex-1" />
+      <div>
         <h1 className="num num-bold text-[44px] leading-[1.02]">
           Hepsi
           <br />
           <span className={accent}>tek yerde</span>
         </h1>
-        <p className="mt-3 text-subtle">Ne zaman, hangi karttan, ne kadar.</p>
         <div className="mt-8 flex items-center justify-between">
           <button onClick={onLogin} className="min-h-11 text-sm text-subtle underline-offset-4 hover:underline">
             Hesabım var
