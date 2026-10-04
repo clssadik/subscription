@@ -31,8 +31,6 @@ function seenWelcome() {
 
 const field = 'min-h-12 w-full rounded-2xl bg-surface px-4 text-base outline-none placeholder:text-subtle/70 focus:ring-2 focus:ring-bh-yellow'
 const primary = 'pressable flex min-h-12 w-full items-center justify-center rounded-2xl bg-bh-yellow font-label text-base font-semibold text-[#141414] disabled:opacity-60'
-// Sarı vurgu: açık temada krem zeminde okunsun diye koyu sarı
-const accent = 'text-[#C9930A] dark:text-bh-yellow'
 
 export function AuthFlow() {
   const [step, setStep] = useState<Step>(() => (seenWelcome() ? 'login' : 'welcome'))
@@ -90,13 +88,7 @@ function Welcome({ onStart, onLogin }: { onStart: () => void; onLogin: () => voi
       <LogoWall />
       <NotificationStack className="my-4 min-h-[64px] flex-1" />
       <div>
-        <h1 className="num num-bold text-[40px] leading-[1.02]">
-          Ne zaman,
-          <br />
-          ne kadar,
-          <br />
-          <span className={accent}>hangi karttan</span>
-        </h1>
+        <h1 className="text-[34px] leading-[1.1] font-semibold tracking-[-0.02em]">Ne zaman, ne kadar, hangi karttan.</h1>
         <div className="mt-6 flex items-center justify-between">
           <button onClick={onLogin} className="min-h-11 text-sm text-subtle underline-offset-4 hover:underline">
             Hesabım var
