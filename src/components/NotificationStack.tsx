@@ -29,8 +29,8 @@ const EVERY = 2200
 
 export function NotificationStack({ className }: { className?: string }) {
   const box = useRef<HTMLDivElement>(null)
-  // Ekrana sığan bildirim sayısı (1-3): kısa telefonlarda taşmasın
-  const [fit, setFit] = useState(3)
+  // Ekrana sığan bildirim sayısı: en çok 2, kısa telefonlarda 1 (taşmasın)
+  const [fit, setFit] = useState(2)
   // Kaçıncı bildirimin en üstte olduğu; her adımda bir artar
   const [head, setHead] = useState(2)
 
@@ -38,7 +38,7 @@ export function NotificationStack({ className }: { className?: string }) {
   useLayoutEffect(() => {
     const el = box.current
     if (!el) return
-    const measure = () => setFit(Math.max(1, Math.min(3, Math.floor((el.clientHeight + GAP) / (ROW + GAP)))))
+    const measure = () => setFit(Math.max(1, Math.min(2, Math.floor((el.clientHeight + GAP) / (ROW + GAP)))))
     measure()
     const ro = new ResizeObserver(measure)
     ro.observe(el)
