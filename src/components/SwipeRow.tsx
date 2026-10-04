@@ -1,6 +1,7 @@
 import { Trash2Icon, type LucideIcon } from 'lucide-react'
 import { useRef, useState, type ReactNode } from 'react'
 import { haptic } from '@/lib/haptics'
+import { HOLD_MS } from '@/lib/useLongPress'
 import { cn } from '@/lib/utils'
 
 const OPEN = -84
@@ -30,8 +31,12 @@ export function SwipeRow({
   // Basılı tutunca satır hafifçe küçülür. Kısa gecikme: kaydırmaya başlayan parmak satırı küçültmesin.
   const [pressed, setPressed] = useState(false)
   const pressTimer = useRef(0)
+  // Basılı tutunca (kaydırmadan) onTap çalışır: sayfası açılır. Ardından gelen bırakma tekrar açmaz.
+  const holdTimer = useRef(0)
+  const held = useRef(false)
   const release = () => {
     clearTimeout(pressTimer.current)
+    clearTimeout(holdTimer.current)
     setPressed(false)
   }
 
@@ -60,6 +65,14 @@ export function SwipeRow({
         onPointerDown={(e) => {
           start.current = { x: e.clientX, y: e.clientY, base: x, dir: null }
           pressTimer.current = window.setTimeout(() => setPressed(true), 70)
+          held.current = false
+          if (onTap && x === 0)
+            holdTimer.current = window.setTimeout(() => {
+              held.current = true
+              setPressed(false)
+              haptic()
+              onTap()
+            }, HOLD_MS)
         }}
         onPointerMove={(e) => {
           const s = start.current
@@ -90,7 +103,7 @@ export function SwipeRow({
           }
           else if (!s.dir) {
             if (x !== 0) setX(0)
-            else onTap?.()
+            else if (!held.current) onTap?.()
           }
         }}
         onPointerCancel={() => {

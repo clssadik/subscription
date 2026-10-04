@@ -10,6 +10,24 @@ import { cn } from '@/lib/utils'
 const TEAR_AT = 0.38
 const FLY_MS = 380
 
+// Özelliği tanıtma: ilk kez görünce koçan kendiliğinden biraz kayıp geri gelir ve altında kısa bir açıklama çıkar.
+// "Anladım"a basınca ya da ilk kez koparınca bir daha gösterilmez.
+const TIP_KEY = 'subly:tear-tip-seen'
+const tipSeen = () => {
+  try {
+    return localStorage.getItem(TIP_KEY) === '1'
+  } catch {
+    return true
+  }
+}
+const markTipSeen = () => {
+  try {
+    localStorage.setItem(TIP_KEY, '1')
+  } catch {
+    // depolama kapalıysa bir dahaki sefere yine gösterilir
+  }
+}
+
 export function TearTicket({
   top,
   stub,
@@ -29,6 +47,12 @@ export function TearTicket({
   const [flying, setFlying] = useState(false)
   // Koptuktan sonra yeni koçan görünmezden belirir (geri kayarak gelmesin)
   const [entering, setEntering] = useState(false)
+  const [tip, setTip] = useState(() => !tipSeen())
+  const showTip = tip && canTear
+  const closeTip = () => {
+    markTipSeen()
+    setTip(false)
+  }
   const start = useRef<{ x: number; y: number; dir: 'h' | 'v' | null } | null>(null)
   const [width, setWidth] = useState(1)
   const passed = useRef(false)
@@ -37,6 +61,7 @@ export function TearTicket({
 
   function tear() {
     haptic()
+    closeTip()
     setFlying(true)
     window.setTimeout(() => {
       onTear()
@@ -55,7 +80,8 @@ export function TearTicket({
   }
 
   return (
-    <section className="relative">
+    // Yana taşan koçan kırpılır: sayfa yana kaymasın (çentiklerin dışarı taşan yarıları da kesilir)
+    <section className="relative overflow-x-clip">
       {/* Gövde: alt köşelerde zemin renginde yarım daireler (fişin çentikleri; diğer yarıları koçanda) */}
       <div className="relative overflow-hidden rounded-t-[22px] bg-hero px-4 pt-4 pb-3 text-hero-fg">
         {top}
@@ -69,7 +95,7 @@ export function TearTicket({
         tabIndex={canTear ? 0 : undefined}
         aria-label={canTear ? hint : undefined}
         onKeyDown={(e) => canTear && (e.key === 'Enter' || e.key === ' ') && tear()}
-        className={cn('relative origin-top-left rounded-b-[22px] bg-hero px-4 pt-3 pb-3.5 text-hero-fg select-none', canTear && 'cursor-grab')}
+        className={cn('relative origin-top-left rounded-b-[22px] bg-hero px-4 pt-3 pb-3.5 text-hero-fg select-none', canTear && 'cursor-grab', showTip && !dragging && !dx && 'tear-demo')}
         style={{
           transform: flying
             ? 'translate(115%, 40px) rotate(14deg)'
@@ -135,6 +161,19 @@ export function TearTicket({
           </p>
         )}
       </div>
+
+      {showTip && (
+        <div className="mt-2 flex items-start gap-3 rounded-[18px] bg-surface p-3.5 text-sm animate-in fade-in slide-in-from-top-1 duration-300">
+          <ScissorsIcon className="mt-0.5 size-[18px] shrink-0 -rotate-90 text-bh-blue" />
+          <p className="flex-1 leading-snug">
+            <span className="font-medium">Ödedin mi? Fişi kes.</span> Kesik çizginin altındaki kısmı sağa çekip kopar; ödeme “ödendi” olarak
+            işaretlenir. Yanlışlıkla olursa “Geri al”a bas.
+          </p>
+          <button type="button" onClick={closeTip} className="-mt-0.5 shrink-0 rounded-full bg-page px-3 py-1.5 text-[13px] font-medium">
+            Anladım
+          </button>
+        </div>
+      )}
     </section>
   )
 }

@@ -1,6 +1,7 @@
 import { CheckIcon } from 'lucide-react'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { HoldButton } from '@/components/HoldButton'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { HomeQuickStart } from '@/components/QuickStart'
@@ -171,8 +172,8 @@ export function HomeScreen({ nav }: { nav: Nav }) {
             <div className="grid grid-cols-2 gap-x-2 gap-y-[calc(8px-8px*var(--p,0))]">
               {/* Sıradaki ödeme: geniş sarı şerit, solda büyük geri sayım */}
               {first ? (
-                <button
-                  onClick={() => nav.openSubscription(first.s.id)}
+                <HoldButton
+                  onOpen={() => nav.openSubscription(first.s.id)}
                   className="pressable col-span-2 flex items-center gap-4 rounded-[22px] bg-bh-yellow px-3.5 py-[calc(14px-4px*var(--p,0))] text-left text-[#141414]"
                 >
                   <span className="min-w-16 text-center leading-none">
@@ -197,7 +198,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
                       </span>
                     </span>
                   </span>
-                </button>
+                </HoldButton>
               ) : (
                 <button onClick={() => nav.add()} className="pressable col-span-2 flex min-h-20 items-center justify-center rounded-[22px] bg-surface text-sm text-subtle">
                   + Abonelik ekle
@@ -206,13 +207,13 @@ export function HomeScreen({ nav }: { nav: Nav }) {
 
               {/* Altında: sonraki abonelik ve en yakın kart son ödemesi. Kaydırınca ikisi de solup tamamen kapanır */}
               {second ? (
-                <button onClick={() => nav.openSubscription(second.s.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-surface px-2.5 py-[calc(10px-10px*var(--p,0))] text-left max-h-[calc(56px-56px*var(--p,0))] overflow-hidden opacity-[calc(1-2*var(--p,0))]">
+                <HoldButton onOpen={() => nav.openSubscription(second.s.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-surface px-2.5 py-[calc(10px-10px*var(--p,0))] text-left max-h-[calc(56px-56px*var(--p,0))] overflow-hidden opacity-[calc(1-2*var(--p,0))]">
                   <Logo serviceKey={second.s.serviceKey} name={second.s.name} size={32} />
                   <span className="min-w-0">
                     <span className="block truncate text-[13px] font-medium">{second.s.name}</span>
                     <span className="block h-[calc(15px-15px*var(--p,0))] truncate text-[11px] text-subtle opacity-[calc(1-2*var(--p,0))]">{dueLabel(second.date)} · {formatMoney(second.s.amount, second.s.currency)}</span>
                   </span>
-                </button>
+                </HoldButton>
               ) : (
                 <button onClick={() => nav.add()} className="pressable flex min-h-[calc(52px-52px*var(--p,0))] items-center justify-center rounded-[18px] bg-surface text-sm text-subtle max-h-[calc(56px-56px*var(--p,0))] overflow-hidden opacity-[calc(1-2*var(--p,0))]">
                   + Abonelik ekle
@@ -220,13 +221,13 @@ export function HomeScreen({ nav }: { nav: Nav }) {
               )}
 
               {nextCard ? (
-                <button onClick={() => nav.openCard(nextCard.c.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-bh-red px-2.5 py-[calc(10px-10px*var(--p,0))] text-left text-white max-h-[calc(56px-56px*var(--p,0))] overflow-hidden opacity-[calc(1-2*var(--p,0))]">
+                <HoldButton onOpen={() => nav.openCard(nextCard.c.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-bh-red px-2.5 py-[calc(10px-10px*var(--p,0))] text-left text-white max-h-[calc(56px-56px*var(--p,0))] overflow-hidden opacity-[calc(1-2*var(--p,0))]">
                   <BankMark bankName={nextCard.c.bankName} color="rgb(0 0 0 / 0.25)" size={32} />
                   <span className="min-w-0">
                     <span className="block truncate text-[13px] font-medium">{nextCard.c.bankName}</span>
                     <span className="block h-[calc(15px-15px*var(--p,0))] truncate text-[11px] opacity-[calc(0.85-1.7*var(--p,0))]">{dueLabel(nextCard.date)} · son ödeme</span>
                   </span>
-                </button>
+                </HoldButton>
               ) : (
                 <button onClick={() => nav.addCard()} className="pressable flex min-h-[calc(52px-52px*var(--p,0))] items-center justify-center rounded-[18px] bg-surface text-sm text-subtle max-h-[calc(56px-56px*var(--p,0))] overflow-hidden opacity-[calc(1-2*var(--p,0))]">
                   + Kart ekle
@@ -258,23 +259,23 @@ export function HomeScreen({ nav }: { nav: Nav }) {
                       </span>
                     </button>
                     {i.kind === 'subscription' ? (
-                      <button onClick={() => nav.openSubscription(i.subscription.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                      <HoldButton onOpen={() => nav.openSubscription(i.subscription.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
                         <Logo serviceKey={i.subscription.serviceKey} name={i.subscription.name} size={30} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium">{i.subscription.name}</span>
                           <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · {i.paid ? 'ödendi' : past ? 'geçti' : dueLabel(i.date)}</span>
                         </span>
                         <span className="num text-[15px]">{formatMoney(i.subscription.amount, i.subscription.currency)}</span>
-                      </button>
+                      </HoldButton>
                     ) : (
-                      <button onClick={() => nav.openCard(i.card.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                      <HoldButton onOpen={() => nav.openCard(i.card.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
                         <BankMark bankName={i.card.bankName} color={i.card.color} size={30} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium">{i.card.bankName}</span>
                           <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · son ödeme · {i.paid ? 'ödendi' : past ? 'geçti' : dueLabel(i.date)}</span>
                         </span>
                         <span className="num text-[15px]">•• {i.card.last4}</span>
-                      </button>
+                      </HoldButton>
                     )}
                   </li>
                 )

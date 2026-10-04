@@ -123,6 +123,19 @@
   }
   body {
     @apply bg-page text-ink antialiased;
+    /* Kopyalama kapalı: yazı seçilmez, iPhone'da basılı tutunca "Kopyala / Paylaş" menüsü çıkmaz */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  /* Yazı alanlarında seçme ve yapıştırma normal çalışır */
+  input, textarea, [contenteditable='true'] {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+  img {
+    -webkit-user-drag: none;
   }
 }
 
@@ -267,8 +280,15 @@ html[data-motion='fade']::view-transition-new(root) { animation-name: vt-fade-in
   30% { transform: translateX(5px); }
 }
 .tear-hint { display: inline-block; animation: tear-hint 1.8s ease-in-out infinite; }
+/* İlk kez: koçan kendiliğinden biraz kopar gibi kayıp geri gelir (iki kez) */
+@keyframes tear-demo {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  40% { transform: translateX(64px) rotate(4deg); }
+  60% { transform: translateX(64px) rotate(4deg); }
+}
+.tear-demo { animation: tear-demo 1.4s 0.7s cubic-bezier(0.32, 0.72, 0, 1) 2; }
 @media (prefers-reduced-motion: reduce) {
-  .tear-hint { animation: none; }
+  .tear-hint, .tear-demo { animation: none; }
 }
 
 /* "Ödendi" işareti dolunca küçük bir zıplama */

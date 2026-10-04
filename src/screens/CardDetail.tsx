@@ -3,6 +3,7 @@ import { addMonths } from 'date-fns'
 import { toast } from 'sonner'
 import { haptic } from '@/lib/haptics'
 import { play } from '@/lib/sound'
+import { HoldButton } from '@/components/HoldButton'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { PaidNote } from '@/components/PaidNote'
@@ -84,7 +85,7 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
           <ul className="grid gap-1.5">
             {onCard.map((s) => (
               <li key={s.id}>
-                <button onClick={() => nav.openSubscription(s.id)} className="pressable flex w-full items-center gap-3 rounded-[18px] bg-surface px-3 py-2.5 text-left">
+                <HoldButton onOpen={() => nav.openSubscription(s.id)} className="pressable flex w-full items-center gap-3 rounded-[18px] bg-surface px-3 py-2.5 text-left">
                   <Logo serviceKey={s.serviceKey} name={s.name} size={30} />
                   <span className="flex-1 truncate font-medium">{s.name}</span>
                   {!cycle && s.currency === 'TRY' && <span aria-hidden className="size-2.5 shrink-0 rounded-[3px]" style={{ background: arcColor(s) }} />}
@@ -92,7 +93,7 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
                     {formatMoney(s.amount, s.currency)}
                     {s.cycle === 'yearly' && <span className="text-[11px] text-subtle">/yıl</span>}
                   </span>
-                </button>
+                </HoldButton>
               </li>
             ))}
           </ul>

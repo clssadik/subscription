@@ -2,6 +2,7 @@ import { CardQuickStart } from '@/components/QuickStart'
 import { ScrollPage } from '@/components/ScrollPage'
 import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
 import { useState } from 'react'
+import { HoldButton } from '@/components/HoldButton'
 import { BankBrand } from '@/components/BankMark'
 import { Segmented } from '@/components/FormBits'
 import { PinnedLayout } from '@/components/PinnedLayout'
@@ -108,7 +109,7 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
 /** Kart satırı: bankanın renginde, orijinal logo ve son 4 hane; kredi kartında sağda sıradaki hesap kesimi */
 function CardRow({ card, statement, onClick }: { card: CreditCard; statement?: Date; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="pressable flex min-h-14 w-full items-center gap-3 rounded-[18px] px-3.5 py-2 text-left text-white" style={{ background: card.color }}>
+    <HoldButton onOpen={onClick} className="pressable flex min-h-14 w-full items-center gap-3 rounded-[18px] px-3.5 py-2 text-left text-white" style={{ background: card.color }}>
       <span className="flex min-w-0 flex-1 items-center gap-2.5">
         <BankBrand bankName={card.bankName} className="h-4 max-w-[120px]" />
         <span className="num shrink-0 text-[15px] opacity-90">•• {card.last4}</span>
@@ -119,7 +120,7 @@ function CardRow({ card, statement, onClick }: { card: CreditCard; statement?: D
           <span className="num text-[15px]">{formatDate(statement, 'd MMM')}</span>
         </span>
       )}
-    </button>
+    </HoldButton>
   )
 }
 

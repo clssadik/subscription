@@ -23,3 +23,11 @@ if (splash) {
 const resetPage = () => document.visibilityState === 'visible' && window.scrollTo(0, 0)
 document.addEventListener('visibilitychange', resetPage)
 window.addEventListener('pageshow', resetPage)
+
+// Kopyalama kapalı: yazı alanları dışında kopyalama, kesme ve sağ tık menüsü engellenir (görünüm: src/index.css)
+const inField = (t: EventTarget | null) => t instanceof HTMLElement && !!t.closest('input, textarea, [contenteditable="true"]')
+for (const type of ['copy', 'cut', 'contextmenu'] as const) {
+  document.addEventListener(type, (e) => {
+    if (!inField(e.target)) e.preventDefault()
+  })
+}
