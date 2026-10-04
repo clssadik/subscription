@@ -60,14 +60,22 @@ function Main({ user }: { user: User }) {
     window.scrollTo(0, 0)
   }, [tab, detailId, cardId])
 
-  // Sayfa geçişi (iPhone'daki gibi): detay sağ kenardan gelir, eski sayfa biraz sola kayıp kararır; geri dönünce tersi.
-  // Alt menüden sekme değişince sayfa sekmenin yönünden kısa bir kaymayla gelir. Animasyonlar src/index.css'te (::view-transition).
-  // View Transitions olmayan tarayıcılarda sadece yeni sayfa kısa bir animasyonla belirir.
+  // Sayfa geçişi (iPhone'daki gibi): detay sağ kenardan gelir, eski sayfa biraz sola kayıp kararır; geri dönünce tersi (View Transitions).
+  // Alt menüden sekme değişince yeni sayfa sekmenin yönünden kısa bir kaymayla gelir: bu sade bir CSS animasyonu, çünkü
+  // iPhone'da View Transitions ile açılan liste sekmelerinde kaydırma kilitleniyordu. Animasyonlar src/index.css'te.
+  // View Transitions olmayan tarayıcılarda her geçiş CSS animasyonuyla olur.
   const screen = `${tab}:${detailId ?? ''}:${cardId ?? ''}`
-  const [motion, setMotion] = useState<Motion>('fade')
+  // null = geçişi View Transitions yaptı, CSS animasyonu gerekmez
+  const [cssMotion, setCssMotion] = useState<Motion | null>(null)
   function go(next: Motion, update: () => void) {
-    // Geçiş desteklenmiyorsa yeni sayfa kısa bir CSS animasyonuyla belirir
-    if (!transition(next, update)) setMotion(next)
+    if (next.startsWith('tab')) {
+      update()
+      setCssMotion(next)
+      return
+    }
+    // transition() desteklenmeyen tarayıcıda güncellemeyi hemen yapar ve false döner
+    const viaView = transition(next, update)
+    setCssMotion(viaView ? null : next)
   }
 
   const nav: Nav = {
@@ -89,7 +97,7 @@ function Main({ user }: { user: User }) {
       <main
         key={ready ? screen : 'loading'}
         className={cn(
-          !document.startViewTransition && `screen-${motion}`,
+          cssMotion && `screen-${cssMotion}`,
           'mx-auto max-w-md px-3 pt-[max(1rem,env(safe-area-inset-top))]',
           (tab === 'home' || tab === 'subscriptions' || tab === 'history' || tab === 'cards') && !detailId && !cardId && ready ? 'flex h-svh flex-col overflow-hidden pb-24' : 'min-h-svh pb-32',
         )}
