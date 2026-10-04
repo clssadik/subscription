@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { TOP_FOG, fog, type FogLevel } from '@/lib/fog'
 import { useScrollLimit } from '@/lib/useScrollLimit'
+import { useScrollMemory } from '@/lib/useScrollMemory'
 import { cn } from '@/lib/utils'
 
 /**
@@ -11,11 +12,14 @@ import { cn } from '@/lib/utils'
  * Liste cam menünün arkasına kadar uzanır. Sis seviyesi src/lib/fog.ts içinde.
  */
 export function PinnedLayout({
+  scrollKey,
   header,
   top,
   children,
   fogLevel = 'normal',
 }: {
+  /** Kaydırma yerinin hatırlandığı ad (sekme adı) */
+  scrollKey: string
   header: ReactNode
   top: ReactNode
   children: ReactNode
@@ -29,6 +33,7 @@ export function PinnedLayout({
   const [scrolled, setScrolled] = useState(false)
   const edge = fog(TOP_FOG[fogLevel])
   const limit = useScrollLimit(scroller, content)
+  useScrollMemory(scrollKey, scroller, blockHeight > 0)
   useLayoutEffect(() => {
     const el = block.current
     if (!el) return

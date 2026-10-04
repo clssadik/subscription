@@ -8,6 +8,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { useUser } from '@/lib/auth'
 import { initial } from '@/lib/format'
 import { StoreProvider, useStore } from '@/lib/store'
+import { scrollToTop } from '@/lib/useScrollMemory'
 import { cn } from '@/lib/utils'
 import { AccountScreen } from '@/screens/AccountScreen'
 import { CardDetail } from '@/screens/CardDetail'
@@ -152,7 +153,12 @@ function Main({
         initial={user ? initial(user.email ?? '') : null}
         onTab={(t) => {
           if (t !== 'account') savePending(null)
-          if (t === tab && !detailId && !cardId) return
+          // Açık sekmeye tekrar basınca en başa kay
+          if (t === tab && !detailId && !cardId) {
+            scrollToTop(t)
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+            return
+          }
           // Aynı sekmeye basınca detaydan listeye geri dönülür
           go(t === tab ? 'pop' : TAB_ORDER.indexOf(t) > TAB_ORDER.indexOf(tab) ? 'tab-right' : 'tab-left', () => {
             setTab(t)

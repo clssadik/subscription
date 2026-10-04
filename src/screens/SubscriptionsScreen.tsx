@@ -84,6 +84,7 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
         </>
       ) : (
         <PinnedLayout
+          scrollKey="subscriptions"
           header={header}
           top={
             /* Koyu temada beyaz kart: siyah zeminde öne çıksın */

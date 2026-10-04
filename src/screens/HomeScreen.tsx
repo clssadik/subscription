@@ -12,6 +12,7 @@ import { haptic } from '@/lib/haptics'
 import { play } from '@/lib/sound'
 import { useStore } from '@/lib/store'
 import { useScrollLimit } from '@/lib/useScrollLimit'
+import { useScrollMemory } from '@/lib/useScrollMemory'
 import { CURRENCIES } from '@/lib/types'
 import { TOP_FOG, fog } from '@/lib/fog'
 import { cn } from '@/lib/utils'
@@ -47,6 +48,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   const scroller = useRef<HTMLDivElement>(null)
   const content = useRef<HTMLDivElement>(null)
   const limit = useScrollLimit(scroller, content)
+  useScrollMemory('home', scroller, blockHeight > 0)
   function onScroll(e: React.UIEvent<HTMLDivElement>) {
     const y = e.currentTarget.scrollTop
     progress.current = Math.min(1, Math.max(0, y / COLLAPSE))
