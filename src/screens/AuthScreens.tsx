@@ -49,7 +49,7 @@ export function AuthFlow() {
   }
 
   return (
-    <main className="mx-auto flex min-h-svh max-w-md flex-col px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+    <main className="mx-auto flex min-h-svh max-w-md flex-col px-4 pt-[max(1rem,calc(env(safe-area-inset-top)+14px))] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
       {step === 'welcome' && <Welcome onStart={() => leaveWelcome('signup')} onLogin={() => leaveWelcome('login')} />}
       {(step === 'signup' || step === 'login') && (
         <EmailStep
