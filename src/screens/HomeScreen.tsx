@@ -30,7 +30,6 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   // Kaydırınca üst blok (toplam, sıradaki, iki küçük kart) birlikte küçülür; tarih başlığı sabit. --p 0 (en üstte) → 1 (COLLAPSE px kaydırınca). Her karede yeniden çizmemek için CSS değişkeni.
   // Blok listenin üstüne bindirilir (akışta yer kaplamaz): küçülürken liste alanının boyutu değişmez, hızlı kaydırmada zıplama olmaz.
   // Listenin üst boşluğu bloğun açık haldeki yüksekliği kadardır; blok boyu değişirse (ör. yazı tipi yüklenince) en üstteyken yeniden ölçülür.
-  const top = useRef<HTMLDivElement>(null)
   const block = useRef<HTMLDivElement>(null)
   const progress = useRef(0)
   const [blockHeight, setBlockHeight] = useState(0)
@@ -49,11 +48,20 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   const content = useRef<HTMLDivElement>(null)
   const limit = useScrollLimit(scroller, content)
   useScrollMemory('home', scroller, blockHeight > 0)
+  // Kaydırırken takılmasın diye: değişken sadece bloğa yazılır (tüm listenin stili yeniden hesaplanmasın), karede en fazla bir kez
+  // ve sadece değer değişince (blok tamamen küçüldükten sonra liste kayarken hiçbir şey yeniden çizilmez)
+  const frame = useRef(0)
   function onScroll(e: React.UIEvent<HTMLDivElement>) {
-    const y = e.currentTarget.scrollTop
-    progress.current = Math.min(1, Math.max(0, y / COLLAPSE))
-    top.current?.style.setProperty('--p', String(progress.current))
-    setScrolled(y > 0)
+    const el = e.currentTarget
+    setScrolled(el.scrollTop > 0)
+    if (frame.current) return
+    frame.current = requestAnimationFrame(() => {
+      frame.current = 0
+      const p = Math.round(Math.min(1, Math.max(0, el.scrollTop / COLLAPSE)) * 1000) / 1000
+      if (p === progress.current) return
+      progress.current = p
+      block.current?.style.setProperty('--p', String(p))
+    })
   }
   const items = monthItems(cards, subscriptions, payments)
   const subItems = items.filter((i) => i.kind === 'subscription')
@@ -101,7 +109,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   }
 
   return (
-    <div ref={top} className="relative -mb-24 flex min-h-0 flex-1 flex-col">
+    <div className="relative -mb-24 flex min-h-0 flex-1 flex-col">
       {/* Tek kayan alan: tarih başlığı ve blok da onun içinde, en üste yapışık (sticky). Böylece sayfanın neresinden tutulursa
           tutulsun liste kayar; iPhone en üstte esnetince başlık ve blok listeyle birlikte iner. Liste cam menünün arkasına kadar uzanır. */}
       <div
