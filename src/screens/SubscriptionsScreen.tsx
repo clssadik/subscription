@@ -22,7 +22,7 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const undoable = useUndoable()
   const { subscriptions, cards, payments } = state
-  // Arama açıkken üstteki toplam kutusu kapanır, liste ada ve karta göre süzülür
+  // Arama açıkken üstteki toplam kutusu kapanır; liste sadece abonelik adına göre, adın başından süzülür
   const search = useSearch()
   const { q } = search
 
@@ -32,7 +32,7 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
   }
 
   const rows = subscriptions
-    .filter((s) => !q || normalize(s.name).includes(q) || normalize(cardLabel(s)).includes(q))
+    .filter((s) => !q || normalize(s.name).startsWith(q))
     .map((s) => ({ s, next: nextRenewal(s, payments) }))
     .sort((a, b) => a.next.getTime() - b.next.getTime())
 
@@ -106,7 +106,7 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
           pinned={false}
           header={header}
           top={
-            <SearchSwap search={search} placeholder="Abonelik ya da kart ara">
+            <SearchSwap search={search} placeholder="Abonelik ara">
               {/* Koyu temada beyaz kart: siyah zeminde öne çıksın */}
               <section className="rounded-[22px] bg-surface p-3.5 dark:bg-[#F2F2F2] dark:text-[#141414]">
                 <div className="flex justify-between text-subtle dark:text-[#141414]/60">

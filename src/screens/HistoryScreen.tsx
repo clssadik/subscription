@@ -20,7 +20,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const undoable = useUndoable()
   const { payments, subscriptions, cards } = state
-  // Arama açıkken üstteki grafik kapanır, liste abonelik ya da banka adına göre süzülür
+  // Arama açıkken üstteki grafik kapanır; liste abonelik ya da banka adına göre, adın başından süzülür
   const search = useSearch()
   const { q } = search
   const nameOf = (p: (typeof payments)[number]) =>
@@ -57,7 +57,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
   ]
 
   // Ay ay gruplanmış liste, yeniden eskiye
-  const sorted = payments.filter((p) => !q || normalize(nameOf(p)).includes(q)).sort((a, b) => b.dueDate.localeCompare(a.dueDate))
+  const sorted = payments.filter((p) => !q || normalize(nameOf(p)).startsWith(q)).sort((a, b) => b.dueDate.localeCompare(a.dueDate))
   const groups = new Map<string, typeof sorted>()
   for (const p of sorted) {
     const k = p.dueDate.slice(0, 7)
