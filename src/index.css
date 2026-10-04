@@ -261,6 +261,16 @@ html[data-motion='tab-left']::view-transition-new(root) { animation-name: vt-tab
 html[data-motion='fade']::view-transition-old(root) { animation-name: vt-fade-out; animation-duration: 160ms; }
 html[data-motion='fade']::view-transition-new(root) { animation-name: vt-fade-in; animation-duration: 240ms; }
 
+/* Fiş koçanındaki makas ve ok: sağa doğru hafifçe dürterek "çek" der */
+@keyframes tear-hint {
+  0%, 60%, 100% { transform: translateX(0); }
+  30% { transform: translateX(5px); }
+}
+.tear-hint { display: inline-block; animation: tear-hint 1.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .tear-hint { animation: none; }
+}
+
 /* "Ödendi" işareti dolunca küçük bir zıplama */
 @keyframes check-pop {
   0% { transform: scale(0.6); }

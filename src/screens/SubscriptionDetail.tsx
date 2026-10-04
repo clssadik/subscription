@@ -1,12 +1,12 @@
 import { CheckCircle2Icon, ChevronLeftIcon, PencilIcon } from 'lucide-react'
 import { parseISO } from 'date-fns'
 import { toast } from 'sonner'
-import { haptic } from '@/lib/haptics'
 import { play } from '@/lib/sound'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { PaidNote } from '@/components/PaidNote'
 import { RoundButton } from '@/components/ScreenHeader'
+import { TearTicket } from '@/components/TearTicket'
 import { canMarkPaid, daysUntil, dueLabel, nextRenewal, paidThisMonth, toKey } from '@/lib/dates'
 import { dayOf, formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
@@ -26,8 +26,8 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
   const totalPaid = history.reduce((s, p) => s + (p.amount ?? 0), 0)
   const anchor = parseISO(sub.renewalDate)
 
+  // Titreşim koçan koparken (dokunuşun içinde) verilir; burada ses ve kayıt
   function markPaid() {
-    haptic()
     play('paid')
     const dueDate = toKey(next)
     const label = formatDate(next, 'd MMMM')
@@ -45,26 +45,30 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
         <RoundButton label="Düzenle" onClick={() => nav.edit({ kind: 'subscription', id: sub.id })}><PencilIcon className="size-[18px]" /></RoundButton>
       </div>
 
-      {/* Ödeme kartı (fiş): tutar en büyük şey. Kesik çizgide iki yanda zemin renginde yarım daire, fiş koçanı gibi. */}
-      <section className="relative overflow-hidden rounded-[22px] bg-hero px-4 pt-4 pb-3.5 text-hero-fg">
-        <span aria-hidden className="absolute -top-8 -right-8 size-28 rounded-full bg-bh-blue dark:bg-bh-yellow" />
-        <Logo serviceKey={sub.serviceKey} name={sub.name} size={44} className="relative" />
-        <h1 className="relative mt-3 truncate font-label text-lg font-medium">{sub.name}</h1>
-        <div className="relative leading-tight">
-          <Money amount={sub.amount} currency={sub.currency} size={46} />
-        </div>
-        <div aria-hidden className="relative -mx-4 my-3 flex items-center">
-          <span className="-ml-3 size-6 shrink-0 rounded-full bg-page" />
-          <span className="mx-1.5 flex-1 border-t border-dashed border-current opacity-25" />
-          <span className="-mr-3 size-6 shrink-0 rounded-full bg-page" />
-        </div>
-        <div className="flex justify-between gap-3 text-[11px] opacity-75">
-          <span className="truncate">{card ? `${card.bankName} •• ${card.last4}` : 'kart seçilmedi'}</span>
-          <span className="shrink-0">
-            {CYCLE_LABELS[sub.cycle]} · {sub.cycle === 'monthly' ? `her ayın ${dayOf(anchor.getDate())}` : `her yıl ${formatDate(anchor, 'd MMMM')}`}
-          </span>
-        </div>
-      </section>
+      {/* Ödeme kartı (fiş): tutar en büyük şey. Bu dönemin ödemesi işaretlenebiliyorsa koçan sağa çekilip koparılır = ödendi. */}
+      <TearTicket
+        canTear={canMarkPaid(next)}
+        hint={daysUntil(next) <= 0 ? 'Kesip ödendi işaretle' : `${formatDate(next, 'd MMMM')} ödemesini kesip işaretle`}
+        onTear={markPaid}
+        top={
+          <>
+            <span aria-hidden className="absolute -top-8 -right-8 size-28 rounded-full bg-bh-blue dark:bg-bh-yellow" />
+            <Logo serviceKey={sub.serviceKey} name={sub.name} size={44} className="relative" />
+            <h1 className="relative mt-3 truncate font-label text-lg font-medium">{sub.name}</h1>
+            <div className="relative leading-tight">
+              <Money amount={sub.amount} currency={sub.currency} size={46} />
+            </div>
+          </>
+        }
+        stub={
+          <div className="flex justify-between gap-3 text-[11px] opacity-75">
+            <span className="truncate">{card ? `${card.bankName} •• ${card.last4}` : 'kart seçilmedi'}</span>
+            <span className="shrink-0">
+              {CYCLE_LABELS[sub.cycle]} · {sub.cycle === 'monthly' ? `her ayın ${dayOf(anchor.getDate())}` : `her yıl ${formatDate(anchor, 'd MMMM')}`}
+            </span>
+          </div>
+        }
+      />
 
       <div className="mt-2 grid grid-cols-2 gap-2">
         <div className="flex h-[92px] flex-col rounded-[22px] bg-bh-yellow p-3 text-[#141414]">
@@ -80,15 +84,8 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
         />
       </div>
 
-      {/* Gelecek ayın ödemesi, ay değişmeden işaretlenemez */}
-      {canMarkPaid(next) ? (
-        <button onClick={markPaid} className="pressable mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-ink font-semibold text-page">
-          <CheckCircle2Icon className="size-[18px] text-bh-yellow" />
-          {daysUntil(next) <= 0 ? 'Ödendi olarak işaretle' : `${formatDate(next, 'd MMMM')} ödendi olarak işaretle`}
-        </button>
-      ) : (
-        paidThisMonth(state.payments, sub.id) && <PaidNote month={new Date()} />
-      )}
+      {/* Bu ayın ödemesi yapıldıysa not; işaretleme fişin koçanını koparmakla olur */}
+      {!canMarkPaid(next) && paidThisMonth(state.payments, sub.id) && <PaidNote month={new Date()} />}
 
       <div className="mt-5 mb-2 flex items-baseline justify-between px-1 text-subtle">
         <h2 className="label">Geçmiş</h2>
