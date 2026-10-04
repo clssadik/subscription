@@ -3,9 +3,12 @@ import type { ReactNode } from 'react'
 import { dayOf } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
-/** Form içindeki gruplanmış alan kutusu. Taşmayı kesmez: ad önerileri listesi alttaki alanların üstüne açılabilsin. */
+/**
+ * Form içindeki gruplanmış alan kutusu. Taşmayı kesmez: ad önerileri listesi alttaki alanların üstüne açılabilsin.
+ * data-collapsed ile kapanmış bir satırın üstündeki ayırıcı çizgi gizlenir (kutunun dibinde çizgi kalmasın).
+ */
 export function FieldGroup({ children }: { children: ReactNode }) {
-  return <div className="divide-y divide-line rounded-[18px] bg-surface">{children}</div>
+  return <div className="divide-y divide-line rounded-[18px] bg-surface [&>*:has(+[data-collapsed])]:border-b-0">{children}</div>
 }
 
 export function Field({ label, htmlFor, stacked, children }: { label: string; htmlFor?: string; stacked?: boolean; children: ReactNode }) {
@@ -43,9 +46,16 @@ export function Segmented<T extends string>({
   /** Seçili düğmenin rengi */
   activeClass?: string
 }) {
+  const index = Math.max(0, options.findIndex((o) => o.value === value))
   return (
     // İç düğmenin köşesi = dış köşe - boşluk (18 - 4 = 14px): ikisi aynı eğriyi izler
-    <div className={cn('flex rounded-[18px] bg-page p-1 text-sm', className)} role="radiogroup">
+    <div className={cn('relative flex rounded-[18px] bg-page p-1 text-sm', className)} role="radiogroup">
+      {/* Seçili zemin: seçim değişince yeni seçeneğin altına kayar */}
+      <span
+        aria-hidden
+        className={cn('absolute top-1 bottom-1 left-1 rounded-[14px] transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]', activeClass)}
+        style={{ width: `calc((100% - 0.5rem) / ${options.length})`, transform: `translateX(${index * 100}%)` }}
+      />
       {options.map((o) => (
         <button
           key={o.value}
@@ -54,8 +64,8 @@ export function Segmented<T extends string>({
           aria-checked={value === o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            'min-h-9 flex-1 rounded-[14px] px-2 transition-colors',
-            value === o.value ? cn('font-medium', activeClass) : 'text-subtle',
+            'relative min-h-9 flex-1 rounded-[14px] px-2 transition-colors duration-300',
+            value === o.value ? cn('font-medium', activeClass, 'bg-transparent dark:bg-transparent shadow-none') : 'text-subtle',
           )}
         >
           {o.label}
@@ -68,7 +78,7 @@ export function Segmented<T extends string>({
 export function PrimaryButton({ children, className, ...props }: React.ComponentProps<'button'>) {
   return (
     <button
-      className={cn('pressable flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-bh-yellow font-label text-base font-semibold text-[#141414]', className)}
+      className={cn('pressable flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-ink font-label text-base font-semibold text-page', className)}
       {...props}
     >
       {children}

@@ -30,6 +30,7 @@
     --color-subtle: var(--subtle);
     --color-surface: var(--surface);
     --color-line: var(--line);
+    --color-raised: var(--raised);
     --color-hero: var(--hero);
     --color-hero-fg: var(--hero-fg);
     --color-nav: var(--nav);
@@ -69,6 +70,8 @@
     --subtle: #857C6D;
     --surface: #FFFFFF;
     --line: #E2DBCD;
+    /* Seçili düğme zemini (ekleme paneli): açıkta beyaz + gölge, koyuda bir ton açık gri */
+    --raised: #FFFFFF;
     --hero: #141414;
     --hero-fg: #F2F2F2;
     --nav: #141414;
@@ -101,6 +104,7 @@
     --subtle: #858585;
     --surface: #141414;
     --line: #262626;
+    --raised: #2C2C2E;
     --hero: #1F4FB4;
     --hero-fg: #FFFFFF;
     --nav: #141414;

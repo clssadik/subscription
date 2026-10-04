@@ -1,6 +1,6 @@
 import { format } from 'date-fns'
 import { CreditCardIcon, RepeatIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { haptic } from '@/lib/haptics'
 import { play } from '@/lib/sound'
@@ -13,6 +13,9 @@ import { newId, useStore } from '@/lib/store'
 import { useUndoable } from '@/lib/undo'
 import { CURRENCIES, type BillingCycle, type CardKind, type CreditCard, type Currency, type Subscription } from '@/lib/types'
 import { cn } from '@/lib/utils'
+
+/** Seçili düğme (tür ve segmentler): açık temada beyaz + hafif gölge, koyu temada bir ton açık gri */
+const raised = 'bg-raised text-ink shadow-[0_1px_3px_rgb(0_0_0/0.12)] dark:shadow-none'
 
 /** Açılacak form. id varsa düzenleme; serviceKey/name/bankName yeni kayıtta hazır seçili gelir. */
 export type SheetTarget = { kind: 'subscription' | 'card'; id?: string; serviceKey?: string; name?: string; bankName?: string } | null
@@ -45,6 +48,26 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
     setKind(next)
   }
 
+  // Panel boyu Abonelik ↔ Kart (ya da kredi ↔ banka kartı) değişince zıplamasın: iki formun ilk açıldığı hâllerinden
+  // uzun olanı en az boy olur, kısa formda Kaydet alta yaslanır. "Yeni kart ekle" gibi ek alanlar yine büyütür.
+  // Ölçüm form ekrana takıldığı an yapılır (panel içeriği açılıştan biraz sonra oluşuyor).
+  const tallest = useRef<{ opened: number; sizes: Partial<Record<'subscription' | 'card', number>> }>({ opened: -1, sizes: {} })
+  function measure(form: HTMLDivElement | null) {
+    const el = form?.parentElement
+    if (!el) return
+    if (editing) {
+      el.style.minHeight = ''
+      return
+    }
+    if (tallest.current.opened !== opened) tallest.current = { opened, sizes: {} }
+    const sizes = tallest.current.sizes
+    if (sizes[kind] == null) {
+      el.style.minHeight = ''
+      sizes[kind] = el.offsetHeight
+    }
+    el.style.minHeight = `${Math.max(...Object.values(sizes))}px`
+  }
+
   // Kapanırken klavyeyi önce indir: klavye panel kayarken kapanınca sayfa sarsılıyor
   function close() {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
@@ -73,9 +96,11 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
 
           {/* Abonelik ↔ Kart değişince form yandan kayarak gelir: Kart sağda, Abonelik solda (düğmelerin sırası gibi).
               İlk açılışta kaymaz; panel zaten aşağıdan geliyor. */}
+          <div className="flex flex-col">
           <div
             key={kind}
-            className={cn(switched && 'animate-in fade-in duration-300 ease-out', switched && (kind === 'card' ? 'slide-in-from-right-8' : 'slide-in-from-left-8'))}
+            ref={measure}
+            className={cn('flex flex-1 flex-col', switched && 'animate-in fade-in duration-300 ease-out', switched && (kind === 'card' ? 'slide-in-from-right-8' : 'slide-in-from-left-8'))}
           >
             {shown && kind === 'subscription' && (
               <SubscriptionFields key={`${shown.id ?? 'new-sub'}-${opened}`} id={shown.kind === 'subscription' ? shown.id : undefined} preset={shown} onDone={close} />
@@ -83,6 +108,7 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
             {shown && kind === 'card' && (
               <CardFields key={`${shown.id ?? 'new-card'}-${opened}`} id={shown.kind === 'card' ? shown.id : undefined} preset={shown} onDone={close} />
             )}
+          </div>
           </div>
         </div>
       </DrawerContent>
@@ -97,9 +123,9 @@ function KindButton({ active, onClick, children }: { active: boolean; onClick: (
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'pressable flex h-16 flex-1 flex-col items-center justify-center gap-0.5 font-label text-sm',
+        'pressable flex h-16 flex-1 flex-col items-center justify-center gap-0.5 font-label text-sm transition-colors duration-300',
         'rounded-[14px]',
-        active ? 'bg-bh-yellow font-medium text-[#141414]' : 'bg-surface text-subtle',
+        active ? cn(raised, 'font-medium') : 'bg-line/50 text-subtle dark:bg-surface',
       )}
     >
       {children}
@@ -162,7 +188,7 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
   }
 
   return (
-    <form onSubmit={submit} className="mt-4 grid grid-cols-1 gap-3">
+    <form onSubmit={submit} className="mt-4 flex flex-1 flex-col gap-3">
       <FieldGroup>
         <Field label="Ad" htmlFor="s-name">
           <SuggestInput
@@ -186,6 +212,7 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
         <Field label="Periyot">
           <Segmented
             className="w-full"
+            activeClass={raised}
             value={cycle}
             onChange={setCycle}
             options={[{ value: 'monthly', label: 'Aylık' }, { value: 'yearly', label: 'Yıllık' }]}
@@ -211,7 +238,7 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
       )}
 
       {error && <p className="px-1 text-sm text-bh-red" role="alert">{error}</p>}
-      <PrimaryButton type="submit">Kaydet</PrimaryButton>
+      <PrimaryButton type="submit" className="mt-auto">Kaydet</PrimaryButton>
       {sub && (
         <button
           type="button"
@@ -266,7 +293,8 @@ function CardInputs({ value, onChange, idPrefix, existing }: { value: NewCard; o
   return (
     <>
       <Segmented
-        className="bg-surface"
+        className="bg-line/50 dark:bg-surface"
+        activeClass={raised}
         value={value.kind}
         onChange={(kind) => set({ kind })}
         options={[{ value: 'credit', label: 'Kredi kartı' }, { value: 'debit', label: 'Banka kartı' }]}
@@ -286,11 +314,21 @@ function CardInputs({ value, onChange, idPrefix, existing }: { value: NewCard; o
         <Field label="Son 4 hane" htmlFor={`${idPrefix}-last4`}>
           <input id={`${idPrefix}-last4`} className={cn(inputClass, 'num tracking-widest')} inputMode="numeric" autoComplete="off" value={value.last4} onChange={(e) => set({ last4: digits(e.target.value, 4) })} placeholder="1234" />
         </Field>
-        {value.kind === 'credit' && (
-          <Field label="Hesap kesim" htmlFor={`${idPrefix}-st`}>
-            <DaySelect id={`${idPrefix}-st`} value={value.statementDay} onChange={(statementDay) => set({ statementDay })} />
-          </Field>
-        )}
+        {/* Banka kartında kesim yok: satır yumuşakça kapanır / açılır */}
+        <div
+          aria-hidden={value.kind !== 'credit'}
+          data-collapsed={value.kind !== 'credit' || undefined}
+          className={cn(
+            'grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]',
+            value.kind === 'credit' ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+          )}
+        >
+          <div className="overflow-hidden">
+            <Field label="Hesap kesim" htmlFor={`${idPrefix}-st`}>
+              <DaySelect id={`${idPrefix}-st`} value={value.statementDay} onChange={(statementDay) => set({ statementDay })} />
+            </Field>
+          </div>
+        </div>
       </FieldGroup>
     </>
   )
@@ -325,11 +363,11 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
   }
 
   return (
-    <form onSubmit={submit} className="mt-4 grid grid-cols-1 gap-3">
+    <form onSubmit={submit} className="mt-4 flex flex-1 flex-col gap-3">
       <CardInputs value={value} onChange={setValue} idPrefix="c" existing={card} />
 
       {error && <p className="px-1 text-sm text-bh-red" role="alert">{error}</p>}
-      <PrimaryButton type="submit">Kaydet</PrimaryButton>
+      <PrimaryButton type="submit" className="mt-auto">Kaydet</PrimaryButton>
       {card && (
         <button
           type="button"
