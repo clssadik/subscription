@@ -1,12 +1,13 @@
 import type { User } from '@supabase/supabase-js'
 import { useEffect, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { AddSheet, type SheetTarget } from '@/components/AddSheet'
 import { BottomNav, type Tab } from '@/components/BottomNav'
 import { Toaster } from '@/components/ui/sonner'
 import { useUser } from '@/lib/auth'
 import { initial } from '@/lib/format'
 import { StoreProvider, useStore } from '@/lib/store'
-import { transition, wakeScrollers, type Motion } from '@/lib/transition'
+import { transition, type Motion } from '@/lib/transition'
 import { scrollToTop } from '@/lib/useScrollMemory'
 import { cn } from '@/lib/utils'
 import { AccountScreen } from '@/screens/AccountScreen'
@@ -30,6 +31,12 @@ export interface Nav {
 
 // Alt menüdeki sıra: sağdaki sekmeye geçince sayfa sağdan, soldakine geçince soldan gelir
 const TAB_ORDER: Tab[] = ['home', 'subscriptions', 'cards', 'history', 'account']
+
+// Liste sekmeleri: bir kez açılınca hep yerinde kalır, sekme değişince sadece görünen değişir.
+// iPhone, sonradan oluşturulan kayan listeyi ilk dokunuşa kadar tam tanımıyor (ilk kaydırma takılıyordu); kalıcı liste bu sorunu yaşamaz.
+// Kaydırma yeri de kendiliğinden korunur.
+const LIST_TABS: Tab[] = ['home', 'subscriptions', 'cards', 'history']
+const isListTab = (t: Tab) => LIST_TABS.includes(t)
 
 export default function App() {
   const user = useUser()
@@ -61,16 +68,27 @@ function Main({ user }: { user: User }) {
   }, [tab, detailId, cardId])
 
   // Sayfa geçişi (iPhone'daki gibi): detay sağ kenardan gelir, eski sayfa biraz sola kayıp kararır; geri dönünce tersi (View Transitions).
-  // Alt menüden sekme değişince yeni sayfa sekmenin yönünden kısa bir kaymayla gelir: bu sade bir CSS animasyonu, çünkü
-  // iPhone'da View Transitions ile açılan liste sekmelerinde kaydırma kilitleniyordu. Animasyonlar src/index.css'te.
-  // View Transitions olmayan tarayıcılarda her geçiş CSS animasyonuyla olur.
+  // Alt menüden sekme değişince yeni sayfa sekmenin yönünden kısa bir kaymayla gelir (Web Animations; sekmeler silinmediği için).
+  // View Transitions olmayan tarayıcılarda detay geçişleri CSS animasyonuyla olur. Animasyonlar src/index.css'te.
   const screen = `${tab}:${detailId ?? ''}:${cardId ?? ''}`
   // null = geçişi View Transitions yaptı, CSS animasyonu gerekmez
   const [cssMotion, setCssMotion] = useState<Motion | null>(null)
+  // Açılmış liste sekmeleri (hep yerinde kalır)
+  const [visited, setVisited] = useState<Tab[]>([tab])
+  const listShown = ready && !detailId && !cardId && isListTab(tab)
+
   function go(next: Motion, update: () => void) {
-    if (next.startsWith('tab')) {
-      update()
-      setCssMotion(next)
+    if (next === 'tab-right' || next === 'tab-left') {
+      flushSync(update)
+      setCssMotion(null)
+      const el = document.querySelector<HTMLElement>('[data-screen-active]')
+      if (el && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const x = next === 'tab-right' ? 40 : -40
+        el.animate([{ opacity: 0, transform: `translateX(${x}px)` }, { opacity: 1, transform: 'none' }], {
+          duration: 440,
+          easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+        })
+      }
       return
     }
     // transition() desteklenmeyen tarayıcıda güncellemeyi hemen yapar ve false döner
@@ -93,37 +111,45 @@ function Main({ user }: { user: User }) {
 
   return (
     <>
-      {/* Liste sekmeleri ekrana sığar (sayfa kaymaz); sadece içlerindeki liste kayar. İç içe ikinci bir kayan alan olmasın: iPhone'da kaydırma kilitlenebiliyor */}
-      <main
-        key={ready ? screen : 'loading'}
-        onAnimationEnd={(e) => {
-          if (e.target !== e.currentTarget) return
-          // Sayfa animasyonu bitti: listeyi telefona yeniden tanıt (yoksa ilk dokunuşa kadar kaymıyor)
-          setCssMotion(null)
-          requestAnimationFrame(wakeScrollers)
-        }}
-        className={cn(
-          cssMotion && `screen-${cssMotion}`,
-          'mx-auto max-w-md px-3 pt-[max(1rem,env(safe-area-inset-top))]',
-          (tab === 'home' || tab === 'subscriptions' || tab === 'history' || tab === 'cards') && !detailId && !cardId && ready ? 'flex h-svh flex-col overflow-hidden pb-24' : 'min-h-svh pb-32',
-        )}
-      >
-        {!ready ? (
-          <LoadingSkeleton />
-        ) : detailId ? (
-          <SubscriptionDetail id={detailId} nav={nav} />
-        ) : cardId ? (
-          <CardDetail id={cardId} nav={nav} onBack={() => go('pop', () => setCardId(null))} />
-        ) : (
-          <>
-            {tab === 'home' && <HomeScreen nav={nav} />}
-            {tab === 'subscriptions' && <SubscriptionsScreen nav={nav} />}
-            {tab === 'account' && <AccountScreen user={user} />}
-            {tab === 'cards' && <CardsScreen nav={nav} onSelect={nav.openCard} />}
-            {tab === 'history' && <HistoryScreen nav={nav} />}
-          </>
-        )}
-      </main>
+      {/* Liste sekmeleri ekrana sığar (sayfa kaymaz); sadece içlerindeki liste kayar. Görünmeyenler yerinde bekler. */}
+      {ready &&
+        visited.filter(isListTab).map((t) => {
+          const active = listShown && t === tab
+          return (
+            <main
+              key={t}
+              data-screen-active={active || undefined}
+              inert={!active}
+              aria-hidden={!active || undefined}
+              className={cn(
+                'fixed inset-x-0 top-0 mx-auto flex h-svh max-w-md flex-col overflow-hidden px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-24',
+                !active && 'invisible',
+              )}
+            >
+              {t === 'home' && <HomeScreen nav={nav} />}
+              {t === 'subscriptions' && <SubscriptionsScreen nav={nav} />}
+              {t === 'cards' && <CardsScreen nav={nav} onSelect={nav.openCard} />}
+              {t === 'history' && <HistoryScreen nav={nav} />}
+            </main>
+          )
+        })}
+      {!listShown && (
+        <main
+          key={ready ? screen : 'loading'}
+          data-screen-active
+          className={cn(cssMotion && `screen-${cssMotion}`, 'mx-auto min-h-svh max-w-md px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-32')}
+        >
+          {!ready ? (
+            <LoadingSkeleton />
+          ) : detailId ? (
+            <SubscriptionDetail id={detailId} nav={nav} />
+          ) : cardId ? (
+            <CardDetail id={cardId} nav={nav} onBack={() => go('pop', () => setCardId(null))} />
+          ) : (
+            tab === 'account' && <AccountScreen user={user} />
+          )}
+        </main>
+      )}
       <BottomNav
         tab={tab}
         initial={initial(user.email ?? '')}
@@ -137,6 +163,7 @@ function Main({ user }: { user: User }) {
           // Aynı sekmeye basınca detaydan listeye geri dönülür
           go(t === tab ? 'pop' : TAB_ORDER.indexOf(t) > TAB_ORDER.indexOf(tab) ? 'tab-right' : 'tab-left', () => {
             setTab(t)
+            setVisited((v) => (v.includes(t) ? v : [...v, t]))
             setDetailId(null)
             setCardId(null)
           })
