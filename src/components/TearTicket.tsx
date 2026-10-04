@@ -1,5 +1,6 @@
 import { ScissorsIcon } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { flushSync } from 'react-dom'
 import { haptic } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
 
@@ -12,6 +13,8 @@ import { cn } from '@/lib/utils'
 /** Bu orana kadar kesilince parmak kaldırılmadan kendiliğinden kopar (geri alınamaz) */
 const TEAR_AT = 0.5
 const FALL_MS = 900
+/** Düşüşün bu anında "Ödendi" ekranı açılır; koçan yerine, ekran onu tamamen örttükten sonra konur */
+const PAID_AT = 0.55
 
 // Özelliği tanıtma: ilk kez görünce koçan kendiliğinden biraz kesilip geri açılır ve altında tek cümlelik bir açıklama çıkar.
 // "Tamam"a basınca ya da ilk kez koparınca bir daha gösterilmez.
@@ -137,10 +140,14 @@ export function TearTicket({
         ],
         { duration: FALL_MS, easing: 'cubic-bezier(0.5, 0, 0.85, 0.4)', fill: 'forwards' },
       )
+      const paid = window.setTimeout(onTear, FALL_MS * PAID_AT)
       fall.onfinish = () => {
-        onTear()
-        setEntering(true)
-        setCut(0)
+        window.clearTimeout(paid)
+        // Önce koçan görünmez yapılıp kesik kapatılır, sonra düşüş kaldırılır: yerinde birleşik hâliyle bir an bile görünmesin
+        flushSync(() => {
+          setEntering(true)
+          setCut(0)
+        })
         fall.cancel()
         setFalling(false)
         requestAnimationFrame(() => requestAnimationFrame(() => setEntering(false)))
@@ -203,7 +210,8 @@ export function TearTicket({
           // Kalktıkça altına gölge düşer
           filter: progress > 0 ? `drop-shadow(0 ${4 + progress * 14}px ${8 + progress * 18}px rgb(0 0 0 / ${0.15 + progress * 0.3}))` : undefined,
           opacity: entering ? 0 : 1,
-          transition: 'opacity 300ms ease',
+          // Gizlenirken anında, belirirken yumuşak
+          transition: entering ? 'none' : 'opacity 300ms ease',
           touchAction: 'pan-y',
         }}
         onPointerDown={(e) => {
@@ -237,8 +245,10 @@ export function TearTicket({
           if (s && cut > 0) animateCut(cut, 0, 480)
         }}
         onPointerCancel={() => {
+          const s = start.current
           start.current = null
-          if (cut > 0) animateCut(cut, 0, 480)
+          // Koparken (düşüş sırasında) gelen iptal kesiği kapatmasın
+          if (s && cut > 0) animateCut(cut, 0, 480)
         }}
       >
         {skin}
