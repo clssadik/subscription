@@ -167,7 +167,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
               </div>
           </section>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-x-2 gap-y-[calc(8px-8px*var(--p,0))]">
               {/* Sıradaki ödeme: geniş sarı şerit, solda büyük geri sayım */}
               {first ? (
                 <button
@@ -203,9 +203,9 @@ export function HomeScreen({ nav }: { nav: Nav }) {
                 </button>
               )}
 
-              {/* Altında: sonraki abonelik ve en yakın kart son ödemesi */}
+              {/* Altında: sonraki abonelik ve en yakın kart son ödemesi. Kaydırınca ikisi de solup tamamen kapanır */}
               {second ? (
-                <button onClick={() => nav.openSubscription(second.s.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-surface px-2.5 py-[calc(10px-4px*var(--p,0))] text-left">
+                <button onClick={() => nav.openSubscription(second.s.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-surface px-2.5 py-[calc(10px-10px*var(--p,0))] text-left max-h-[calc(56px-56px*var(--p,0))] overflow-hidden opacity-[calc(1-2*var(--p,0))]">
                   <Logo serviceKey={second.s.serviceKey} name={second.s.name} size={32} />
                   <span className="min-w-0">
                     <span className="block truncate text-[13px] font-medium">{second.s.name}</span>
@@ -213,13 +213,13 @@ export function HomeScreen({ nav }: { nav: Nav }) {
                   </span>
                 </button>
               ) : (
-                <button onClick={() => nav.add()} className="pressable flex min-h-[52px] items-center justify-center rounded-[18px] bg-surface text-sm text-subtle">
+                <button onClick={() => nav.add()} className="pressable flex min-h-[calc(52px-52px*var(--p,0))] items-center justify-center rounded-[18px] bg-surface text-sm text-subtle max-h-[calc(56px-56px*var(--p,0))] overflow-hidden opacity-[calc(1-2*var(--p,0))]">
                   + Abonelik ekle
                 </button>
               )}
 
               {nextCard ? (
-                <button onClick={() => nav.openCard(nextCard.c.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-bh-red px-2.5 py-[calc(10px-4px*var(--p,0))] text-left text-white">
+                <button onClick={() => nav.openCard(nextCard.c.id)} className="pressable flex min-w-0 items-center gap-2.5 rounded-[18px] bg-bh-red px-2.5 py-[calc(10px-10px*var(--p,0))] text-left text-white max-h-[calc(56px-56px*var(--p,0))] overflow-hidden opacity-[calc(1-2*var(--p,0))]">
                   <BankMark bankName={nextCard.c.bankName} color="rgb(0 0 0 / 0.25)" size={32} />
                   <span className="min-w-0">
                     <span className="block truncate text-[13px] font-medium">{nextCard.c.bankName}</span>
@@ -227,7 +227,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
                   </span>
                 </button>
               ) : (
-                <button onClick={() => nav.addCard()} className="pressable flex min-h-[52px] items-center justify-center rounded-[18px] bg-surface text-sm text-subtle">
+                <button onClick={() => nav.addCard()} className="pressable flex min-h-[calc(52px-52px*var(--p,0))] items-center justify-center rounded-[18px] bg-surface text-sm text-subtle max-h-[calc(56px-56px*var(--p,0))] overflow-hidden opacity-[calc(1-2*var(--p,0))]">
                   + Kart ekle
                 </button>
               )}
