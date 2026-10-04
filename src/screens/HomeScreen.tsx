@@ -135,7 +135,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
             <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-x-0 -top-8 bottom-0 -z-10"
+              className="pointer-events-none absolute inset-x-0 -top-24 bottom-0 -z-10"
               style={{ background: `linear-gradient(to bottom, var(--page) calc(100% - 30px), ${fog(TOP_FOG.normal)})` }}
             />
             <div
