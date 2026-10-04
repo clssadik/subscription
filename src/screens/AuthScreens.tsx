@@ -1,4 +1,4 @@
-import { ArrowRightIcon, ChevronLeftIcon } from 'lucide-react'
+import { ArrowRightIcon, CheckIcon, ChevronLeftIcon } from 'lucide-react'
 import { useState } from 'react'
 import { siApple, siGoogle } from 'simple-icons'
 import { toast } from 'sonner'
@@ -7,7 +7,10 @@ import { LegalSheet, type LegalPage } from '@/components/LegalSheet'
 import { LogoWall } from '@/components/LogoWall'
 import { NotificationStack } from '@/components/NotificationStack'
 import { RoundButton } from '@/components/ScreenHeader'
+import { holdSignIn, releaseSignIn } from '@/lib/auth'
 import { DEMO_CODE, DEMO_EMAIL, demoSignIn } from '@/lib/demo'
+import { haptic } from '@/lib/haptics'
+import { play } from '@/lib/sound'
 import { isConfigured, supabase } from '@/lib/supabase'
 import { transition } from '@/lib/transition'
 import { cn } from '@/lib/utils'
@@ -228,23 +231,36 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [focused, setFocused] = useState(true)
+  // Kod doğru: kutular yeşile döner, kısa bir an sonra Anasayfa açılır
+  const [done, setDone] = useState(false)
 
   async function verify(value: string) {
+    if (busy || done) return
     if (value.length !== CODE_LENGTH) return setError('Kodun 6 hanesini de gir.')
     setError('')
     // Yanlış kodda kutular boşalır: yeniden yazmak için tek tek silmek gerekmesin
     const fail = (message: string) => {
+      releaseSignIn()
+      haptic()
       setError(message)
       setCode('')
     }
+    // Gelen oturum başarı anı gösterilene kadar bekletilir (src/lib/auth.tsx)
+    holdSignIn()
     if (!isConfigured) {
       if (value !== DEMO_CODE) return fail('Kod hatalı ya da süresi dolmuş.')
-      return demoSignIn()
+      demoSignIn()
+    } else {
+      setBusy(true)
+      const { error } = await supabase.auth.verifyOtp({ email, token: value, type: 'email' })
+      setBusy(false)
+      if (error) return fail(friendly(error.message))
     }
-    setBusy(true)
-    const { error } = await supabase.auth.verifyOtp({ email, token: value, type: 'email' })
-    setBusy(false)
-    if (error) fail(friendly(error.message))
+    haptic()
+    play('paid')
+    setDone(true)
+    document.querySelector<HTMLInputElement>('input[autocomplete="one-time-code"]')?.blur()
+    window.setTimeout(releaseSignIn, 900)
   }
 
   async function resend() {
@@ -302,9 +318,11 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
                 <span
                   key={i}
                   className={cn(
-                    'num flex h-14 items-center justify-center rounded-[14px] bg-surface text-2xl transition-shadow',
-                    active && 'ring-2 ring-bh-yellow',
+                    'num flex h-14 items-center justify-center rounded-[14px] text-2xl transition-[background-color,color,box-shadow,transform] duration-300',
+                    done ? 'check-pop bg-bh-green text-white' : 'bg-surface',
+                    active && !done && 'ring-2 ring-bh-yellow',
                   )}
+                  style={done ? { animationDelay: `${i * 40}ms` } : undefined}
                 >
                   {code[i] ?? ''}
                 </span>
@@ -313,8 +331,12 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
           </span>
         </label>
         {error && <p className="px-1 text-sm text-bh-red" role="alert">{error}</p>}
-        <button type="submit" disabled={busy} className={primary}>
-          {busy ? 'Kontrol ediliyor…' : mode === 'signup' ? 'Hesabı oluştur' : 'Giriş yap'}
+        <button type="submit" disabled={busy} className={cn(primary, done && 'bg-bh-green text-white')}>
+          {done ? (
+            <span className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
+              <CheckIcon className="size-5" strokeWidth={2.6} /> {mode === 'signup' ? 'Hesap oluşturuldu' : 'Giriş yapıldı'}
+            </span>
+          ) : busy ? 'Kontrol ediliyor…' : mode === 'signup' ? 'Hesabı oluştur' : 'Giriş yap'}
         </button>
       </form>
 
