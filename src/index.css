@@ -275,6 +275,13 @@ html[data-motion='fade']::view-transition-new(root) { animation-name: vt-fade-in
     0 0 0 0.5px rgb(0 0 0 / 0.08),
     0 10px 30px rgb(0 0 0 / 0.14);
 }
+/* Saat çubuğunun arkasındaki buzlu cam: zemin rengi yarı saydam + bulanıklık, alt kenarı yumuşakça biter */
+.status-glass {
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  backdrop-filter: blur(14px) saturate(180%);
+  background: color-mix(in srgb, var(--page) 72%, transparent);
+}
+
 /* Cam içindeki seçili sekme: daha parlak ikinci bir cam damlası */
 .glass-on {
   background: rgb(255 255 255 / 0.75);

@@ -155,6 +155,8 @@ function Main({ user }: { user: User }) {
           </ScrollPage>
         </main>
       )}
+      {/* Saat/pil çubuğunun arkası: buzlu cam. Kayan liste çubuğun altından bulanık geçer (Safari sekmesinde yüksekliği 0) */}
+      <div aria-hidden className="status-glass pointer-events-none fixed inset-x-0 top-0 z-30 h-[env(safe-area-inset-top)]" />
       <BottomNav
         tab={tab}
         initial={initials(settings.name, user.email ?? '')}
