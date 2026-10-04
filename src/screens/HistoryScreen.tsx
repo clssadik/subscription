@@ -1,12 +1,14 @@
 import { addMonths, format, parseISO, startOfMonth } from 'date-fns'
 import { CheckIcon, Undo2Icon } from 'lucide-react'
+import { useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { PinnedLayout } from '@/components/PinnedLayout'
-import { ScreenHeader } from '@/components/ScreenHeader'
+import { ScreenHeader, SearchBar, SearchButton } from '@/components/ScreenHeader'
 import { SwipeRow } from '@/components/SwipeRow'
 import { formatDate, formatMoney } from '@/lib/format'
 import { CURRENCIES, type Currency } from '@/lib/types'
+import { normalize } from '@/lib/services'
 import { useStore } from '@/lib/store'
 import { BankMark } from '@/components/BankMark'
 import { useUndoable } from '@/lib/undo'
@@ -17,6 +19,13 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const undoable = useUndoable()
   const { payments, subscriptions, cards } = state
+  // null = arama kapalı. Açıkken üstteki grafik gizlenir, liste abonelik ya da banka adına göre süzülür.
+  const [query, setQuery] = useState<string | null>(null)
+  const q = normalize(query ?? '')
+  const nameOf = (p: (typeof payments)[number]) =>
+    p.kind === 'subscription'
+      ? (subscriptions.find((x) => x.id === p.refId)?.name ?? '')
+      : (cards.find((x) => x.id === p.refId)?.bankName ?? '')
 
   // Sola kaydırıp "Kaldır": ödendi işareti kalkar, ödeme yeniden bekleyen olur. Mesajdaki "Geri al" geri getirir.
   const unmark = (p: (typeof payments)[number], name: string) =>
@@ -47,7 +56,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
   ]
 
   // Ay ay gruplanmış liste, yeniden eskiye
-  const sorted = [...payments].sort((a, b) => b.dueDate.localeCompare(a.dueDate))
+  const sorted = payments.filter((p) => !q || normalize(nameOf(p)).includes(q)).sort((a, b) => b.dueDate.localeCompare(a.dueDate))
   const groups = new Map<string, typeof sorted>()
   for (const p of sorted) {
     const k = p.dueDate.slice(0, 7)
@@ -59,38 +68,48 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
       <PinnedLayout
         scrollKey="history"
         pinned={false}
-        header={<ScreenHeader title="Geçmiş" />}
+        header={
+          <ScreenHeader
+            title="Geçmiş"
+            action={payments.length > 0 && <SearchButton open={query !== null} onClick={() => setQuery(query === null ? '' : null)} />}
+          />
+        }
         top={
-          <section className="flex h-[176px] flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg">
-            <div className="flex justify-between gap-2">
-              <span className="label opacity-70">{formatDate(thisMonth, 'LLLL')} ayında ödenen</span>
-              {paidLastMonth.length > 0 && (
-                <span className="label text-right opacity-70">geçen ay {paidLastMonth.join(' + ')}</span>
-              )}
-            </div>
-            <div className="mt-1 leading-none">
-              <Money amount={current} size={32} />
-              {paidThisMonth.map((f) => (
-                <span key={f.currency} className="ml-2" style={{ fontSize: 32 }}>
-                  <span className="num">+ </span>
-                  <Money amount={f.sums[5]} currency={f.currency} size={32} />
-                </span>
-              ))}
-            </div>
-            <div className="mt-auto flex h-[70px] items-end gap-2" role="img" aria-label="Son 6 ayda ödenen TL abonelik tutarları">
-              {months.map((m, i) => (
-                <div key={i} className="flex-1 text-center">
-                  <div
-                    className={cn(i === 5 ? 'rounded-[14px_14px_4px_4px] bg-bh-yellow' : 'rounded bg-white/20')}
-                    style={{ height: Math.max(3, (sums[i] / max) * 52) }}
-                  />
-                  <div className="mt-1 text-[9px] opacity-70">{formatDate(m, 'LLL')}</div>
-                </div>
-              ))}
-            </div>
-          </section>
+          query !== null ? (
+            <SearchBar value={query} onChange={setQuery} onClose={() => setQuery(null)} placeholder="Abonelik ya da banka ara" />
+          ) : (
+            <section className="flex h-[176px] flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg">
+              <div className="flex justify-between gap-2">
+                <span className="label opacity-70">{formatDate(thisMonth, 'LLLL')} ayında ödenen</span>
+                {paidLastMonth.length > 0 && (
+                  <span className="label text-right opacity-70">geçen ay {paidLastMonth.join(' + ')}</span>
+                )}
+              </div>
+              <div className="mt-1 leading-none">
+                <Money amount={current} size={32} />
+                {paidThisMonth.map((f) => (
+                  <span key={f.currency} className="ml-2" style={{ fontSize: 32 }}>
+                    <span className="num">+ </span>
+                    <Money amount={f.sums[5]} currency={f.currency} size={32} />
+                  </span>
+                ))}
+              </div>
+              <div className="mt-auto flex h-[70px] items-end gap-2" role="img" aria-label="Son 6 ayda ödenen TL abonelik tutarları">
+                {months.map((m, i) => (
+                  <div key={i} className="flex-1 text-center">
+                    <div
+                      className={cn(i === 5 ? 'rounded-[14px_14px_4px_4px] bg-bh-yellow' : 'rounded bg-white/20')}
+                      style={{ height: Math.max(3, (sums[i] / max) * 52) }}
+                    />
+                    <div className="mt-1 text-[9px] opacity-70">{formatDate(m, 'LLL')}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )
         }
       >
+        {q && groups.size === 0 && <p className="mt-6 text-center text-sm text-subtle">“{query?.trim()}” için sonuç yok</p>}
         {/* Henüz hiçbir şey ödendi işaretlenmemişse ne yapılacağını söyle */}
         {payments.length === 0 && (
           <div className="mt-4 flex flex-col items-center rounded-[22px] bg-surface px-6 py-8 text-center">

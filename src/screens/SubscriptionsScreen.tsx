@@ -1,13 +1,15 @@
 import { endOfMonth, endOfWeek, startOfDay } from 'date-fns'
+import { useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { SubscriptionQuickStart } from '@/components/QuickStart'
-import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
+import { AddButton, ScreenHeader, SearchBar, SearchButton } from '@/components/ScreenHeader'
 import { PinnedLayout } from '@/components/PinnedLayout'
 import { ShareBar } from '@/components/ShareBar'
 import { SwipeRow } from '@/components/SwipeRow'
 import { daysUntil, monthlyCost, nextRenewal } from '@/lib/dates'
 import { formatDate, formatMoney } from '@/lib/format'
+import { normalize } from '@/lib/services'
 import { useStore } from '@/lib/store'
 import { useUndoable } from '@/lib/undo'
 import { CURRENCIES, type Subscription } from '@/lib/types'
@@ -18,8 +20,17 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const undoable = useUndoable()
   const { subscriptions, cards, payments } = state
+  // null = arama kapalı. Açıkken üstteki toplam kutusu gizlenir, liste ada ve karta göre süzülür.
+  const [query, setQuery] = useState<string | null>(null)
+  const q = normalize(query ?? '')
+
+  const cardLabel = (s: Subscription) => {
+    const c = cards.find((c) => c.id === s.cardId)
+    return c ? `${c.bankName} •• ${c.last4}` : 'kart seçilmedi'
+  }
 
   const rows = subscriptions
+    .filter((s) => !q || normalize(s.name).includes(q) || normalize(cardLabel(s)).includes(q))
     .map((s) => ({ s, next: nextRenewal(s, payments) }))
     .sort((a, b) => a.next.getTime() - b.next.getTime())
 
@@ -37,11 +48,6 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
     currency: c,
     total: subscriptions.filter((s) => s.currency === c).reduce((sum, s) => sum + monthlyCost(s), 0),
   }))
-
-  const cardLabel = (s: Subscription) => {
-    const c = cards.find((c) => c.id === s.cardId)
-    return c ? `${c.bankName} •• ${c.last4}` : 'kart seçilmedi'
-  }
 
   const row = ({ s, next }: (typeof rows)[number]) => {
     const isToday = daysUntil(next) === 0
@@ -73,7 +79,17 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
     )
   }
 
-  const header = <ScreenHeader title="Abonelikler" action={<AddButton label="Abonelik ekle" onClick={() => nav.add()} />} />
+  const header = (
+    <ScreenHeader
+      title="Abonelikler"
+      action={
+        <div className="flex gap-2">
+          {subscriptions.length > 0 && <SearchButton open={query !== null} onClick={() => setQuery(query === null ? '' : null)} />}
+          <AddButton label="Abonelik ekle" onClick={() => nav.add()} />
+        </div>
+      }
+    />
+  )
 
   return (
     <>
@@ -88,25 +104,30 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
           pinned={false}
           header={header}
           top={
-            /* Koyu temada beyaz kart: siyah zeminde öne çıksın */
-            <section className="rounded-[22px] bg-surface p-3.5 dark:bg-[#F2F2F2] dark:text-[#141414]">
-              <div className="flex justify-between text-subtle dark:text-[#141414]/60">
-                <span className="label">Aylık toplam</span>
-                <span className="label">{subscriptions.length} abonelik</span>
-              </div>
-              <div className="mt-0.5 leading-none">
-                <Money amount={totals[0].total} size={34} />
-                {totals.slice(1).filter((t) => t.total > 0).map((t) => (
-                  <span key={t.currency} className="ml-2" style={{ fontSize: 34 }}>
-                    <span className="num">+ </span>
-                    <Money amount={t.total} currency={t.currency} size={34} />
-                  </span>
-                ))}
-              </div>
-              <div className="mt-3"><ShareBar subscriptions={subscriptions} height={10} /></div>
-            </section>
+            query !== null ? (
+              <SearchBar value={query} onChange={setQuery} onClose={() => setQuery(null)} placeholder="Abonelik ya da kart ara" />
+            ) : (
+              /* Koyu temada beyaz kart: siyah zeminde öne çıksın */
+              <section className="rounded-[22px] bg-surface p-3.5 dark:bg-[#F2F2F2] dark:text-[#141414]">
+                <div className="flex justify-between text-subtle dark:text-[#141414]/60">
+                  <span className="label">Aylık toplam</span>
+                  <span className="label">{subscriptions.length} abonelik</span>
+                </div>
+                <div className="mt-0.5 leading-none">
+                  <Money amount={totals[0].total} size={34} />
+                  {totals.slice(1).filter((t) => t.total > 0).map((t) => (
+                    <span key={t.currency} className="ml-2" style={{ fontSize: 34 }}>
+                      <span className="num">+ </span>
+                      <Money amount={t.total} currency={t.currency} size={34} />
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-3"><ShareBar subscriptions={subscriptions} height={10} /></div>
+              </section>
+            )
           }
         >
+          {q && groups.length === 0 && <p className="mt-6 text-center text-sm text-subtle">“{query?.trim()}” için sonuç yok</p>}
           {groups.map((g, i) => (
             <section key={g.title}>
               <h2 className={cn('label mb-1 px-1 text-subtle', i > 0 && 'mt-2')}>{g.title}</h2>

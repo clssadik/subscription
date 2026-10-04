@@ -82,13 +82,16 @@ export function PinnedLayout({
             </div>
           </>
         ) : (
+          // Sabit değil: başlık ve blok listenin başında durur, onunla birlikte kayar.
+          // Liste en az kayan alan boyunda: kısa listede de başlık ve blok yukarı kaydırılıp ekrandan çıkarılabilir.
           <>
-            {/* Sabit değil: başlık ve blok listenin başında durur, onunla birlikte kayar */}
             <div className="pb-2">
               {header}
               {top}
             </div>
-            <div ref={content}>{children}</div>
+            <div ref={content} className="min-h-full">
+              {children}
+            </div>
           </>
         )}
       </div>
