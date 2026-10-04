@@ -1,5 +1,5 @@
 import { ScissorsIcon } from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { haptic } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
 
@@ -81,18 +81,24 @@ export function TearTicket({
     tween.current = requestAnimationFrame(step)
   }
 
-  // Geri alınınca: koptuğu yerden (aşağıdan) dönerek gelip fişe yapışır, yerine otururken hafifçe seker
-  useEffect(() => {
-    if (!restore || !root.current) return
-    root.current.animate(
+  // Geri alınınca kopuşun yavaş çekim tersi: koçan düştüğü yoldan yavaşça yükselip sarkık hâliyle sağ köşesine asılır,
+  // ardından kesik soldan sağa kapanarak yerine oturur (~1,5 sn). Ekran çizilmeden başlar: yerinde bir an görünmesin.
+  useLayoutEffect(() => {
+    const el = root.current
+    if (!restore || !el) return
+    const w = el.offsetWidth
+    setWidth(w)
+    setCut(w)
+    const rise = el.animate(
       [
-        { transform: 'translate(-30px, 300px) rotate(-26deg) rotateY(-40deg) rotateX(55deg)', opacity: 0 },
-        { transform: `translate(0, -10px) ${pose(0.5)}`, opacity: 1, offset: 0.62 },
-        { transform: pose(-0.12), offset: 0.82 },
-        { transform: pose(0) },
+        { transform: 'translate(-30px, 360px) rotate(-26deg) rotateY(-40deg) rotateX(55deg)', opacity: 0 },
+        { transform: `translate(-6px, 24px) ${pose(1)} rotate(-8deg)`, opacity: 1, offset: 0.7 },
+        { transform: pose(1), opacity: 1 },
       ],
-      { duration: 620, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+      { duration: 850, easing: 'cubic-bezier(0.15, 0.6, 0.3, 1)' },
     )
+    rise.onfinish = () => animateCut(w, 0, 650)
+    return () => rise.cancel()
   }, [restore])
 
   // Tanıtım: ilk açılışta koçan iki kez biraz kesilip geri açılır
