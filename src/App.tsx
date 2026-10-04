@@ -28,7 +28,10 @@ export interface Nav {
   back: () => void
 }
 
-type Motion = 'push' | 'pop' | 'fade' | 'none'
+type Motion = 'push' | 'pop' | 'fade' | 'tab-right' | 'tab-left'
+
+// Alt menüdeki sıra: sağdaki sekmeye geçince sayfa sağdan, soldakine geçince soldan gelir
+const TAB_ORDER: Tab[] = ['home', 'subscriptions', 'cards', 'history', 'account']
 
 type Pending = { sheet: NonNullable<SheetTarget>; tab: Tab } | null
 
@@ -80,12 +83,12 @@ function Main({
   }, [tab, detailId, cardId])
 
   // Sayfa geçişi (iPhone'daki gibi): detay sağ kenardan gelir, eski sayfa biraz sola kayıp kararır; geri dönünce tersi.
-  // Alt menüden sekme değişince animasyon yok, sayfa anında değişir (iPhone'daki sekmeler gibi). Animasyonlar src/index.css'te (::view-transition).
+  // Alt menüden sekme değişince sayfa sekmenin yönünden kısa bir kaymayla gelir. Animasyonlar src/index.css'te (::view-transition).
   // View Transitions olmayan tarayıcılarda sadece yeni sayfa kısa bir animasyonla belirir.
   const screen = `${tab}:${detailId ?? ''}:${cardId ?? ''}`
   const [motion, setMotion] = useState<Motion>('fade')
   function go(next: Motion, update: () => void) {
-    if (next === 'none' || !document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setMotion(next)
       return update()
     }
@@ -150,7 +153,8 @@ function Main({
         onTab={(t) => {
           if (t !== 'account') savePending(null)
           if (t === tab && !detailId && !cardId) return
-          go('none', () => {
+          // Aynı sekmeye basınca detaydan listeye geri dönülür
+          go(t === tab ? 'pop' : TAB_ORDER.indexOf(t) > TAB_ORDER.indexOf(tab) ? 'tab-right' : 'tab-left', () => {
             setTab(t)
             setDetailId(null)
             setCardId(null)

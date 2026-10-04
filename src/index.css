@@ -172,12 +172,20 @@
 @keyframes screen-push {
   from { opacity: 0; transform: translateX(28px); }
 }
+@keyframes screen-tab-right {
+  from { opacity: 0; transform: translateX(40px); }
+}
+@keyframes screen-tab-left {
+  from { opacity: 0; transform: translateX(-40px); }
+}
 @keyframes screen-pop {
   from { opacity: 0; transform: translateX(-28px); }
 }
 .screen-fade { animation: screen-fade 200ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 .screen-push { animation: screen-push 260ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 .screen-pop { animation: screen-pop 260ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.screen-tab-right { animation: screen-tab-right 260ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.screen-tab-left { animation: screen-tab-left 260ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 
 /* iPhone tarzı sayfa geçişi (View Transitions, iOS 18+). Yön <html data-motion="push|pop|fade"> ile seçilir (src/App.tsx).
    push: yeni sayfa sağ kenardan gelir, eski sayfa %30 sola kayıp kararır. pop: tersi, kapanan sayfa üstte sağa çıkar.
@@ -204,6 +212,16 @@ html[data-motion='push']::view-transition-old(root) { animation-name: vt-to-left
 html[data-motion='push']::view-transition-new(root) { animation-name: vt-from-right; box-shadow: -8px 0 24px rgb(0 0 0 / 0.12); }
 html[data-motion='pop']::view-transition-old(root) { animation-name: vt-to-right; z-index: 1; box-shadow: -8px 0 24px rgb(0 0 0 / 0.12); }
 html[data-motion='pop']::view-transition-new(root) { animation-name: vt-from-left; }
+@keyframes vt-tab-in-right { from { opacity: 0; transform: translateX(40px); } }
+@keyframes vt-tab-in-left { from { opacity: 0; transform: translateX(-40px); } }
+@keyframes vt-tab-out-left { to { opacity: 0; transform: translateX(-40px); } }
+@keyframes vt-tab-out-right { to { opacity: 0; transform: translateX(40px); } }
+html[data-motion^='tab']::view-transition-old(root),
+html[data-motion^='tab']::view-transition-new(root) { animation-duration: 260ms; }
+html[data-motion='tab-right']::view-transition-old(root) { animation-name: vt-tab-out-left; }
+html[data-motion='tab-right']::view-transition-new(root) { animation-name: vt-tab-in-right; }
+html[data-motion='tab-left']::view-transition-old(root) { animation-name: vt-tab-out-right; }
+html[data-motion='tab-left']::view-transition-new(root) { animation-name: vt-tab-in-left; }
 html[data-motion='fade']::view-transition-old(root) { animation-name: vt-fade-out; animation-duration: 160ms; }
 html[data-motion='fade']::view-transition-new(root) { animation-name: vt-fade-in; animation-duration: 240ms; }
 
@@ -222,7 +240,7 @@ html[data-motion='fade']::view-transition-new(root) { animation-name: vt-fade-in
 .skeleton { background: var(--surface); animation: skeleton 1.4s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .screen-fade, .screen-push, .screen-pop, .check-pop, .skeleton { animation: none; }
+  .screen-fade, .screen-push, .screen-pop, .screen-tab-right, .screen-tab-left, .check-pop, .skeleton { animation: none; }
 }
 
 /* Liquid glass: alt menüdeki buzlu cam. Arkadan geçen içerik bulanık görünür, kenarda ince ışık parlaması. */
