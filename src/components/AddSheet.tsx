@@ -4,8 +4,6 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { haptic } from '@/lib/haptics'
 import { play } from '@/lib/sound'
-import { BankMark } from '@/components/BankMark'
-import { Logo } from '@/components/Logo'
 import { DaySelect, Field, FieldGroup, inputClass, PrimaryButton, Segmented, selectClass } from '@/components/FormBits'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer'
 import { BANKS, bankColor, bankName as fullBankName, cardColor } from '@/lib/banks'
@@ -94,6 +92,7 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
   const newCard = cardId === NEW_CARD
   const [card, setCard] = useState<NewCard>({ bankName: '', last4: '', kind: 'credit', statementDay: null })
   const [error, setError] = useState('')
+  const nameHints = startingWith(name, SERVICES)
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -132,17 +131,15 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
     <form onSubmit={submit} className="mt-4 grid grid-cols-1 gap-3">
       <FieldGroup>
         <Field label="Ad" htmlFor="s-name">
-          <input id="s-name" className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Netflix" autoComplete="off" />
+          <input id="s-name" className={inputClass} style={hinted(name, nameHints)} value={name} onChange={(e) => setName(e.target.value)} placeholder="Netflix" autoComplete="off" />
+          <Suggestions
+            items={nameHints}
+            onPick={(s) => {
+              setServiceKey(s.key)
+              setName(s.name)
+            }}
+          />
         </Field>
-        <Suggestions
-          query={name}
-          items={SERVICES}
-          icon={(s) => <Logo serviceKey={s.key} name={s.name} size={22} />}
-          onPick={(s) => {
-            setServiceKey(s.key)
-            setName(s.name)
-          }}
-        />
         <Field label="Tutar" htmlFor="s-amount">
           <input id="s-amount" className={cn(inputClass, 'num text-lg')} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="229,99" />
           <select aria-label="Para birimi" className={selectClass} value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>
@@ -229,6 +226,7 @@ function buildCard(c: NewCard, existing?: CreditCard): CreditCard {
 function CardInputs({ value, onChange, idPrefix, existing }: { value: NewCard; onChange: (c: NewCard) => void; idPrefix: string; existing?: CreditCard }) {
   const set = (patch: Partial<NewCard>) => onChange({ ...value, ...patch })
   const digits = (v: string, max: number) => v.replace(/\D/g, '').slice(0, max)
+  const bankHints = startingWith(value.bankName, BANKS)
   return (
     <>
       <Segmented
@@ -239,15 +237,10 @@ function CardInputs({ value, onChange, idPrefix, existing }: { value: NewCard; o
       />
       <FieldGroup>
         <Field label="Banka adı" htmlFor={`${idPrefix}-bank`}>
-          <input id={`${idPrefix}-bank`} className={inputClass} value={value.bankName} onChange={(e) => set({ bankName: e.target.value })} placeholder="Garanti BBVA" autoComplete="off" />
-          {value.bankName.trim() && <span aria-hidden className="size-4 shrink-0 rounded-full" style={{ background: colorFor(value.bankName, existing) }} />}
+          <input id={`${idPrefix}-bank`} className={inputClass} style={hinted(value.bankName, bankHints)} value={value.bankName} onChange={(e) => set({ bankName: e.target.value })} placeholder="Garanti BBVA" autoComplete="off" />
+          <Suggestions items={bankHints} onPick={(b) => set({ bankName: b.name })} />
+          {value.bankName.trim() && bankHints.length === 0 && <span aria-hidden className="size-4 shrink-0 rounded-full" style={{ background: colorFor(value.bankName, existing) }} />}
         </Field>
-        <Suggestions
-          query={value.bankName}
-          items={BANKS}
-          icon={(b) => <BankMark bankName={b.name} color={b.color} size={22} />}
-          onPick={(b) => set({ bankName: b.name })}
-        />
         <Field label="Son 4 hane" htmlFor={`${idPrefix}-last4`}>
           <input id={`${idPrefix}-last4`} className={cn(inputClass, 'num tracking-widest')} inputMode="numeric" autoComplete="off" value={value.last4} onChange={(e) => set({ last4: digits(e.target.value, 4) })} placeholder="1234" />
         </Field>
@@ -306,38 +299,23 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
   )
 }
 
-/**
- * Ad yazarken alanın altında çıkan hazır öneriler (logolu, yana kaydırılır). Başı yazılana uyanlar önce gelir.
- * Yazılan ad zaten listedekiyle aynıysa ya da hiçbiri uymuyorsa gizlenir.
- */
-function Suggestions<T extends { key: string; name: string }>({
-  query,
-  items,
-  icon,
-  onPick,
-}: {
-  query: string
-  items: T[]
-  icon: (item: T) => React.ReactNode
-  onPick: (item: T) => void
-}) {
+/** Öneri varken yazı alanı yazılan kadar daralır, öneriler aynı satırda sağında durur (form büyümez). Yazılan, önerilerin başı olduğu için kısadır. */
+const hinted = (text: string, hints: unknown[]) => (hints.length > 0 ? { width: `${text.length + 1}ch`, flex: 'none' } : undefined)
+
+/** Adı yazılanla başlayanlar (içinde geçenler değil). Yazılan zaten listedeki bir adla aynıysa öneri yok. */
+function startingWith<T extends { name: string }>(query: string, items: T[]) {
   const q = normalize(query)
-  if (!q || items.some((i) => normalize(i.name) === q)) return null
-  const starts = items.filter((i) => normalize(i.name).startsWith(q))
-  const contains = items.filter((i) => !normalize(i.name).startsWith(q) && normalize(i.name).includes(q))
-  const list = [...starts, ...contains].slice(0, 10)
-  if (list.length === 0) return null
+  if (!q || items.some((i) => normalize(i.name) === q)) return []
+  return items.filter((i) => normalize(i.name).startsWith(q)).slice(0, 8)
+}
+
+/** Ad alanının sağında, aynı satırda yana kaydırılan yazılı öneriler. Dokununca ad o öneriyle dolar. */
+function Suggestions<T extends { key: string; name: string }>({ items, onPick }: { items: T[]; onPick: (item: T) => void }) {
+  if (items.length === 0) return null
   return (
-    // Öneriler üstteki alana ait: 1px yukarı çıkıp alanın altındaki ayırıcı çizgiyi örter
-    <div className="relative -mt-px flex gap-1.5 overflow-x-auto bg-surface px-3.5 pb-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {list.map((i) => (
-        <button
-          key={i.key}
-          type="button"
-          onClick={() => onPick(i)}
-          className="pressable flex shrink-0 items-center gap-1.5 rounded-full bg-page py-1 pr-3 pl-1 text-sm"
-        >
-          {icon(i)}
+    <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {items.map((i) => (
+        <button key={i.key} type="button" onClick={() => onPick(i)} className="pressable shrink-0 rounded-full bg-page px-3 py-1 text-sm whitespace-nowrap">
           {i.name}
         </button>
       ))}
