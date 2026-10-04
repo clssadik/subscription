@@ -41,6 +41,7 @@ export function TearTicket({
   stub,
   canTear,
   hint,
+  note,
   onTear,
 }: {
   top: ReactNode
@@ -48,6 +49,8 @@ export function TearTicket({
   canTear: boolean
   /** Koçanda görünen ipucu, ör. "Kesip ödendi işaretle" */
   hint: string
+  /** Kesilemezken koçanda neden yazar, ör. "19 Şubat ödemesi o ay gelince kesilebilir" */
+  note?: string
   onTear: () => void
 }) {
   const root = useRef<HTMLDivElement>(null)
@@ -144,6 +147,7 @@ export function TearTicket({
         <span className="flex-1 border-t border-dashed border-current opacity-25" />
       </div>
       {stub}
+      {!canTear && note && <p className="mt-2.5 text-[12px] opacity-60">{note}</p>}
       {canTear && (
         <p className="mt-2.5 flex items-center gap-1.5 text-[12px] font-medium opacity-90">
           <span>{hint}</span>

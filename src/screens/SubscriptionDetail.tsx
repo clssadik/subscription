@@ -61,6 +61,8 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
         canTear={canMarkPaid(next)}
         hint={daysUntil(next) <= 0 ? 'Kesip ödendi işaretle' : `${formatDate(next, 'd MMMM')} ödemesini kesip işaretle`}
         onTear={markPaid}
+        // Gelecek ayların ödemesi o ay gelmeden işaretlenemez: koçanda nedeni yazar (bu ay ödendiyse alttaki not yeter)
+        note={paidThisMonth(state.payments, sub.id) ? undefined : `${formatDate(next, 'd MMMM')} ödemesi o ay gelince kesilebilir`}
         top={
           <>
             <span aria-hidden className="absolute -top-8 -right-8 size-28 rounded-full bg-bh-blue dark:bg-bh-yellow" />
