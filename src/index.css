@@ -116,9 +116,9 @@
     @apply font-sans;
     -webkit-tap-highlight-color: transparent;
   }
+  /* Esneme açık: her sayfa iPhone'daki gibi hem üstte hem altta esner. overscroll-behavior ile kapatma. */
   body {
     @apply bg-page text-ink antialiased;
-    overscroll-behavior-y: none;
   }
 }
 
