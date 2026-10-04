@@ -17,6 +17,22 @@ export function ScrollPage({ children }: { children: ReactNode }) {
       >
         <div className="min-h-[calc(100%+1px)]">{children}</div>
       </div>
+      <TopFade />
     </div>
+  )
+}
+
+/**
+ * Kayan alanın üstündeki boş şeridin (32px) üstüne zemin renginden şeffafa geçiş: yukarı kayan içerik saat çubuğuna
+ * varmadan solar. Çubuk düz zemin renginde olduğu için ikisi tek parça görünür, kenarda keskin çizgi oluşmaz.
+ * Kayan alanı saran kutunun içine, kayan alandan sonra konur.
+ */
+export function TopFade() {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute -inset-x-3 -top-8 z-20 h-8"
+      style={{ background: 'linear-gradient(to bottom, var(--page) 20%, transparent)' }}
+    />
   )
 }

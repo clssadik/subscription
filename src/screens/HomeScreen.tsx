@@ -17,6 +17,7 @@ import { useScrollMemory } from '@/lib/useScrollMemory'
 import { CURRENCIES } from '@/lib/types'
 import { TOP_FOG, fog } from '@/lib/fog'
 import { cn } from '@/lib/utils'
+import { TopFade } from '@/components/ScrollPage'
 import { BankMark } from '@/components/BankMark'
 import type { Nav } from '@/App'
 
@@ -282,6 +283,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
             </ul>
         </div>
       </div>
+      <TopFade />
     </div>
   )
 }

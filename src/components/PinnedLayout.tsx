@@ -3,6 +3,7 @@ import { TOP_FOG, fog, type FogLevel } from '@/lib/fog'
 import { useScrollLimit } from '@/lib/useScrollLimit'
 import { useScrollMemory } from '@/lib/useScrollMemory'
 import { cn } from '@/lib/utils'
+import { TopFade } from '@/components/ScrollPage'
 
 /**
  * Üstte sabit duran başlık + blok ve altından kayan liste (Anasayfa'daki yapının aynısı).
@@ -93,6 +94,7 @@ export function PinnedLayout({
           </div>
         )}
       </div>
+      <TopFade />
     </div>
   )
 }
