@@ -106,17 +106,22 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
   const newCard = cardId === NEW_CARD
   const [card, setCard] = useState<NewCard>({ bankName: '', last4: '', kind: 'credit', statementDay: null })
   const [error, setError] = useState('')
+  // Hata: mesajla birlikte hafif titreşim
+  const fail = (message: string) => {
+    haptic()
+    setError(message)
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
     const value = parseAmount(amount)
-    if (!name.trim()) return setError('Abonelik adını gir.')
-    if (!(value > 0)) return setError('Tutarı sayı olarak gir, örneğin 229,99.')
-    if (!renewalDate) return setError('Yenilenme tarihini seç.')
+    if (!name.trim()) return fail('Abonelik adını gir.')
+    if (!(value > 0)) return fail('Tutarı sayı olarak gir, örneğin 229,99.')
+    if (!renewalDate) return fail('Yenilenme tarihini seç.')
     let linkedCard = cardId || null
     if (newCard) {
       const problem = cardProblem(card)
-      if (problem) return setError(problem)
+      if (problem) return fail(problem)
       const saved = buildCard(card)
       dispatch({ type: 'card/save', card: saved })
       linkedCard = saved.id
@@ -286,11 +291,16 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
     statementDay: card?.statementDay ?? null,
   })
   const [error, setError] = useState('')
+  // Hata: mesajla birlikte hafif titreşim
+  const fail = (message: string) => {
+    haptic()
+    setError(message)
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
     const problem = cardProblem(value)
-    if (problem) return setError(problem)
+    if (problem) return fail(problem)
     dispatch({ type: 'card/save', card: buildCard(value, card) })
     haptic()
     play('save')

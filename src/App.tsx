@@ -6,7 +6,7 @@ import { ScrollPage } from '@/components/ScrollPage'
 import { BottomNav, type Tab } from '@/components/BottomNav'
 import { Toaster } from '@/components/ui/sonner'
 import { useUser } from '@/lib/auth'
-import { initial } from '@/lib/format'
+import { initials, useSettings } from '@/lib/settings'
 import { StoreProvider, useStore } from '@/lib/store'
 import { transition, type Motion } from '@/lib/transition'
 import { scrollToTop } from '@/lib/useScrollMemory'
@@ -58,6 +58,7 @@ export default function App() {
 
 function Main({ user }: { user: User }) {
   const { ready } = useStore()
+  const { settings } = useSettings(user.id)
   const [tab, setTab] = useState<Tab>('home')
   const [detailId, setDetailId] = useState<string | null>(null)
   // Kart detayı hangi sekmeden açıldıysa onun üstünde açılır; geri basınca o sekmeye dönülür
@@ -156,7 +157,7 @@ function Main({ user }: { user: User }) {
       )}
       <BottomNav
         tab={tab}
-        initial={initial(user.email ?? '')}
+        initial={initials(settings.name, user.email ?? '')}
         onTab={(t) => {
           // Açık sekmeye tekrar basınca en başa kay
           if (t === tab && !detailId && !cardId) {

@@ -1,22 +1,81 @@
 import type { User } from '@supabase/supabase-js'
-import { FlaskConicalIcon, LogOutIcon, MoonIcon, SmartphoneIcon, SunIcon, Trash2Icon, Volume2Icon, VolumeXIcon } from 'lucide-react'
+import {
+  BellIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  FileTextIcon,
+  FlaskConicalIcon,
+  LogOutIcon,
+  MoonIcon,
+  ShieldIcon,
+  SmartphoneIcon,
+  SquarePlusIcon,
+  SunIcon,
+  Trash2Icon,
+  Volume2Icon,
+  WalletIcon,
+} from 'lucide-react'
+import { useState } from 'react'
 import { toast } from 'sonner'
+import { LegalSheet, type LegalPage } from '@/components/LegalSheet'
 import { ScreenHeader } from '@/components/ScreenHeader'
-import { formatDate, initial } from '@/lib/format'
-import { clearCache, useStore } from '@/lib/store'
+import { Group, Row, RowIcon, Switch } from '@/components/SettingsList'
+import { monthlyCost } from '@/lib/dates'
 import { DEMO_ID, demoSignOut } from '@/lib/demo'
+import { formatMoney } from '@/lib/format'
+import { haptic } from '@/lib/haptics'
+import { isInstalled } from '@/lib/install'
 import { randomCards, randomSubscriptions } from '@/lib/seed'
-import { useUndoable } from '@/lib/undo'
+import { daysLabel, initials, useSettings } from '@/lib/settings'
 import { play, useSoundEnabled } from '@/lib/sound'
+import { clearCache, useStore } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
 import { type ThemePref, useTheme } from '@/lib/theme'
-import { cn } from '@/lib/utils'
+import { transition } from '@/lib/transition'
+import { useUndoable } from '@/lib/undo'
+import { InstallGuide } from './account/InstallGuide'
+import { NotificationSettings } from './account/NotificationSettings'
+import { ProfileEditor } from './account/ProfileEditor'
+import { SpendingSummary } from './account/SpendingSummary'
+
+// Hesap: iPhone Ayarlar gibi gruplu satırlar. Profil, bildirimler, harcama özeti ve ana ekrana ekle rehberi
+// kendi alt sayfalarında açılır (sağdan kayarak; geri sola).
+
+type Page = 'main' | 'profile' | 'notifications' | 'spending' | 'install'
+
+const THEME_LABELS: Record<ThemePref, string> = { auto: 'Otomatik', light: 'Açık', dark: 'Koyu' }
+const SUMMARY_LABELS = { off: 'Kapalı', weekly: 'Haftalık', monthly: 'Aylık' } as const
 
 export function AccountScreen({ user }: { user: User }) {
+  const [page, setPage] = useState<Page>('main')
+
+  function go(next: Page) {
+    transition(next === 'main' ? 'pop' : 'push', () => {
+      setPage(next)
+      // Yeni sayfa en baştan başlasın
+      document.querySelector('[data-screen-active] [data-scroller]')?.scrollTo(0, 0)
+    })
+  }
+  const back = () => go('main')
+
+  if (page === 'profile') return <ProfileEditor user={user} onBack={back} />
+  if (page === 'notifications') return <NotificationSettings userId={user.id} onBack={back} />
+  if (page === 'spending') return <SpendingSummary onBack={back} />
+  if (page === 'install') return <InstallGuide onBack={back} />
+  return <AccountMain user={user} open={go} />
+}
+
+function AccountMain({ user, open }: { user: User; open: (page: Page) => void }) {
   const { state, dispatch } = useStore()
   const undoable = useUndoable()
+  const { settings, updateNotify } = useSettings(user.id)
+  const { pref, setPref } = useTheme()
+  const [sound, setSound] = useSoundEnabled()
+  const [legal, setLegal] = useState<LegalPage | null>(null)
   const email = user.email ?? ''
   const demo = user.id === DEMO_ID
+  const notify = settings.notify
+  const monthly = state.subscriptions.filter((s) => s.currency === 'TRY').reduce((sum, s) => sum + monthlyCost(s), 0)
 
   function addTestData() {
     const cards = randomCards(10)
@@ -27,6 +86,7 @@ export function AccountScreen({ user }: { user: User }) {
   }
 
   async function signOut() {
+    haptic()
     // Test hesabının verileri cihazda kalsın; gerçek hesapta çıkarken temizlenir
     if (user.id === DEMO_ID) return demoSignOut()
     clearCache(user.id)
@@ -36,124 +96,124 @@ export function AccountScreen({ user }: { user: User }) {
   return (
     <>
       <ScreenHeader title="Hesap" />
-      <section className="flex flex-col items-center rounded-[120px_120px_22px_22px] bg-bh-yellow px-4 pt-8 pb-5 text-center text-[#141414]">
-        <div className="flex size-16 items-center justify-center rounded-full bg-[#141414] font-label text-2xl font-medium text-bh-yellow">
-          {initial(email)}
-        </div>
-        <p className="mt-3 max-w-full truncate font-medium">{email}</p>
-        <p className="text-[11px] opacity-75">{formatDate(new Date(user.created_at), 'd MMMM yyyy')} tarihinden beri</p>
-      </section>
 
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        <Stat label="Abonelik" value={state.subscriptions.length} />
-        <Stat label="Kart" value={state.cards.length} />
-      </div>
+      {/* Profil: dokununca ad düzenlenir */}
+      <button
+        type="button"
+        onClick={() => {
+          haptic()
+          open('profile')
+        }}
+        className="pressable flex w-full items-center gap-3 rounded-[22px] bg-surface p-3.5 text-left"
+      >
+        <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-bh-yellow font-label text-xl font-medium text-[#141414]">
+          {initials(settings.name, email)}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className={settings.name ? 'block truncate text-lg font-medium' : 'block text-lg text-subtle'}>
+            {settings.name || 'Adını ekle'}
+          </span>
+          <span className="block truncate text-sm text-subtle">{email}</span>
+        </span>
+      </button>
 
-      <ThemePicker />
-      <SoundPicker />
+      <Group title="Bildirimler">
+        <Row
+          icon={<RowIcon Icon={BellIcon} className="bg-bh-yellow text-[#141414]" />}
+          label="Hatırlatmalar"
+          trailing={<Switch label="Hatırlatmalar" checked={notify.enabled} onChange={(enabled) => updateNotify({ enabled })} />}
+        />
+        <Row
+          icon={<RowIcon Icon={ClockIcon} className="bg-bh-blue text-white" />}
+          label="Zamanlama"
+          value={notify.enabled ? `${daysLabel(notify.subscriptionDays)} · ${notify.time}` : 'Kapalı'}
+          onClick={() => open('notifications')}
+        />
+        <Row
+          icon={<RowIcon Icon={CalendarDaysIcon} className="bg-bh-green text-white" />}
+          label="Özet bildirimi"
+          value={notify.enabled ? SUMMARY_LABELS[notify.summary] : 'Kapalı'}
+          onClick={() => open('notifications')}
+        />
+      </Group>
 
-      <p className="mt-4 px-1 text-sm text-subtle">
-        {demo
-          ? 'Test hesabı: veriler sadece bu cihazda saklanıyor.'
-          : 'Verilerin hesabında saklanıyor. Aynı e-postayla başka bir cihazdan girdiğinde hepsi orada olur.'}
-      </p>
+      <Group title="Görünüm">
+        <Row
+          icon={<RowIcon Icon={pref === 'dark' ? MoonIcon : pref === 'light' ? SunIcon : SmartphoneIcon} className="bg-page" />}
+          label="Tema"
+          value={THEME_LABELS[pref]}
+          select={
+            <select
+              aria-label="Tema"
+              value={pref}
+              onChange={(e) => {
+                haptic()
+                setPref(e.target.value as ThemePref)
+              }}
+              className="absolute inset-0 opacity-0"
+            >
+              {Object.entries(THEME_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          }
+        />
+        <Row
+          icon={<RowIcon Icon={Volume2Icon} className="bg-page" />}
+          label="Sesler"
+          trailing={
+            <Switch
+              label="Sesler"
+              checked={sound}
+              onChange={(on) => {
+                setSound(on)
+                if (on) play('paid')
+              }}
+            />
+          }
+        />
+      </Group>
+
+      <Group title="Diğer">
+        <Row
+          icon={<RowIcon Icon={WalletIcon} className="bg-page" />}
+          label="Harcama özeti"
+          value={state.subscriptions.length ? `${formatMoney(monthly)}/ay` : undefined}
+          onClick={() => open('spending')}
+        />
+        <Row
+          icon={<RowIcon Icon={SquarePlusIcon} className="bg-page" />}
+          label="Ana ekrana ekle"
+          value={isInstalled() ? 'Eklendi' : undefined}
+          onClick={() => open('install')}
+        />
+        <Row icon={<RowIcon Icon={FileTextIcon} className="bg-page" />} label="Kullanım şartları" onClick={() => setLegal('terms')} />
+        <Row icon={<RowIcon Icon={ShieldIcon} className="bg-page" />} label="Gizlilik" onClick={() => setLegal('privacy')} />
+      </Group>
 
       {/* Sadece test hesabında: hızlı deneme için örnek veri */}
       {demo && (
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <button onClick={addTestData} className="pressable flex min-h-12 items-center justify-center gap-2 rounded-[18px] bg-surface font-medium">
-            <FlaskConicalIcon className="size-[18px] text-bh-blue" /> Test verisi ekle
-          </button>
-          <button
+        <Group title="Test hesabı" footer="Veriler sadece bu cihazda saklanıyor.">
+          <Row icon={<RowIcon Icon={FlaskConicalIcon} className="bg-bh-blue/15 text-bh-blue" />} label="Test verisi ekle" onClick={addTestData} />
+          <Row
+            icon={<RowIcon Icon={Trash2Icon} className="bg-bh-red/15 text-bh-red" />}
+            label="Tüm verileri sil"
+            danger
             onClick={() => undoable('Tüm veriler silindi', () => dispatch({ type: 'state/restore', state: { cards: [], subscriptions: [], payments: [], missingLogos: [] } }))}
-            className="pressable flex min-h-12 items-center justify-center gap-2 rounded-[18px] bg-surface font-medium"
-          >
-            <Trash2Icon className="size-[18px] text-bh-red" /> Tüm verileri sil
-          </button>
-        </div>
+          />
+        </Group>
       )}
 
-      <button onClick={signOut} className="pressable mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-surface font-medium text-bh-red">
-        <LogOutIcon className="size-[18px]" /> Çıkış yap
-      </button>
+      <Group
+        footer={demo ? undefined : 'Verilerin hesabında saklanıyor. Aynı e-postayla başka bir cihazdan girdiğinde hepsi orada olur.'}
+      >
+        <button type="button" onClick={signOut} className="flex min-h-[52px] w-full items-center justify-center gap-2 text-[15px] font-medium text-bh-red active:bg-line/60">
+          <LogOutIcon className="size-[18px]" /> Çıkış yap
+        </button>
+      </Group>
+
+      <p className="mt-6 text-center text-[12px] text-subtle">Subly</p>
+      <LegalSheet page={legal} onClose={() => setLegal(null)} />
     </>
-  )
-}
-
-const THEMES: { value: ThemePref; label: string; Icon: typeof SunIcon }[] = [
-  { value: 'auto', label: 'Otomatik', Icon: SmartphoneIcon },
-  { value: 'light', label: 'Açık', Icon: SunIcon },
-  { value: 'dark', label: 'Koyu', Icon: MoonIcon },
-]
-
-// Otomatik = telefonun ayarını izler. Seçim bu cihazda saklanır.
-function ThemePicker() {
-  const { pref, setPref } = useTheme()
-  return (
-    <section className="mt-4">
-      <h2 className="label px-1 text-subtle">Tema</h2>
-      <div className="mt-2 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Tema">
-        {THEMES.map(({ value, label, Icon }) => (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={pref === value}
-            onClick={() => setPref(value)}
-            className={cn(
-              'pressable flex h-16 flex-col items-center justify-center gap-1 rounded-[18px] font-label text-sm',
-              pref === value ? 'bg-bh-yellow font-medium text-[#141414]' : 'bg-surface text-subtle',
-            )}
-          >
-            <Icon className="size-[18px]" />
-            {label}
-          </button>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-// Ödendi, kaydet ve sil sesleri. Açınca örnek olarak "ding" çalar. Seçim bu cihazda saklanır.
-function SoundPicker() {
-  const [enabled, setEnabled] = useSoundEnabled()
-  const options = [
-    { on: true, label: 'Açık', Icon: Volume2Icon },
-    { on: false, label: 'Kapalı', Icon: VolumeXIcon },
-  ]
-  return (
-    <section className="mt-4">
-      <h2 className="label px-1 text-subtle">Sesler</h2>
-      <div className="mt-2 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Sesler">
-        {options.map(({ on, label, Icon }) => (
-          <button
-            key={label}
-            type="button"
-            role="radio"
-            aria-checked={enabled === on}
-            onClick={() => {
-              setEnabled(on)
-              if (on) play('paid')
-            }}
-            className={cn(
-              'pressable flex h-16 flex-col items-center justify-center gap-1 rounded-[18px] font-label text-sm',
-              enabled === on ? 'bg-bh-yellow font-medium text-[#141414]' : 'bg-surface text-subtle',
-            )}
-          >
-            <Icon className="size-[18px]" />
-            {label}
-          </button>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex h-[92px] flex-col rounded-[22px] bg-surface p-3">
-      <span className="label text-subtle">{label}</span>
-      <span className="num num-bold mt-auto text-3xl">{value}</span>
-    </div>
   )
 }

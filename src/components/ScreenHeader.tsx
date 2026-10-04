@@ -1,6 +1,7 @@
 import { PlusIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { formatDate } from '@/lib/format'
+import { haptic } from '@/lib/haptics'
 
 export function ScreenHeader({ title, action }: { title: string; action?: ReactNode }) {
   return (
@@ -39,7 +40,11 @@ export function RoundButton({ label, onClick, children }: { label: string; onCli
 /** Başlığın sağındaki sarı "+" */
 export function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} aria-label={label} className="pressable flex size-11 items-center justify-center rounded-full bg-bh-yellow text-[#141414]">
+    <button
+      onClick={() => {
+        haptic()
+        onClick()
+      }} aria-label={label} className="pressable flex size-11 items-center justify-center rounded-full bg-bh-yellow text-[#141414]">
       <PlusIcon className="size-6" strokeWidth={2} />
     </button>
   )

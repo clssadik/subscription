@@ -1,5 +1,6 @@
 import { Trash2Icon, type LucideIcon } from 'lucide-react'
 import { useRef, useState, type ReactNode } from 'react'
+import { haptic } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
 
 const OPEN = -84
@@ -81,7 +82,12 @@ export function SwipeRow({
           setDragging(false)
           release()
           if (!s) return
-          if (s.dir === 'h') setX(x < OPEN / 2 ? OPEN : 0)
+          if (s.dir === 'h') {
+            const open = x < OPEN / 2
+            // "Sil" açılınca hafif titreşim
+            if (open && s.base === 0) haptic()
+            setX(open ? OPEN : 0)
+          }
           else if (!s.dir) {
             if (x !== 0) setX(0)
             else onTap?.()
