@@ -106,6 +106,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
           tutulsun liste kayar; iPhone en üstte esnetince başlık ve blok listeyle birlikte iner. Liste cam menünün arkasına kadar uzanır. */}
       <div
         ref={scroller}
+        data-scroller
         onScroll={onScroll}
         className="relative -mx-3 min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >

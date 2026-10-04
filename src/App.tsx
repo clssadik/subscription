@@ -85,13 +85,13 @@ function Main({ user }: { user: User }) {
 
   return (
     <>
-      {/* Özet ve Abonelikler ekrana sığar (sayfa kaymaz); orada sadece liste kayar */}
+      {/* Liste sekmeleri ekrana sığar (sayfa kaymaz); sadece içlerindeki liste kayar. İç içe ikinci bir kayan alan olmasın: iPhone'da kaydırma kilitlenebiliyor */}
       <main
         key={ready ? screen : 'loading'}
         className={cn(
           !document.startViewTransition && `screen-${motion}`,
           'mx-auto max-w-md px-3 pt-[max(1rem,env(safe-area-inset-top))]',
-          (tab === 'home' || tab === 'subscriptions' || tab === 'history' || tab === 'cards') && !detailId && !cardId && ready ? 'flex h-svh flex-col overflow-y-auto pb-24' : 'min-h-svh pb-32',
+          (tab === 'home' || tab === 'subscriptions' || tab === 'history' || tab === 'cards') && !detailId && !cardId && ready ? 'flex h-svh flex-col overflow-hidden pb-24' : 'min-h-svh pb-32',
         )}
       >
         {!ready ? (

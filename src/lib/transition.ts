@@ -17,6 +17,20 @@ export function transition(motion: Motion, update: () => void) {
   // Sayfa arka plandayken ya da arka arkaya basınca geçiş atlanır; güncelleme yine yapılır, hata sayılmasın
   const ignore = () => {}
   t.ready.catch(ignore)
-  t.finished.catch(ignore)
+  t.finished.then(wakeScrollers, ignore)
   return true
+}
+
+/**
+ * iPhone'da geçiş sırasında oluşturulan kayan alan bazen parmakla kaymıyor (kilitli kalıyor).
+ * Geçiş bitince her kayan alanın taşmasını bir anlığına kapatıp açarak telefonun onu yeniden tanımasını sağlar; kaydırma yeri korunur.
+ */
+function wakeScrollers() {
+  for (const el of document.querySelectorAll<HTMLElement>('[data-scroller]')) {
+    const top = el.scrollTop
+    el.style.overflowY = 'hidden'
+    void el.offsetHeight
+    el.style.overflowY = ''
+    el.scrollTop = top
+  }
 }
