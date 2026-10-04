@@ -58,6 +58,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
     <>
       <PinnedLayout
         scrollKey="history"
+        pinned={false}
         header={<ScreenHeader title="Geçmiş" />}
         top={
           <section className="flex h-[176px] flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg">
