@@ -86,8 +86,8 @@ function Welcome({ onStart, onLogin }: { onStart: () => void; onLogin: () => voi
   return (
     <>
       <Brand className="mb-4" />
-      <LogoWall />
-      <div className="mt-auto pt-8">
+      <LogoWall className="min-h-0 flex-1" />
+      <div className="pt-8">
         <h1 className="num num-bold text-[44px] leading-[1.02]">
           Hepsi
           <br />
