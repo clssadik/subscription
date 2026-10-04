@@ -1,10 +1,10 @@
 import { endOfMonth, endOfWeek, startOfDay } from 'date-fns'
-import { useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { SubscriptionQuickStart } from '@/components/QuickStart'
 import { ScrollPage } from '@/components/ScrollPage'
-import { AddButton, ScreenHeader, SearchBar, SearchButton } from '@/components/ScreenHeader'
+import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
+import { SearchButton, SearchSwap } from '@/components/Search'
 import { PinnedLayout } from '@/components/PinnedLayout'
 import { ShareBar } from '@/components/ShareBar'
 import { SwipeRow } from '@/components/SwipeRow'
@@ -12,6 +12,7 @@ import { daysUntil, monthlyCost, nextRenewal } from '@/lib/dates'
 import { formatDate, formatMoney } from '@/lib/format'
 import { normalize } from '@/lib/services'
 import { useStore } from '@/lib/store'
+import { useSearch } from '@/lib/useSearch'
 import { useUndoable } from '@/lib/undo'
 import { CURRENCIES, type Subscription } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -21,9 +22,9 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const undoable = useUndoable()
   const { subscriptions, cards, payments } = state
-  // null = arama kapalı. Açıkken üstteki toplam kutusu gizlenir, liste ada ve karta göre süzülür.
-  const [query, setQuery] = useState<string | null>(null)
-  const q = normalize(query ?? '')
+  // Arama açıkken üstteki toplam kutusu kapanır, liste ada ve karta göre süzülür
+  const search = useSearch()
+  const { q } = search
 
   const cardLabel = (s: Subscription) => {
     const c = cards.find((c) => c.id === s.cardId)
@@ -85,7 +86,7 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
       title="Abonelikler"
       action={
         <div className="flex gap-2">
-          {subscriptions.length > 0 && <SearchButton open={query !== null} onClick={() => setQuery(query === null ? '' : null)} />}
+          {subscriptions.length > 0 && <SearchButton search={search} />}
           <AddButton label="Abonelik ekle" onClick={() => nav.add()} />
         </div>
       }
@@ -105,10 +106,8 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
           pinned={false}
           header={header}
           top={
-            query !== null ? (
-              <SearchBar value={query} onChange={setQuery} onClose={() => setQuery(null)} placeholder="Abonelik ya da kart ara" />
-            ) : (
-              /* Koyu temada beyaz kart: siyah zeminde öne çıksın */
+            <SearchSwap search={search} placeholder="Abonelik ya da kart ara">
+              {/* Koyu temada beyaz kart: siyah zeminde öne çıksın */}
               <section className="rounded-[22px] bg-surface p-3.5 dark:bg-[#F2F2F2] dark:text-[#141414]">
                 <div className="flex justify-between text-subtle dark:text-[#141414]/60">
                   <span className="label">Aylık toplam</span>
@@ -125,10 +124,10 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
                 </div>
                 <div className="mt-3"><ShareBar subscriptions={subscriptions} height={10} /></div>
               </section>
-            )
+            </SearchSwap>
           }
         >
-          {q && groups.length === 0 && <p className="mt-6 text-center text-sm text-subtle">“{query?.trim()}” için sonuç yok</p>}
+          {q && groups.length === 0 && <p className="mt-6 text-center text-sm text-subtle">“{search.query?.trim()}” için sonuç yok</p>}
           {groups.map((g, i) => (
             <section key={g.title}>
               <h2 className={cn('label mb-1 px-1 text-subtle', i > 0 && 'mt-2')}>{g.title}</h2>

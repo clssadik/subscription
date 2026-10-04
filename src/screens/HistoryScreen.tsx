@@ -1,15 +1,16 @@
 import { addMonths, format, parseISO, startOfMonth } from 'date-fns'
 import { CheckIcon, Undo2Icon } from 'lucide-react'
-import { useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { PinnedLayout } from '@/components/PinnedLayout'
-import { ScreenHeader, SearchBar, SearchButton } from '@/components/ScreenHeader'
+import { ScreenHeader } from '@/components/ScreenHeader'
+import { SearchButton, SearchSwap } from '@/components/Search'
 import { SwipeRow } from '@/components/SwipeRow'
 import { formatDate, formatMoney } from '@/lib/format'
 import { CURRENCIES, type Currency } from '@/lib/types'
 import { normalize } from '@/lib/services'
 import { useStore } from '@/lib/store'
+import { useSearch } from '@/lib/useSearch'
 import { BankMark } from '@/components/BankMark'
 import { useUndoable } from '@/lib/undo'
 import { cn } from '@/lib/utils'
@@ -19,9 +20,9 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const undoable = useUndoable()
   const { payments, subscriptions, cards } = state
-  // null = arama kapalı. Açıkken üstteki grafik gizlenir, liste abonelik ya da banka adına göre süzülür.
-  const [query, setQuery] = useState<string | null>(null)
-  const q = normalize(query ?? '')
+  // Arama açıkken üstteki grafik kapanır, liste abonelik ya da banka adına göre süzülür
+  const search = useSearch()
+  const { q } = search
   const nameOf = (p: (typeof payments)[number]) =>
     p.kind === 'subscription'
       ? (subscriptions.find((x) => x.id === p.refId)?.name ?? '')
@@ -71,13 +72,11 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
         header={
           <ScreenHeader
             title="Geçmiş"
-            action={payments.length > 0 && <SearchButton open={query !== null} onClick={() => setQuery(query === null ? '' : null)} />}
+            action={payments.length > 0 && <SearchButton search={search} />}
           />
         }
         top={
-          query !== null ? (
-            <SearchBar value={query} onChange={setQuery} onClose={() => setQuery(null)} placeholder="Abonelik ya da banka ara" />
-          ) : (
+          <SearchSwap search={search} placeholder="Abonelik ya da banka ara">
             <section className="flex h-[176px] flex-col rounded-[22px] bg-hero p-3.5 text-hero-fg">
               <div className="flex justify-between gap-2">
                 <span className="label opacity-70">{formatDate(thisMonth, 'LLLL')} ayında ödenen</span>
@@ -106,10 +105,10 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
                 ))}
               </div>
             </section>
-          )
+          </SearchSwap>
         }
       >
-        {q && groups.size === 0 && <p className="mt-6 text-center text-sm text-subtle">“{query?.trim()}” için sonuç yok</p>}
+        {q && groups.size === 0 && <p className="mt-6 text-center text-sm text-subtle">“{search.query?.trim()}” için sonuç yok</p>}
         {/* Henüz hiçbir şey ödendi işaretlenmemişse ne yapılacağını söyle */}
         {payments.length === 0 && (
           <div className="mt-4 flex flex-col items-center rounded-[22px] bg-surface px-6 py-8 text-center">
