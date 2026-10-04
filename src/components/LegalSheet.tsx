@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer'
 
 export type LegalPage = 'terms' | 'privacy'
@@ -54,7 +55,10 @@ const PAGES: Record<LegalPage, { title: string; sections: { heading: string; bod
 
 /** Alttan açılan şartlar / gizlilik sayfası; aşağı çekince kapanır */
 export function LegalSheet({ page, onClose }: { page: LegalPage | null; onClose: () => void }) {
-  const content = page ? PAGES[page] : null
+  // Kapanırken metin panelde kalsın: boşalıp büzülmeden aşağı kaysın
+  const [last, setLast] = useState(page)
+  if (page && page !== last) setLast(page)
+  const content = last ? PAGES[last] : null
   return (
     <Drawer open={!!page} onOpenChange={(o) => !o && onClose()}>
       <DrawerContent className="max-h-[88svh] rounded-t-[30px] border-0 bg-page data-[vaul-drawer-direction=bottom]:max-h-[88svh]">

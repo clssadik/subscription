@@ -21,15 +21,29 @@ export type SheetTarget = { kind: 'subscription' | 'card'; id?: string; serviceK
 export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: () => void }) {
   const [kind, setKind] = useState<'subscription' | 'card'>(target?.kind ?? 'subscription')
   const [lastTarget, setLastTarget] = useState(target)
+  // Kapanırken son açılan form panelde kalır: içerik silinip panel önce büzülmesin, olduğu gibi aşağı kaysın
+  const [shown, setShown] = useState(target)
+  // Her açılışta artar: form temiz başlasın (kapanınca silinmediği için eski yazılar kalmasın)
+  const [opened, setOpened] = useState(0)
   // Panel her açıldığında türü hedefe göre sıfırla
   if (target !== lastTarget) {
     setLastTarget(target)
-    if (target) setKind(target.kind)
+    if (target) {
+      setKind(target.kind)
+      setShown(target)
+      setOpened((n) => n + 1)
+    }
   }
-  const editing = !!target?.id
+  const editing = !!shown?.id
+
+  // Kapanırken klavyeyi önce indir: klavye panel kayarken kapanınca sayfa sarsılıyor
+  function close() {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+    onClose()
+  }
 
   return (
-    <Drawer open={!!target} onOpenChange={(o) => !o && onClose()}>
+    <Drawer open={!!target} onOpenChange={(o) => !o && close()}>
       <DrawerContent className="max-h-[94svh] rounded-t-[30px] border-0 bg-page data-[vaul-drawer-direction=bottom]:max-h-[94svh]">
         <div className="mx-auto w-full max-w-md overflow-y-auto px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <DrawerTitle className="num pt-3 pb-1 text-center text-lg font-medium">
@@ -48,11 +62,11 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
             </div>
           )}
 
-          {target && kind === 'subscription' && (
-            <SubscriptionFields key={target.id ?? 'new-sub'} id={target.kind === 'subscription' ? target.id : undefined} preset={target} onDone={onClose} />
+          {shown && kind === 'subscription' && (
+            <SubscriptionFields key={`${shown.id ?? 'new-sub'}-${opened}`} id={shown.kind === 'subscription' ? shown.id : undefined} preset={shown} onDone={close} />
           )}
-          {target && kind === 'card' && (
-            <CardFields key={target.id ?? 'new-card'} id={target.kind === 'card' ? target.id : undefined} preset={target} onDone={onClose} />
+          {shown && kind === 'card' && (
+            <CardFields key={`${shown.id ?? 'new-card'}-${opened}`} id={shown.kind === 'card' ? shown.id : undefined} preset={shown} onDone={close} />
           )}
         </div>
       </DrawerContent>
