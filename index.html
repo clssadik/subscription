@@ -24,8 +24,27 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Subly" />
     <title>Subly</title>
+    <!-- Açılış ekranı: uygulama kodu yüklenmeden görünür, src/main.tsx hazır olunca soldurup kaldırır.
+         Renkler burada: ana stil dosyası henüz yüklenmemiş olabilir. -->
+    <style>
+      #splash {
+        position: fixed; inset: 0; z-index: 100;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+        background: #F1ECE2; color: #141414;
+        font: 600 26px/1 'Outfit', -apple-system, system-ui, sans-serif; letter-spacing: -0.01em;
+        transition: opacity 360ms ease, transform 360ms ease;
+      }
+      html.dark #splash { background: #000; color: #F2F2F2; }
+      #splash img { width: 84px; height: 84px; border-radius: 20px; animation: splash-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both, splash-breathe 1.6s 520ms ease-in-out infinite; }
+      #splash span { animation: splash-in 520ms 90ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+      #splash.hide { opacity: 0; transform: scale(1.04); pointer-events: none; }
+      @keyframes splash-in { from { opacity: 0; transform: scale(0.82) translateY(6px); } }
+      @keyframes splash-breathe { 50% { transform: scale(0.95); } }
+      @media (prefers-reduced-motion: reduce) { #splash img, #splash span { animation: none; } }
+    </style>
   </head>
   <body>
+    <div id="splash" aria-hidden="true"><img src="/favicon.svg" alt="" /><span>Subly</span></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
