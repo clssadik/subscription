@@ -1,21 +1,25 @@
 import { ScissorsIcon } from 'lucide-react'
-import { useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { haptic } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
 
-// Abonelik detayındaki ödeme fişi. Kesik çizginin altındaki koçan soldan sağa doğru kesilir (sağa çekilir):
-// kesilen sol uç, hâlâ bağlı olan sağ uçtan sarkar (dönme noktası koçanın sağ üst köşesi). Yeterince kesip bırakınca
-// kesik sona kadar tamamlanır: önce sol taraf iyice düşer, sonra sağ uç da kopar ve koçan yerçekimiyle hızlanarak
-// dönerek düşer; ardından onTear çalışır (ödendi işaretlenir). Yarıda bırakınca kâğıt gibi hafifçe sekerek yerine oturur.
-// canTear değilse koçan sabittir.
+// Abonelik detayındaki ödeme fişi. Kesik çizginin altındaki koçan soldan sağa doğru kesilir (parmak sağa çekilir).
+// Kâğıt hissi: koçan görünmez ince dikey şeritlere bölünür; her şerit solundakini taşır ve kesik noktasının solundaki
+// şeritler birer birer biraz daha döner. Böylece kesilen kısım menteşeden yumuşak bir kıvrımla aşağı bükülür, büküldükçe
+// gölgelenir. Yeterince kesip bırakınca kesik sona kadar tamamlanır, koçan kopar ve kâğıt gibi sallanarak süzülüp düşer;
+// ardından onTear çalışır (ödendi işaretlenir). Yarıda bırakınca kıvrım açılıp yerine oturur. canTear değilse sabittir.
 
 /** Bu orandan fazla kesilip bırakılırsa kopar */
 const TEAR_AT = 0.38
-/** Eşiğe kadar sol ucun sarkma açısı (derece); eşikten sonra biraz daha sarkar */
-const DROOP = 12
-const FALL_MS = 950
+/** Şerit sayısı: arttıkça kıvrım yumuşar */
+const STRIPS = 16
+/** Kıvrımın uzunluğu (px): menteşeden bu kadar uzağa kadar bükülür, sonrası düz sarkar */
+const BEND = 72
+/** Tamamen kesilince sarkma açısı (derece) */
+const MAX_DROOP = 80
+const FALL_MS = 1500
 
-// Özelliği tanıtma: ilk kez görünce koçan kendiliğinden biraz sarkıp geri gelir ve altında tek cümlelik bir açıklama çıkar.
+// Özelliği tanıtma: ilk kez görünce koçan kendiliğinden biraz kesilip geri açılır ve altında tek cümlelik bir açıklama çıkar.
 // "Tamam"a basınca ya da ilk kez koparınca bir daha gösterilmez.
 const TIP_KEY = 'subly:tear-tip-seen'
 const tipSeen = () => {
@@ -33,8 +37,19 @@ const markTipSeen = () => {
   }
 }
 
-/** Kesilen oran (0-1) → sol ucun sarkma açısı (sağ üst köşe etrafında; eksi = sol aşağı) */
-const droopAngle = (p: number) => -(Math.min(1, p / TEAR_AT) * DROOP + Math.max(0, p - TEAR_AT) * 18)
+const easeOut = (t: number) => 1 - Math.pow(1 - t, 3)
+
+/**
+ * Kesik noktası cut (px) iken k. eklemin (k. şeridin sağ kenarı) dönme açısı. Eklem kesik noktasının sağındaysa 0 (koçan bağlı).
+ * Solundaysa menteşeye BEND px uzaklığa kadar her eklem toplam açının bir payını alır: yumuşak kıvrım, sonrası düz.
+ */
+function jointAngle(k: number, cut: number, width: number) {
+  const x = ((k + 1) / STRIPS) * width
+  if (x >= cut) return 0
+  const total = Math.min(1, cut / (width * 0.55)) * MAX_DROOP
+  const stripW = width / STRIPS
+  return cut - x <= BEND ? -(total * stripW) / BEND : 0
+}
 
 export function TearTicket({
   top,
@@ -50,10 +65,9 @@ export function TearTicket({
   hint: string
   onTear: () => void
 }) {
-  const stubRef = useRef<HTMLDivElement>(null)
-  const [dx, setDx] = useState(0)
+  const root = useRef<HTMLDivElement>(null)
+  const [cut, setCut] = useState(0)
   const [width, setWidth] = useState(1)
-  const [dragging, setDragging] = useState(false)
   const [falling, setFalling] = useState(false)
   // Koptuktan sonra yeni koçan (sonraki dönem) yerinde görünmez başlar ve yumuşakça belirir
   const [entering, setEntering] = useState(false)
@@ -61,9 +75,34 @@ export function TearTicket({
   const showTip = tip && canTear
   const start = useRef<{ x: number; y: number; dir: 'h' | 'v' | null } | null>(null)
   const passed = useRef(false)
+  const tween = useRef(0)
 
-  const progress = Math.min(1, dx / width)
-  const angle = droopAngle(progress)
+  // Kesik noktasını yumuşakça bir değere götürür (bırakınca açılma, koparken tamamlanma, tanıtım)
+  function animateCut(from: number, to: number, ms: number, done?: () => void) {
+    cancelAnimationFrame(tween.current)
+    const t0 = performance.now()
+    const step = (now: number) => {
+      const t = Math.min(1, (now - t0) / ms)
+      setCut(from + (to - from) * easeOut(t))
+      if (t < 1) tween.current = requestAnimationFrame(step)
+      else done?.()
+    }
+    tween.current = requestAnimationFrame(step)
+  }
+
+  // Tanıtım: ilk açılışta koçan iki kez biraz kesilip geri açılır
+  useEffect(() => {
+    if (!showTip || !root.current) return
+    const w = root.current.offsetWidth
+    setWidth(w)
+    const timers = [700, 2100].map((delay) =>
+      window.setTimeout(() => animateCut(0, w * 0.3, 520, () => window.setTimeout(() => animateCut(w * 0.3, 0, 620), 220)), delay),
+    )
+    return () => {
+      timers.forEach(clearTimeout)
+      cancelAnimationFrame(tween.current)
+    }
+  }, [showTip])
 
   const closeTip = () => {
     markTipSeen()
@@ -71,38 +110,81 @@ export function TearTicket({
   }
 
   function tear() {
-    const el = stubRef.current
-    if (!el || falling) return
+    if (falling) return
     haptic()
     closeTip()
     setFalling(true)
-    const from = `rotate(${angle}deg)`
-    // 1) Kesik sona kadar biter, sol taraf iyice düşer  2) sağ uç kopar  3) yerçekimiyle hızlanarak, dönerek düşer
-    const fall = el.animate(
-      [
-        { transform: from, opacity: 1, offset: 0, easing: 'cubic-bezier(0.4, 0, 0.6, 1)' },
-        { transform: 'rotate(-34deg)', opacity: 1, offset: 0.26, easing: 'cubic-bezier(0.5, 0, 0.9, 0.5)' },
-        { transform: 'translate(-4px, 14px) rotate(-38deg)', opacity: 1, offset: 0.38, easing: 'cubic-bezier(0.55, 0, 1, 0.45)' },
-        { transform: 'translate(-26px, 380px) rotate(-64deg)', opacity: 1, offset: 0.86, easing: 'linear' },
-        { transform: 'translate(-34px, 520px) rotate(-72deg)', opacity: 0, offset: 1 },
-      ],
-      { duration: FALL_MS, fill: 'forwards' },
-    )
-    fall.onfinish = () => {
-      onTear()
-      // Yeni koçan: geçişsiz yerine konur, görünmez başlar, bir kare sonra belirir
-      setDragging(true)
-      setEntering(true)
-      setDx(0)
-      fall.cancel()
-      setFalling(false)
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
-          setDragging(false)
-          setEntering(false)
-        }),
+    // Kesik sona kadar tamamlanır, sonra kopan kâğıt sallanarak süzülüp düşer
+    animateCut(cut, width, 220, () => {
+      const el = root.current
+      if (!el) return
+      const fall = el.animate(
+        [
+          { transform: 'translate(0, 0) rotate(0deg)', opacity: 1 },
+          { transform: 'translate(-18px, 70px) rotate(-14deg)', opacity: 1, offset: 0.22 },
+          { transform: 'translate(22px, 170px) rotate(9deg)', opacity: 1, offset: 0.45 },
+          { transform: 'translate(-12px, 290px) rotate(-11deg)', opacity: 1, offset: 0.68 },
+          { transform: 'translate(14px, 420px) rotate(6deg)', opacity: 0.9, offset: 0.86 },
+          { transform: 'translate(0, 520px) rotate(-4deg)', opacity: 0 },
+        ],
+        { duration: FALL_MS, easing: 'cubic-bezier(0.45, 0, 0.75, 1)', fill: 'forwards' },
       )
-    }
+      fall.onfinish = () => {
+        onTear()
+        setEntering(true)
+        setCut(0)
+        fall.cancel()
+        setFalling(false)
+        requestAnimationFrame(() => requestAnimationFrame(() => setEntering(false)))
+      }
+    })
+  }
+
+  // Koçanın görünümü (her şeritte aynısı çizilir, şerit kendi dilimini gösterir)
+  const skin = (
+    <div className="relative rounded-b-[22px] bg-hero px-4 pt-3 pb-3.5 text-hero-fg">
+      {/* Çentiklerin alt yarıları */}
+      <span aria-hidden className="absolute top-0 -left-3 h-3 w-6 rounded-b-full bg-page" />
+      <span aria-hidden className="absolute top-0 -right-3 h-3 w-6 rounded-b-full bg-page" />
+      {/* Kesik çizgi; koparılabiliyorsa solunda makas */}
+      <div aria-hidden className="-mt-3 mb-3 flex h-0 items-center">
+        {canTear && <ScissorsIcon className="tear-hint mr-1.5 -ml-1 size-4 shrink-0 -rotate-90 opacity-70" />}
+        <span className="flex-1 border-t border-dashed border-current opacity-25" />
+      </div>
+      {stub}
+      {canTear && (
+        <p className="mt-2.5 flex items-center gap-1.5 text-[12px] font-medium opacity-90">
+          <span>{hint}</span>
+          <span className="tear-hint" aria-hidden>→</span>
+        </p>
+      )}
+    </div>
+  )
+
+  // Şerit zinciri: en sağdaki şerit sabit ve akışta (boyutu verir); her şerit solundakini taşır, o da kendi sağ kenarından döner
+  function strip(k: number, angleSoFar: number): ReactNode {
+    const left = (k / STRIPS) * 100
+    const right = 100 - ((k + 1) / STRIPS) * 100
+    const angle = k === STRIPS - 1 ? 0 : jointAngle(k, cut, width)
+    const bent = angleSoFar + angle
+    return (
+      <div
+        className={k === STRIPS - 1 ? 'relative' : 'absolute inset-0'}
+        style={k === STRIPS - 1 ? undefined : { transform: `rotate(${angle}deg)`, transformOrigin: `${((k + 1) / STRIPS) * 100}% 0` }}
+      >
+        <div
+          aria-hidden={k !== STRIPS - 1 || undefined}
+          // Komşu şeritle 1px üst üste: aralarında çizgi görünmesin. Büküldükçe hafifçe gölgelenir.
+          style={{
+            clipPath: `inset(-40px calc(${right}% - 1px) -1px calc(${left}% - 1px))`,
+            filter: bent ? `brightness(${1 - Math.min(0.35, Math.abs(bent) / 220)})` : undefined,
+          }}
+        >
+          {skin}
+        </div>
+        {k > 0 && strip(k - 1, bent)}
+      </div>
+    )
   }
 
   return (
@@ -115,27 +197,18 @@ export function TearTicket({
         <span aria-hidden className="absolute -right-3 -bottom-3 size-6 rounded-full bg-page" />
       </div>
 
-      {/* Koçan: sağ üst köşesinden asılı gibi döner */}
+      {/* Koçan */}
       <div
-        ref={stubRef}
+        ref={root}
         role={canTear ? 'button' : undefined}
         tabIndex={canTear ? 0 : undefined}
         aria-label={canTear ? hint : undefined}
         onKeyDown={(e) => canTear && (e.key === 'Enter' || e.key === ' ') && tear()}
-        className={cn(
-          'relative z-10 origin-top-right rounded-b-[22px] bg-hero px-4 pt-3 pb-3.5 text-hero-fg select-none',
-          canTear && 'cursor-grab',
-          showTip && !dragging && !dx && !falling && 'tear-demo',
-        )}
-        style={{
-          transform: `rotate(${angle}deg)`,
-          opacity: entering ? 0 : 1,
-          // Bırakınca kâğıt gibi hafifçe sekerek yerine oturur
-          transition: dragging ? 'none' : 'transform 520ms cubic-bezier(0.34, 1.5, 0.64, 1), opacity 300ms ease',
-          touchAction: 'pan-y',
-        }}
+        className={cn('relative z-10 select-none', canTear && 'cursor-grab')}
+        style={{ opacity: entering ? 0 : 1, transition: 'opacity 300ms ease', touchAction: 'pan-y' }}
         onPointerDown={(e) => {
           if (!canTear || falling) return
+          cancelAnimationFrame(tween.current)
           setWidth(e.currentTarget.offsetWidth)
           start.current = { x: e.clientX, y: e.clientY, dir: null }
           passed.current = false
@@ -147,14 +220,11 @@ export function TearTicket({
           const my = e.clientY - s.y
           if (!s.dir && (Math.abs(mx) > 8 || Math.abs(my) > 8)) {
             s.dir = Math.abs(mx) > Math.abs(my) ? 'h' : 'v'
-            if (s.dir === 'h') {
-              e.currentTarget.setPointerCapture(e.pointerId)
-              setDragging(true)
-            }
+            if (s.dir === 'h') e.currentTarget.setPointerCapture(e.pointerId)
           }
           if (s.dir !== 'h') return
-          const next = Math.max(0, mx)
-          setDx(next)
+          const next = Math.min(width, Math.max(0, mx))
+          setCut(next)
           // Kopma eşiği geçilince (ve geri dönülünce) hafif titreşim
           const over = next / width > TEAR_AT
           if (over !== passed.current) {
@@ -165,31 +235,15 @@ export function TearTicket({
         onPointerUp={() => {
           const s = start.current
           start.current = null
-          setDragging(false)
-          if (s?.dir === 'h' && dx / width > TEAR_AT) tear()
-          else setDx(0)
+          if (s?.dir === 'h' && cut / width > TEAR_AT) tear()
+          else if (cut > 0) animateCut(cut, 0, 480)
         }}
         onPointerCancel={() => {
           start.current = null
-          setDragging(false)
-          setDx(0)
+          if (cut > 0) animateCut(cut, 0, 480)
         }}
       >
-        {/* Çentiklerin alt yarıları (yarım daire): koçan koparken onunla gider */}
-        <span aria-hidden className="absolute top-0 -left-3 h-3 w-6 rounded-b-full bg-page" />
-        <span aria-hidden className="absolute top-0 -right-3 h-3 w-6 rounded-b-full bg-page" />
-        {/* Kesik çizgi; koparılabiliyorsa solunda makas */}
-        <div aria-hidden className="-mt-3 mb-3 flex h-0 items-center">
-          {canTear && <ScissorsIcon className="tear-hint mr-1.5 -ml-1 size-4 shrink-0 -rotate-90 opacity-70" />}
-          <span className="flex-1 border-t border-dashed border-current opacity-25" />
-        </div>
-        {stub}
-        {canTear && (
-          <p className="mt-2.5 flex items-center gap-1.5 text-[12px] font-medium opacity-90">
-            <span>{hint}</span>
-            <span className="tear-hint" aria-hidden>→</span>
-          </p>
-        )}
+        {strip(STRIPS - 1, 0)}
       </div>
 
       {showTip && (
