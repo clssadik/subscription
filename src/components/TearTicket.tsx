@@ -4,20 +4,14 @@ import { haptic } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
 
 // Abonelik detayındaki ödeme fişi. Kesik çizginin altındaki koçan soldan sağa doğru kesilir (parmak sağa çekilir).
-// Kâğıt hissi: koçan görünmez ince dikey şeritlere bölünür; her şerit solundakini taşır ve kesik noktasının solundaki
-// şeritler birer birer biraz daha döner. Böylece kesilen kısım menteşeden yumuşak bir kıvrımla aşağı bükülür, büküldükçe
-// gölgelenir. Yeterince kesip bırakınca kesik sona kadar tamamlanır, koçan kopar ve kâğıt gibi sallanarak süzülüp düşer;
-// ardından onTear çalışır (ödendi işaretlenir). Yarıda bırakınca kıvrım açılıp yerine oturur. canTear değilse sabittir.
+// Kâğıt hissi: koçan tek parça ama ince bir kâğıt gibi hareket eder. Kesildikçe sol ucu, hâlâ bağlı olan sağ üst köşeden
+// hafifçe sarkar ve öne (kullanıcıya doğru) kalkar (3B), altına yumuşak gölge düşer; kopan kenar delikli/tırtıklı görünür.
+// Yeterince kesip bırakınca koçan kopar, dönerek ve öne devrilerek düşer; ardından onTear çalışır (ödendi işaretlenir).
+// Yarıda bırakınca yerine oturur. canTear değilse sabittir.
 
 /** Bu orandan fazla kesilip bırakılırsa kopar */
 const TEAR_AT = 0.38
-/** Şerit sayısı: arttıkça kıvrım yumuşar */
-const STRIPS = 16
-/** Kıvrımın uzunluğu (px): menteşeden bu kadar uzağa kadar bükülür, sonrası düz sarkar */
-const BEND = 72
-/** Tamamen kesilince sarkma açısı (derece) */
-const MAX_DROOP = 80
-const FALL_MS = 1500
+const FALL_MS = 900
 
 // Özelliği tanıtma: ilk kez görünce koçan kendiliğinden biraz kesilip geri açılır ve altında tek cümlelik bir açıklama çıkar.
 // "Tamam"a basınca ya da ilk kez koparınca bir daha gösterilmez.
@@ -39,17 +33,8 @@ const markTipSeen = () => {
 
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3)
 
-/**
- * Kesik noktası cut (px) iken k. eklemin (k. şeridin sağ kenarı) dönme açısı. Eklem kesik noktasının sağındaysa 0 (koçan bağlı).
- * Solundaysa menteşeye BEND px uzaklığa kadar her eklem toplam açının bir payını alır: yumuşak kıvrım, sonrası düz.
- */
-function jointAngle(k: number, cut: number, width: number) {
-  const x = ((k + 1) / STRIPS) * width
-  if (x >= cut) return 0
-  const total = Math.min(1, cut / (width * 0.55)) * MAX_DROOP
-  const stripW = width / STRIPS
-  return cut - x <= BEND ? -(total * stripW) / BEND : 0
-}
+/** Kesilen oran (0-1) → koçanın duruşu: sağ üst köşeden hafif sarkma + sol ucun öne kalkması */
+const pose = (p: number) => `rotate(${-p * 9}deg) rotateY(${-p * 26}deg) rotateX(${p * 14}deg)`
 
 export function TearTicket({
   top,
@@ -76,6 +61,7 @@ export function TearTicket({
   const start = useRef<{ x: number; y: number; dir: 'h' | 'v' | null } | null>(null)
   const passed = useRef(false)
   const tween = useRef(0)
+  const progress = Math.min(1, cut / width)
 
   // Kesik noktasını yumuşakça bir değere götürür (bırakınca açılma, koparken tamamlanma, tanıtım)
   function animateCut(from: number, to: number, ms: number, done?: () => void) {
@@ -115,19 +101,16 @@ export function TearTicket({
     closeTip()
     setFalling(true)
     // Kesik sona kadar tamamlanır, sonra kopan kâğıt sallanarak süzülüp düşer
-    animateCut(cut, width, 220, () => {
+    animateCut(cut, width, 160, () => {
       const el = root.current
       if (!el) return
       const fall = el.animate(
         [
-          { transform: 'translate(0, 0) rotate(0deg)', opacity: 1 },
-          { transform: 'translate(-18px, 70px) rotate(-14deg)', opacity: 1, offset: 0.22 },
-          { transform: 'translate(22px, 170px) rotate(9deg)', opacity: 1, offset: 0.45 },
-          { transform: 'translate(-12px, 290px) rotate(-11deg)', opacity: 1, offset: 0.68 },
-          { transform: 'translate(14px, 420px) rotate(6deg)', opacity: 0.9, offset: 0.86 },
-          { transform: 'translate(0, 520px) rotate(-4deg)', opacity: 0 },
+          { transform: pose(1), opacity: 1 },
+          { transform: `translate(-6px, 24px) ${pose(1)} rotate(-8deg)`, opacity: 1, offset: 0.25 },
+          { transform: 'translate(-30px, 360px) rotate(-26deg) rotateY(-40deg) rotateX(55deg)', opacity: 0 },
         ],
-        { duration: FALL_MS, easing: 'cubic-bezier(0.45, 0, 0.75, 1)', fill: 'forwards' },
+        { duration: FALL_MS, easing: 'cubic-bezier(0.5, 0, 0.85, 0.4)', fill: 'forwards' },
       )
       fall.onfinish = () => {
         onTear()
@@ -140,9 +123,19 @@ export function TearTicket({
     })
   }
 
-  // Koçanın görünümü (her şeritte aynısı çizilir, şerit kendi dilimini gösterir)
+  // Kopan kenar: kesik noktasına kadar küçük yarım delikler (tırtık), sonrası düz. İki maske katmanı birleşir:
+  // her yerde delikli desen + kesik noktasının sağında dolu alan (orada delikleri kapatır).
+  const tornEdge = (edge: 'top' | 'bottom'): React.CSSProperties | undefined => {
+    if (cut <= 0) return undefined
+    const holes = `radial-gradient(circle at 5px ${edge === 'top' ? '0' : '100%'}, transparent 2.6px, #000 3.2px) 0 0 / 10px 100% repeat-x`
+    const rest = `linear-gradient(to right, transparent ${cut}px, #000 ${cut}px)`
+    const mask = `${holes}, ${rest}`
+    return { WebkitMask: mask, mask }
+  }
+
+  // Koçanın görünümü
   const skin = (
-    <div className="relative rounded-b-[22px] bg-hero px-4 pt-3 pb-3.5 text-hero-fg">
+    <div className="relative rounded-b-[22px] bg-hero px-4 pt-3 pb-3.5 text-hero-fg" style={tornEdge('top')}>
       {/* Çentiklerin alt yarıları */}
       <span aria-hidden className="absolute top-0 -left-3 h-3 w-6 rounded-b-full bg-page" />
       <span aria-hidden className="absolute top-0 -right-3 h-3 w-6 rounded-b-full bg-page" />
@@ -161,37 +154,11 @@ export function TearTicket({
     </div>
   )
 
-  // Şerit zinciri: en sağdaki şerit sabit ve akışta (boyutu verir); her şerit solundakini taşır, o da kendi sağ kenarından döner
-  function strip(k: number, angleSoFar: number): ReactNode {
-    const left = (k / STRIPS) * 100
-    const right = 100 - ((k + 1) / STRIPS) * 100
-    const angle = k === STRIPS - 1 ? 0 : jointAngle(k, cut, width)
-    const bent = angleSoFar + angle
-    return (
-      <div
-        className={k === STRIPS - 1 ? 'relative' : 'absolute inset-0'}
-        style={k === STRIPS - 1 ? undefined : { transform: `rotate(${angle}deg)`, transformOrigin: `${((k + 1) / STRIPS) * 100}% 0` }}
-      >
-        <div
-          aria-hidden={k !== STRIPS - 1 || undefined}
-          // Komşu şeritle 1px üst üste: aralarında çizgi görünmesin. Büküldükçe hafifçe gölgelenir.
-          style={{
-            clipPath: `inset(-40px calc(${right}% - 1px) -1px calc(${left}% - 1px))`,
-            filter: bent ? `brightness(${1 - Math.min(0.35, Math.abs(bent) / 220)})` : undefined,
-          }}
-        >
-          {skin}
-        </div>
-        {k > 0 && strip(k - 1, bent)}
-      </div>
-    )
-  }
-
   return (
     // Yana taşan koçan kırpılır: sayfa yana kaymasın (çentiklerin dışarı taşan yarıları da kesilir)
-    <section className="relative overflow-x-clip">
+    <section className="relative overflow-x-clip [perspective:900px]">
       {/* Gövde: alt köşelerde zemin renginde yarım daireler (fişin çentikleri; diğer yarıları koçanda) */}
-      <div className="relative overflow-hidden rounded-t-[22px] bg-hero px-4 pt-4 pb-3 text-hero-fg">
+      <div className="relative overflow-hidden rounded-t-[22px] bg-hero px-4 pt-4 pb-3 text-hero-fg" style={tornEdge('bottom')}>
         {top}
         <span aria-hidden className="absolute -bottom-3 -left-3 size-6 rounded-full bg-page" />
         <span aria-hidden className="absolute -right-3 -bottom-3 size-6 rounded-full bg-page" />
@@ -204,8 +171,15 @@ export function TearTicket({
         tabIndex={canTear ? 0 : undefined}
         aria-label={canTear ? hint : undefined}
         onKeyDown={(e) => canTear && (e.key === 'Enter' || e.key === ' ') && tear()}
-        className={cn('relative z-10 select-none', canTear && 'cursor-grab')}
-        style={{ opacity: entering ? 0 : 1, transition: 'opacity 300ms ease', touchAction: 'pan-y' }}
+        className={cn('relative z-10 origin-top-right select-none', canTear && 'cursor-grab')}
+        style={{
+          transform: pose(progress),
+          // Kalktıkça altına gölge düşer
+          filter: progress > 0 ? `drop-shadow(0 ${4 + progress * 14}px ${8 + progress * 18}px rgb(0 0 0 / ${0.15 + progress * 0.3}))` : undefined,
+          opacity: entering ? 0 : 1,
+          transition: 'opacity 300ms ease',
+          touchAction: 'pan-y',
+        }}
         onPointerDown={(e) => {
           if (!canTear || falling) return
           cancelAnimationFrame(tween.current)
@@ -243,7 +217,7 @@ export function TearTicket({
           if (cut > 0) animateCut(cut, 0, 480)
         }}
       >
-        {strip(STRIPS - 1, 0)}
+        {skin}
       </div>
 
       {showTip && (
