@@ -301,6 +301,15 @@ html[data-motion='fade']::view-transition-new(root) { animation-name: vt-fade-in
   .paid-check { animation: none; stroke-dashoffset: 0; }
 }
 
+/* Basılı tutulacak düğmeye kısa dokununca: "olmaz" der gibi hafif sallanma */
+@keyframes hold-nudge {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  45% { transform: translateX(4px); }
+  70% { transform: translateX(-2px); }
+}
+.hold-nudge { animation: hold-nudge 360ms ease-out; }
+
 /* "Ödendi" işareti dolunca küçük bir zıplama */
 @keyframes check-pop {
   0% { transform: scale(0.6); }
