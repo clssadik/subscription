@@ -181,6 +181,16 @@
   }
 }
 
+/* Tam ekran sayfalar ve alt menü. Safari'de görünen alana sabit (inset 0 / bottom 0).
+   Ana ekran uygulamasında iPhone, uygulamadan çıkıp dönünce görünen alanı kısa hesaplıyor ve alta sabit her şey yukarı kayıyordu;
+   orada ekranın tam boyu (100lvh) kullanılır. Safari'de lvh alt araç çubuğunun arkasına taştığı için sadece ana ekranda. */
+.app-screen { position: fixed; inset: 0; }
+.app-bottom { position: fixed; left: 0; right: 0; bottom: 0; }
+@media (display-mode: standalone) {
+  .app-screen { bottom: auto; height: 100lvh; }
+  .app-bottom { bottom: auto; top: 100lvh; transform: translateY(-100%); }
+}
+
 /* Giriş ekranı kutuları: yeni renk ortadan daire olarak büyür */
 @keyframes bloom {
   from { transform: scale(0); }

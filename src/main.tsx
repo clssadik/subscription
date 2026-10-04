@@ -18,3 +18,8 @@ if (splash) {
     window.setTimeout(() => splash.remove(), 400)
   }, wait)
 }
+
+// Uygulamaya geri dönünce (ana ekrandan) sayfa kaymış kalmasın: belge hiç kaymamalı, en başa sıfırla
+const resetPage = () => document.visibilityState === 'visible' && window.scrollTo(0, 0)
+document.addEventListener('visibilitychange', resetPage)
+window.addEventListener('pageshow', resetPage)

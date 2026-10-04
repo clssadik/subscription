@@ -52,7 +52,7 @@ export function AuthFlow() {
   }
 
   return (
-    <main className="fixed inset-0 mx-auto flex max-w-md flex-col overflow-y-auto overscroll-contain px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+    <main className="app-screen mx-auto flex max-w-md flex-col overflow-y-auto overscroll-contain px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
       {step === 'welcome' && <Welcome onStart={() => leaveWelcome('signup')} onLogin={() => leaveWelcome('login')} />}
       {(step === 'signup' || step === 'login') && (
         <EmailStep

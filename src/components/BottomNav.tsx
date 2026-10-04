@@ -19,7 +19,8 @@ export function BottomNav({ tab, onTab, initial }: { tab: Tab; onTab: (t: Tab) =
   const onAccount = tab === 'account'
   const bottomFog = BOTTOM_FOG[tab === 'cards' ? 'light' : 'normal']
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 px-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] [view-transition-name:bottom-nav]">
+    // Ekranın altına sabit (.app-bottom, src/index.css)
+    <nav className="app-bottom z-40 px-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] [view-transition-name:bottom-nav]">
       {/* Kenar solması (iOS'taki gibi): içerik menüye yaklaşırken zemin rengine karışır, cam izi bulanıklaştırır.
           Sis seviyesi src/lib/fog.ts içinde; Kartlar'da daha az. */}
       <div
