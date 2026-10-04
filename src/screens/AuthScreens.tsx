@@ -88,8 +88,7 @@ function Welcome({ onStart, onLogin }: { onStart: () => void; onLogin: () => voi
       <Brand className="mb-4" />
       <LogoWall />
       <div className="mt-auto pt-8">
-        <p className="label text-subtle">Abonelik ve kart takibi</p>
-        <h1 className="num num-bold mt-2 text-[44px] leading-[1.02]">
+        <h1 className="num num-bold text-[44px] leading-[1.02]">
           Hepsi
           <br />
           <span className={accent}>tek yerde</span>
