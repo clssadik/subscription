@@ -158,6 +158,18 @@
 :root { --logo-tile: #141414; --logo-ink: #FFFFFF; }
 :root.dark { --logo-tile: #FFFFFF; --logo-ink: #141414; }
 
+/* Anasayfa'daki üst bloğun küçülmesi: --p 0 (açık) → 1 (küçük). Kayıtlı değişken olduğu için yumuşakça geçer;
+   bloktaki boylar ve yazı boyutları bu değişkene bağlı (src/screens/HomeScreen.tsx). */
+@property --p {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+.shrink-block { transition: --p 340ms cubic-bezier(0.32, 0.72, 0, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .shrink-block { transition: none; }
+}
+
 /* Giriş ekranı kutuları: yeni renk ortadan daire olarak büyür */
 @keyframes bloom {
   from { transform: scale(0); }

@@ -19,25 +19,29 @@ import { cn } from '@/lib/utils'
 import { BankMark } from '@/components/BankMark'
 import type { Nav } from '@/App'
 
-// Üst bloğun tamamen küçülmesi için gereken kaydırma (px): bloğun küçülme mesafesinin iki katı, telefonda çok hızlı olmasın
-const COLLAPSE = 220
+// Bu kadar aşağı kaydırınca blok küçülür; en üste bu kadar yaklaşınca açılır (arada titremesin diye iki ayrı eşik)
+const COLLAPSE_AT = 48
+const EXPAND_AT = 16
 // Tüm para birimleri aynı tipografiyi kullanır: virgülden önceki ana kısım aynı boyut/renk, sonrası küçük ve soluk
 const AMOUNT_SIZE = 'calc(42px - 16px * var(--p, 0))'
 
 export function HomeScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const { cards, subscriptions, payments } = state
-  // Kaydırınca üst blok (toplam, sıradaki, iki küçük kart) birlikte küçülür; tarih başlığı sabit. --p 0 (en üstte) → 1 (COLLAPSE px kaydırınca). Her karede yeniden çizmemek için CSS değişkeni.
+  // Kaydırınca üst blok (toplam, sıradaki, iki küçük kart) küçülür; tarih başlığı sabit. Blok parmağı adım adım izlemez: eşiği geçince
+  // --p 0 → 1 kısa bir animasyonla değişir (src/index.css'teki @property --p). iPhone'da kaydırmaya bağlı yeniden boyutlama takılıyordu;
+  // böylece liste kayarken hiçbir şey yeniden boyutlanmaz.
   // Blok listenin üstüne bindirilir (akışta yer kaplamaz): küçülürken liste alanının boyutu değişmez, hızlı kaydırmada zıplama olmaz.
   // Listenin üst boşluğu bloğun açık haldeki yüksekliği kadardır; blok boyu değişirse (ör. yazı tipi yüklenince) en üstteyken yeniden ölçülür.
   const block = useRef<HTMLDivElement>(null)
-  const progress = useRef(0)
+  const compact = useRef(false)
   const [blockHeight, setBlockHeight] = useState(0)
   const [scrolled, setScrolled] = useState(false)
   useLayoutEffect(() => {
     const el = block.current
     if (!el) return
-    const measure = () => progress.current === 0 && setBlockHeight(el.offsetHeight)
+    // Sadece blok tamamen açıkken ölç (açılma animasyonunun ara boyları listenin boşluğunu oynatmasın)
+    const measure = () => !compact.current && getComputedStyle(el).getPropertyValue('--p').trim() === '0' && setBlockHeight(el.offsetHeight)
     measure()
     const ro = new ResizeObserver(measure)
     ro.observe(el)
@@ -48,20 +52,13 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   const content = useRef<HTMLDivElement>(null)
   const limit = useScrollLimit(scroller, content)
   useScrollMemory('home', scroller, blockHeight > 0)
-  // Kaydırırken takılmasın diye: değişken sadece bloğa yazılır (tüm listenin stili yeniden hesaplanmasın), karede en fazla bir kez
-  // ve sadece değer değişince (blok tamamen küçüldükten sonra liste kayarken hiçbir şey yeniden çizilmez)
-  const frame = useRef(0)
   function onScroll(e: React.UIEvent<HTMLDivElement>) {
-    const el = e.currentTarget
-    setScrolled(el.scrollTop > 0)
-    if (frame.current) return
-    frame.current = requestAnimationFrame(() => {
-      frame.current = 0
-      const p = Math.round(Math.min(1, Math.max(0, el.scrollTop / COLLAPSE)) * 1000) / 1000
-      if (p === progress.current) return
-      progress.current = p
-      block.current?.style.setProperty('--p', String(p))
-    })
+    const y = e.currentTarget.scrollTop
+    setScrolled(y > 0)
+    const next = y > (compact.current ? EXPAND_AT : COLLAPSE_AT)
+    if (next === compact.current) return
+    compact.current = next
+    block.current?.style.setProperty('--p', next ? '1' : '0')
   }
   const items = monthItems(cards, subscriptions, payments)
   const subItems = items.filter((i) => i.kind === 'subscription')
@@ -126,7 +123,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
         {/* Blok, kaydırma sınırı kadar yüksek bir kutunun içinde yapışık: liste sona gelip esneyince blok da onunla gider */}
         <div className="pointer-events-none absolute inset-x-0 top-0 z-10" style={{ height: limit }}>
         <div className="pointer-events-auto sticky top-0 h-0">
-          <div ref={block} className="absolute inset-x-0 top-0 px-3 pb-2">
+          <div ref={block} className="shrink-block absolute inset-x-0 top-0 px-3 pb-2">
             <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
             <div
               aria-hidden
