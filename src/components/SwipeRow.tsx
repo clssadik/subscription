@@ -1,21 +1,25 @@
-import { Trash2Icon } from 'lucide-react'
+import { Trash2Icon, type LucideIcon } from 'lucide-react'
 import { useRef, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 const OPEN = -84
 
-/** Sola kaydırınca altından kırmızı "Sil" çıkan satır. Dokununca onTap çalışır. */
+/** Sola kaydırınca altından kırmızı "Sil" (ya da actionLabel) çıkan satır. Dokununca onTap çalışır. */
 export function SwipeRow({
   children,
   onTap,
   onDelete,
   className,
   surface = 'bg-surface',
+  actionLabel = 'Sil',
+  actionIcon: ActionIcon = Trash2Icon,
 }: {
   children: ReactNode
-  onTap: () => void
+  onTap?: () => void
   onDelete: () => void
   className?: string
+  actionLabel?: string
+  actionIcon?: LucideIcon
   /** Satırın zemin rengi (kırmızı "Sil"in üstünü örtmesi için opak olmalı) */
   surface?: string
 }) {
@@ -34,18 +38,18 @@ export function SwipeRow({
     <div className={cn('relative overflow-hidden rounded-[18px] transition-transform duration-100', pressed && 'scale-[0.98]', className)}>
       <button
         onClick={onDelete}
-        aria-label="Sil"
+        aria-label={actionLabel}
         tabIndex={x === 0 ? -1 : 0}
         // Kaydırılmadıkça gizli; yoksa yuvarlak köşenin arkasından ince kırmızı bir çizgi sızıyor
         style={{ visibility: x === 0 && !dragging ? 'hidden' : 'visible' }}
         className="absolute inset-y-0 right-0 flex w-[84px] items-center justify-center gap-1 bg-bh-red text-sm font-medium text-white"
       >
-        <Trash2Icon className="size-4" /> Sil
+        <ActionIcon className="size-4" /> {actionLabel}
       </button>
       <div
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && onTap()}
+        onKeyDown={(e) => e.key === 'Enter' && onTap?.()}
         className={cn('relative select-none', surface)}
         style={{
           transform: `translateX(${x}px)`,
@@ -80,7 +84,7 @@ export function SwipeRow({
           if (s.dir === 'h') setX(x < OPEN / 2 ? OPEN : 0)
           else if (!s.dir) {
             if (x !== 0) setX(0)
-            else onTap()
+            else onTap?.()
           }
         }}
         onPointerCancel={() => {

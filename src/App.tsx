@@ -143,7 +143,7 @@ function Main({
               ) : (
                 <CardsScreen nav={nav} onSelect={(id) => go('push', () => setCardId(id))} />
               ))}
-            {tab === 'history' && <HistoryScreen />}
+            {tab === 'history' && <HistoryScreen nav={nav} />}
           </>
         )}
       </main>

@@ -1,18 +1,26 @@
 import { addMonths, format, parseISO, startOfMonth } from 'date-fns'
-import { CheckIcon } from 'lucide-react'
+import { CheckIcon, Undo2Icon } from 'lucide-react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { PinnedLayout } from '@/components/PinnedLayout'
 import { ScreenHeader } from '@/components/ScreenHeader'
+import { SwipeRow } from '@/components/SwipeRow'
 import { formatDate, formatMoney } from '@/lib/format'
 import { CURRENCIES, type Currency } from '@/lib/types'
 import { useStore } from '@/lib/store'
 import { BankMark } from '@/components/BankMark'
+import { useUndoable } from '@/lib/undo'
 import { cn } from '@/lib/utils'
+import type { Nav } from '@/App'
 
-export function HistoryScreen() {
-  const { state } = useStore()
+export function HistoryScreen({ nav }: { nav: Nav }) {
+  const { state, dispatch } = useStore()
+  const undoable = useUndoable()
   const { payments, subscriptions, cards } = state
+
+  // Sola kaydırıp "Kaldır": ödendi işareti kalkar, ödeme yeniden bekleyen olur. Mesajdaki "Geri al" geri getirir.
+  const unmark = (p: (typeof payments)[number], name: string) =>
+    undoable(`${name} ödemesi kaldırıldı`, () => dispatch({ type: 'payment/toggle', kind: p.kind, refId: p.refId, dueDate: p.dueDate }))
 
   // Son 6 ayda ödendi işaretlenen abonelik tutarları, para birimi bazında. Kart ekstreleri tutarsız tutulduğu için dahil değil.
   const thisMonth = startOfMonth(new Date())
@@ -101,25 +109,43 @@ export function HistoryScreen() {
                   const s = subscriptions.find((x) => x.id === p.refId)
                   const card = cards.find((c) => c.id === s?.cardId)
                   return (
-                    <li key={p.id} className="flex items-center gap-3 rounded-[18px] bg-surface px-3 py-2.5">
-                      <Logo serviceKey={s?.serviceKey ?? null} name={s?.name ?? '?'} size={30} />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-medium">{s?.name ?? 'Silinmiş abonelik'}</span>
-                        <span className="block text-[11px] text-subtle">{date}{card ? ` · ${card.bankName}` : ''}</span>
-                      </span>
-                      <span className="num text-[15px]">{p.amount != null ? formatMoney(p.amount, p.currency) : ''}</span>
+                    <li key={p.id}>
+                      <SwipeRow
+                        actionLabel="Kaldır"
+                        actionIcon={Undo2Icon}
+                        onTap={s ? () => nav.openSubscription(s.id) : undefined}
+                        onDelete={() => unmark(p, s?.name ?? 'Abonelik')}
+                      >
+                        <div className="flex items-center gap-3 px-3 py-2.5">
+                          <Logo serviceKey={s?.serviceKey ?? null} name={s?.name ?? '?'} size={30} />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-medium">{s?.name ?? 'Silinmiş abonelik'}</span>
+                            <span className="block text-[11px] text-subtle">{date}{card ? ` · ${card.bankName}` : ''}</span>
+                          </span>
+                          <span className="num text-[15px]">{p.amount != null ? formatMoney(p.amount, p.currency) : ''}</span>
+                        </div>
+                      </SwipeRow>
                     </li>
                   )
                 }
                 const c = cards.find((x) => x.id === p.refId)
                 return (
-                  <li key={p.id} className="flex items-center gap-3 rounded-[18px] bg-surface px-3 py-2.5">
-                    <BankMark bankName={c?.bankName ?? '?'} color={c?.color ?? '#888'} size={30} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{c ? `${c.bankName} ekstresi` : 'Kart ekstresi'}</span>
-                      <span className="block text-[11px] text-subtle">{date} · son ödeme</span>
-                    </span>
-                    <span className="flex items-center gap-1 text-[13px] text-bh-green"><CheckIcon className="size-4" />ödendi</span>
+                  <li key={p.id}>
+                    <SwipeRow
+                      actionLabel="Kaldır"
+                      actionIcon={Undo2Icon}
+                      onTap={c ? () => nav.openCard(c.id) : undefined}
+                      onDelete={() => unmark(p, c ? `${c.bankName} ekstre` : 'Ekstre')}
+                    >
+                      <div className="flex items-center gap-3 px-3 py-2.5">
+                        <BankMark bankName={c?.bankName ?? '?'} color={c?.color ?? '#888'} size={30} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium">{c ? `${c.bankName} ekstresi` : 'Kart ekstresi'}</span>
+                          <span className="block text-[11px] text-subtle">{date} · son ödeme</span>
+                        </span>
+                        <span className="flex items-center gap-1 text-[13px] text-bh-green"><CheckIcon className="size-4" />ödendi</span>
+                      </div>
+                    </SwipeRow>
                   </li>
                 )
               })}
