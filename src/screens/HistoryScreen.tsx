@@ -144,7 +144,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
                           <span className="block truncate font-medium">{c ? `${c.bankName} ekstresi` : 'Kart ekstresi'}</span>
                           <span className="block text-[11px] text-subtle">{date} · son ödeme</span>
                         </span>
-                        <span className="flex items-center gap-1 text-[13px] text-bh-green"><CheckIcon className="size-4" />ödendi</span>
+                        {c && <span className="num text-[13px] text-subtle">•• {c.last4}</span>}
                       </div>
                     </SwipeRow>
                   </li>
