@@ -5,7 +5,7 @@ import { FEATURED_SERVICES, type Service } from '@/lib/services'
 import { cn } from '@/lib/utils'
 
 // Giriş ekranındaki logo duvarı: 3x3 kutu, her biri bir servisin kendi renginde ve logolu.
-// Yaklaşık her saniye 2-3 rastgele kutu, kısa arayla sırayla başka bir servise döner: yeni renk ortadan daire olarak büyür, şekil de değişir.
+// Yaklaşık 2,5 saniyede bir 2-3 rastgele kutu, kısa arayla sırayla başka bir servise döner: yeni renk ortadan daire olarak büyür, şekil de değişir.
 
 // Bauhaus şekilleri: kemer, çeyrek daireler, yuvarlak, kare
 const SHAPES = [
@@ -71,9 +71,9 @@ export function LogoWall() {
       order.forEach((i, k) => {
         swaps.push(window.setTimeout(() => setTiles((prev) => prev.map((t, j) => (j === i ? nextTile(prev, i) : t))), k * 140))
       })
-      timer = window.setTimeout(tick, 1000 + Math.random() * 500)
+      timer = window.setTimeout(tick, 2200 + Math.random() * 800)
     }
-    timer = window.setTimeout(tick, 900)
+    timer = window.setTimeout(tick, 1500)
     return () => {
       window.clearTimeout(timer)
       swaps.forEach((t) => window.clearTimeout(t))
