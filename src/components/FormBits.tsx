@@ -3,9 +3,9 @@ import type { ReactNode } from 'react'
 import { dayOf } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
-/** Form içindeki gruplanmış alan kutusu */
+/** Form içindeki gruplanmış alan kutusu. Taşmayı kesmez: ad önerileri listesi alttaki alanların üstüne açılabilsin. */
 export function FieldGroup({ children }: { children: ReactNode }) {
-  return <div className="divide-y divide-line overflow-hidden rounded-[18px] bg-surface">{children}</div>
+  return <div className="divide-y divide-line rounded-[18px] bg-surface">{children}</div>
 }
 
 export function Field({ label, htmlFor, stacked, children }: { label: string; htmlFor?: string; stacked?: boolean; children: ReactNode }) {
@@ -20,7 +20,7 @@ export function Field({ label, htmlFor, stacked, children }: { label: string; ht
   return (
     <div className="flex min-h-12 items-center gap-3 px-3.5 py-1.5">
       <label htmlFor={htmlFor} className="label w-24 shrink-0 text-subtle">{label}</label>
-      <div className="flex min-w-0 flex-1 items-center gap-2">{children}</div>
+      <div className="relative flex min-w-0 flex-1 items-center gap-2">{children}</div>
     </div>
   )
 }

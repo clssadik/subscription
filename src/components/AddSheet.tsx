@@ -92,7 +92,6 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
   const newCard = cardId === NEW_CARD
   const [card, setCard] = useState<NewCard>({ bankName: '', last4: '', kind: 'credit', statementDay: null })
   const [error, setError] = useState('')
-  const nameHints = startingWith(name, SERVICES)
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -131,9 +130,12 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
     <form onSubmit={submit} className="mt-4 grid grid-cols-1 gap-3">
       <FieldGroup>
         <Field label="Ad" htmlFor="s-name">
-          <input id="s-name" className={inputClass} style={hinted(name, nameHints)} value={name} onChange={(e) => setName(e.target.value)} placeholder="Netflix" autoComplete="off" />
-          <Suggestions
-            items={nameHints}
+          <SuggestInput
+            id="s-name"
+            value={name}
+            onChange={setName}
+            placeholder="Netflix"
+            items={SERVICES}
             onPick={(s) => {
               setServiceKey(s.key)
               setName(s.name)
@@ -226,7 +228,6 @@ function buildCard(c: NewCard, existing?: CreditCard): CreditCard {
 function CardInputs({ value, onChange, idPrefix, existing }: { value: NewCard; onChange: (c: NewCard) => void; idPrefix: string; existing?: CreditCard }) {
   const set = (patch: Partial<NewCard>) => onChange({ ...value, ...patch })
   const digits = (v: string, max: number) => v.replace(/\D/g, '').slice(0, max)
-  const bankHints = startingWith(value.bankName, BANKS)
   return (
     <>
       <Segmented
@@ -237,9 +238,15 @@ function CardInputs({ value, onChange, idPrefix, existing }: { value: NewCard; o
       />
       <FieldGroup>
         <Field label="Banka adı" htmlFor={`${idPrefix}-bank`}>
-          <input id={`${idPrefix}-bank`} className={inputClass} style={hinted(value.bankName, bankHints)} value={value.bankName} onChange={(e) => set({ bankName: e.target.value })} placeholder="Garanti BBVA" autoComplete="off" />
-          <Suggestions items={bankHints} onPick={(b) => set({ bankName: b.name })} />
-          {value.bankName.trim() && bankHints.length === 0 && <span aria-hidden className="size-4 shrink-0 rounded-full" style={{ background: colorFor(value.bankName, existing) }} />}
+          <SuggestInput
+            id={`${idPrefix}-bank`}
+            value={value.bankName}
+            onChange={(bankName) => set({ bankName })}
+            placeholder="Garanti BBVA"
+            items={BANKS}
+            onPick={(b) => set({ bankName: b.name })}
+          />
+          {value.bankName.trim() && <span aria-hidden className="size-4 shrink-0 rounded-full" style={{ background: colorFor(value.bankName, existing) }} />}
         </Field>
         <Field label="Son 4 hane" htmlFor={`${idPrefix}-last4`}>
           <input id={`${idPrefix}-last4`} className={cn(inputClass, 'num tracking-widest')} inputMode="numeric" autoComplete="off" value={value.last4} onChange={(e) => set({ last4: digits(e.target.value, 4) })} placeholder="1234" />
@@ -299,26 +306,66 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
   )
 }
 
-/** Öneri varken yazı alanı yazılan kadar daralır, öneriler aynı satırda sağında durur (form büyümez). Yazılan, önerilerin başı olduğu için kısadır. */
-const hinted = (text: string, hints: unknown[]) => (hints.length > 0 ? { width: `${text.length + 1}ch`, flex: 'none' } : undefined)
-
-/** Adı yazılanla başlayanlar (içinde geçenler değil). Yazılan zaten listedeki bir adla aynıysa öneri yok. */
-function startingWith<T extends { name: string }>(query: string, items: T[]) {
-  const q = normalize(query)
-  if (!q || items.some((i) => normalize(i.name) === q)) return []
-  return items.filter((i) => normalize(i.name).startsWith(q)).slice(0, 8)
-}
-
-/** Ad alanının sağında, aynı satırda yana kaydırılan yazılı öneriler. Dokununca ad o öneriyle dolar. */
-function Suggestions<T extends { key: string; name: string }>({ items, onPick }: { items: T[]; onPick: (item: T) => void }) {
-  if (items.length === 0) return null
+/**
+ * Öneri listeli yazı alanı: yazarken adı yazılanla başlayanlar alanın altında açılan bir listede çıkar (iPhone menüsü gibi).
+ * Liste alttaki alanların üstüne biner, formu büyütmez. Dokununca ad dolar; alandan çıkınca liste kapanır.
+ */
+function SuggestInput<T extends { key: string; name: string }>({
+  id,
+  value,
+  onChange,
+  placeholder,
+  items,
+  onPick,
+}: {
+  id: string
+  value: string
+  onChange: (v: string) => void
+  placeholder: string
+  items: T[]
+  onPick: (item: T) => void
+}) {
+  const [focused, setFocused] = useState(false)
+  const q = normalize(value)
+  const hints = !q || items.some((i) => normalize(i.name) === q) ? [] : items.filter((i) => normalize(i.name).startsWith(q)).slice(0, 6)
   return (
-    <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {items.map((i) => (
-        <button key={i.key} type="button" onClick={() => onPick(i)} className="pressable shrink-0 rounded-full bg-page px-3 py-1 text-sm whitespace-nowrap">
-          {i.name}
-        </button>
-      ))}
-    </div>
+    <>
+      <input
+        id={id}
+        className={inputClass}
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value)
+          setFocused(true)
+        }}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder={placeholder}
+        autoComplete="off"
+      />
+      {focused && hints.length > 0 && (
+        <ul
+          role="listbox"
+          className="absolute top-[calc(100%+10px)] -left-2 z-30 w-[min(15rem,calc(100%+1rem))] overflow-hidden rounded-[14px] bg-surface py-1 shadow-[0_10px_30px_rgb(0_0_0/0.18),0_0_0_0.5px_rgb(0_0_0/0.08)] dark:bg-[#262626] dark:shadow-[0_10px_30px_rgb(0_0_0/0.6),0_0_0_0.5px_rgb(255_255_255/0.12)]"
+        >
+          {hints.map((i) => (
+            <li key={i.key} role="option" aria-selected={false}>
+              <button
+                type="button"
+                // Alanın odağı kaybolmasın (yoksa liste dokunuş bitmeden kapanır)
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onPick(i)
+                  setFocused(false)
+                }}
+                className="w-full px-3.5 py-2.5 text-left text-base active:bg-line"
+              >
+                {i.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
   )
 }
