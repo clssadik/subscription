@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BauhausTiles } from '@/components/BauhausTiles'
+import { LogoWall } from '@/components/LogoWall'
 import { DEMO_CODE, DEMO_EMAIL, demoSignIn } from '@/lib/demo'
 import { isConfigured, supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
@@ -46,63 +46,66 @@ export function LoginScreen() {
     if (error) setError(friendly(error.message))
   }
 
-  const field = 'min-h-12 w-full rounded-2xl bg-page px-4 text-base outline-none focus:ring-2 focus:ring-bh-yellow'
-  const button = 'pressable min-h-12 w-full rounded-2xl bg-[#141414] font-label text-base font-semibold text-bh-yellow disabled:opacity-60 dark:bg-bh-yellow dark:text-[#141414]'
+  const field = 'min-h-12 w-full rounded-2xl bg-surface px-4 text-base outline-none focus:ring-2 focus:ring-bh-yellow'
+  const button = 'pressable min-h-12 w-full rounded-2xl bg-bh-yellow font-label text-base font-semibold text-[#141414] disabled:opacity-60'
 
   return (
-    <section className="flex min-h-[calc(100svh-10rem)] flex-col justify-center">
-      <BauhausTiles>
-        <div className="my-2 rounded-[24px] bg-surface px-3.5 pt-5 pb-3.5">
-          <h1 className="num num-bold mb-4 text-center text-[28px]">{step === 'email' ? 'Giriş yap' : 'Kodu gir'}</h1>
+    // Üstte logo duvarı; başlık ve form altta (başparmağın ulaştığı yer)
+    <section className="flex min-h-[calc(100svh-9rem)] flex-col">
+      <LogoWall />
 
-          {step === 'email' ? (
-            <form onSubmit={sendCode} className="grid gap-2">
-              <label htmlFor="email" className="sr-only">E-posta</label>
-              <input
-                id="email"
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                autoCapitalize="none"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="E-posta"
-                className={field}
-              />
-              {error && <p className="px-1 text-sm text-bh-red" role="alert">{error}</p>}
-              <button type="submit" disabled={busy} className={button}>{busy ? 'Gönderiliyor…' : 'Kod gönder'}</button>
-            </form>
-          ) : (
-            <form onSubmit={verify} className="grid gap-2">
-              <p className="-mt-3 mb-1 truncate text-center text-sm text-subtle">{email}</p>
-              <label htmlFor="code" className="sr-only">Kod</label>
-              <input
-                id="code"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={8}
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="••••••"
-                className={cn(field, 'num text-center text-2xl tracking-[0.4em]')}
-              />
-              {error && <p className="px-1 text-sm text-bh-red" role="alert">{error}</p>}
-              <button type="submit" disabled={busy} className={button}>{busy ? 'Kontrol ediliyor…' : 'Giriş yap'}</button>
-              <button
-                type="button"
-                onClick={() => {
-                  setStep('email')
-                  setCode('')
-                  setError('')
-                }}
-                className="min-h-11 text-sm text-subtle"
-              >
-                Geri
-              </button>
-            </form>
-          )}
+      <div className="mt-auto pt-6">
+        <div className="mb-5 text-center">
+          <h1 className="num num-bold text-[30px] leading-tight">{step === 'email' ? 'Hepsi tek yerde' : 'Kodu gir'}</h1>
+          <p className="mt-1 truncate text-sm text-subtle">{step === 'email' ? 'Ne zaman, hangi karttan, ne kadar.' : `${email} adresine gönderdik`}</p>
         </div>
-      </BauhausTiles>
+        {step === 'email' ? (
+          <form onSubmit={sendCode} className="grid gap-2">
+            <label htmlFor="email" className="sr-only">E-posta</label>
+            <input
+              id="email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              autoCapitalize="none"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="E-posta"
+              className={field}
+            />
+            {error && <p className="px-1 text-sm text-bh-red" role="alert">{error}</p>}
+            <button type="submit" disabled={busy} className={button}>{busy ? 'Gönderiliyor…' : 'Kod gönder'}</button>
+            <p className="px-1 text-center text-xs text-subtle">Şifre yok: e-postana gelen kodla girersin.</p>
+          </form>
+        ) : (
+          <form onSubmit={verify} className="grid gap-2">
+            <label htmlFor="code" className="sr-only">Kod</label>
+            <input
+              id="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={8}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+              placeholder="••••••"
+              className={cn(field, 'num text-center text-2xl tracking-[0.4em]')}
+            />
+            {error && <p className="px-1 text-sm text-bh-red" role="alert">{error}</p>}
+            <button type="submit" disabled={busy} className={button}>{busy ? 'Kontrol ediliyor…' : 'Giriş yap'}</button>
+            <button
+              type="button"
+              onClick={() => {
+                setStep('email')
+                setCode('')
+                setError('')
+              }}
+              className="min-h-11 text-sm text-subtle"
+            >
+              Geri
+            </button>
+          </form>
+        )}
+      </div>
     </section>
   )
 }
