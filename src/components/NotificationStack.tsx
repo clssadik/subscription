@@ -1,5 +1,5 @@
 import { CheckIcon } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { BankMark } from '@/components/BankMark'
 import { Logo } from '@/components/Logo'
 import { formatMoney } from '@/lib/format'
@@ -34,10 +34,13 @@ export function NotificationStack({ className }: { className?: string }) {
   // Kaçıncı bildirimin en üstte olduğu; her adımda bir artar
   const [head, setHead] = useState(2)
 
-  useEffect(() => {
+  // Ekran çizilmeden ölçülür: ilk anda fazla kart görünüp başlığın üstünde sönmesin
+  useLayoutEffect(() => {
     const el = box.current
     if (!el) return
-    const ro = new ResizeObserver(() => setFit(Math.max(1, Math.min(3, Math.floor((el.clientHeight + GAP) / (ROW + GAP))))))
+    const measure = () => setFit(Math.max(1, Math.min(3, Math.floor((el.clientHeight + GAP) / (ROW + GAP)))))
+    measure()
+    const ro = new ResizeObserver(measure)
     ro.observe(el)
     return () => ro.disconnect()
   }, [])

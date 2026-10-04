@@ -90,12 +90,14 @@ function Welcome({ onStart, onLogin }: { onStart: () => void; onLogin: () => voi
       <LogoWall />
       <NotificationStack className="my-4 min-h-[64px] flex-1" />
       <div>
-        <h1 className="num num-bold text-[44px] leading-[1.02]">
-          Hepsi
+        <h1 className="num num-bold text-[40px] leading-[1.02]">
+          Ne zaman,
           <br />
-          <span className={accent}>tek yerde</span>
+          ne kadar,
+          <br />
+          <span className={accent}>hangi karttan</span>
         </h1>
-        <div className="mt-8 flex items-center justify-between">
+        <div className="mt-6 flex items-center justify-between">
           <button onClick={onLogin} className="min-h-11 text-sm text-subtle underline-offset-4 hover:underline">
             Hesabım var
           </button>
