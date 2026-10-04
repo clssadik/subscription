@@ -46,7 +46,7 @@ export function SearchSwap({ search, placeholder, children }: { search: Search; 
       <Collapse open={open}>
         <div className="flex items-center gap-2 pb-1">
           {/* Sarı halka kutunun içine çizilir: kapanan kutu (overflow-hidden) kenarını kesmesin */}
-          <label className="flex min-h-11 flex-1 items-center gap-2 rounded-2xl bg-surface px-3.5 focus-within:ring-2 focus-within:ring-bh-yellow focus-within:ring-inset">
+          <label className="flex min-h-11 flex-1 items-center gap-2 rounded-2xl bg-surface px-3.5 focus-within:ring-2 focus-within:ring-metal focus-within:ring-inset">
             <SearchIcon className="size-4 shrink-0 text-subtle" />
             <input
               ref={input}

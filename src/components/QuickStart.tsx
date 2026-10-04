@@ -119,7 +119,7 @@ export function SubscriptionQuickStart({ nav }: { nav: Nav }) {
       {q && (
         <button
           onClick={() => nav.add({ name: query.trim() })}
-          className="pressable mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-bh-yellow font-medium text-[#141414]"
+          className="pressable mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-[14px] metal font-medium text-[#141414]"
         >
           <PlusIcon className="size-4" /> “{query.trim()}” ekle
         </button>

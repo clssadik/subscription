@@ -173,7 +173,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
               {first ? (
                 <button
                   onClick={() => nav.openSubscription(first.s.id)}
-                  className="pressable col-span-2 flex items-center gap-4 rounded-[22px] bg-bh-yellow px-3.5 py-[calc(14px-4px*var(--p,0))] text-left text-[#141414]"
+                  className="pressable col-span-2 flex items-center gap-4 rounded-[22px] metal px-3.5 py-[calc(14px-4px*var(--p,0))] text-left text-[#141414]"
                 >
                   <span className="min-w-16 text-center leading-none">
                     {daysUntil(first.date) === 0 ? (

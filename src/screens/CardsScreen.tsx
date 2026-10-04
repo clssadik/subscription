@@ -142,7 +142,7 @@ function Poster({ cards }: { cards: CreditCard[] }) {
         // Siyah kartlar (Papara) siyah panelde kaybolmasın: ince açık kenar
         <span key={i} className={cn('absolute', shape, cards[i] && luminance(cards[i].color) < 0.12 && 'ring-1 ring-white/30')} style={{ background: cards[i]?.color ?? '#262626' }} />
       ))}
-      {cards.length > 0 && <span className="absolute top-3.5 left-3.5 size-14 rounded-full ring-[3px] ring-bh-yellow" />}
+      {cards.length > 0 && <span className="absolute top-3.5 left-3.5 size-14 rounded-full ring-[3px] ring-metal" />}
     </div>
   )
 }

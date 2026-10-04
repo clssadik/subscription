@@ -9,7 +9,7 @@
 @import "@fontsource/outfit/500.css";
 @import "@fontsource/outfit/600.css";
 
-/* Tema: açık = "Gündüz Bauhaus", koyu = "Gece Bauhaus". Varsayılan telefonun ayarını izler;
+/* Tema: açık = soğuk açık gri, koyu = grafit; vurgu titanyum (.metal). Bauhaus mavi/kırmızı süslemelerde kalır. Varsayılan telefonun ayarını izler;
    Hesap ekranından elle seçilebilir. <html class="dark"> src/lib/theme.ts ve index.html'deki betikle konur. */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -20,6 +20,8 @@
 
     /* Bauhaus renkleri: iki temada da aynı */
     --color-bh-yellow: #F4C21B;
+    /* Titanyum: vurgu rengi (eski sarının yerine). Düz hali halka, ikon ve çizgiler için; yüzeyler .metal ile parlak metal */
+    --color-metal: #9A9CA1;
     --color-bh-blue: #1F4FB4;
     --color-bh-red: #D9381E;
     --color-bh-green: #22B573;
@@ -64,15 +66,15 @@
 }
 
 :root {
-    --page: #F1ECE2;
-    --ink: #141414;
-    --subtle: #857C6D;
+    --page: #EEEEF0;
+    --ink: #141416;
+    --subtle: #77787E;
     --surface: #FFFFFF;
-    --line: #E2DBCD;
-    --hero: #141414;
+    --line: #DEDEE2;
+    --hero: #141416;
     --hero-fg: #F2F2F2;
-    --nav: #141414;
-    --nav-off: #8A8172;
+    --nav: #141416;
+    --nav-off: #8A8B91;
 
     --background: var(--page);
     --foreground: var(--ink);
@@ -91,20 +93,20 @@
     --destructive: #D9381E;
     --border: var(--line);
     --input: var(--line);
-    --ring: #F4C21B;
+    --ring: #9A9CA1;
     --radius: 0.875rem;
 }
 
 :root.dark {
-    --page: #000000;
-    --ink: #F2F2F2;
-    --subtle: #858585;
-    --surface: #141414;
-    --line: #262626;
-    --hero: #1F4FB4;
+    --page: #0E0E10;
+    --ink: #EDEDEF;
+    --subtle: #84858B;
+    --surface: #18181B;
+    --line: #2A2A2E;
+    --hero: #1F1F23;
     --hero-fg: #FFFFFF;
-    --nav: #141414;
-    --nav-off: #5C5C5C;
+    --nav: #18181B;
+    --nav-off: #5E5F64;
     color-scheme: dark;
 }
 
@@ -156,6 +158,12 @@
   @media (prefers-reduced-motion: reduce) {
     .pressable:active { transform: none; }
   }
+}
+
+/* Titanyum yüzey: fırçalanmış gümüş geçiş + ince kenar ışığı. Üstündeki yazı koyu (#141414). Eski sarı yüzeylerin yerine. */
+.metal {
+  background: linear-gradient(125deg, #F4F4F5 0%, #B4B6BB 34%, #ECEDEF 52%, #9C9EA3 78%, #D4D5D8 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7), inset 0 0 0 0.5px rgb(0 0 0 / 0.12);
 }
 
 /* Logo kutusu: açık temada siyah, koyu temada beyaz. --logo-ink = kutudaki siyah/beyaz logoların rengi */

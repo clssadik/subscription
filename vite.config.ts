@@ -18,7 +18,7 @@ export default defineConfig({
         description: 'Abonelik ve kredi kartı ödemelerini takip et',
         lang: 'tr',
         theme_color: '#141414',
-        background_color: '#F1ECE2',
+        background_color: '#EEEEF0',
         display: 'standalone',
         start_url: '/',
         icons: [

@@ -39,7 +39,7 @@ export function RoundButton({ label, onClick, children }: { label: string; onCli
 /** Başlığın sağındaki sarı "+" */
 export function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} aria-label={label} className="pressable flex size-11 items-center justify-center rounded-full bg-bh-yellow text-[#141414]">
+    <button onClick={onClick} aria-label={label} className="pressable flex size-11 items-center justify-center rounded-full metal text-[#141414]">
       <PlusIcon className="size-6" strokeWidth={2} />
     </button>
   )

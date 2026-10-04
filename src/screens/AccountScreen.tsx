@@ -36,8 +36,8 @@ export function AccountScreen({ user }: { user: User }) {
   return (
     <>
       <ScreenHeader title="Hesap" />
-      <section className="flex flex-col items-center rounded-[120px_120px_22px_22px] bg-bh-yellow px-4 pt-8 pb-5 text-center text-[#141414]">
-        <div className="flex size-16 items-center justify-center rounded-full bg-[#141414] font-label text-2xl font-medium text-bh-yellow">
+      <section className="flex flex-col items-center rounded-[120px_120px_22px_22px] metal px-4 pt-8 pb-5 text-center text-[#141414]">
+        <div className="flex size-16 items-center justify-center rounded-full bg-[#141414] font-label text-2xl font-medium text-metal">
           {initial(email)}
         </div>
         <p className="mt-3 max-w-full truncate font-medium">{email}</p>
@@ -102,7 +102,7 @@ function ThemePicker() {
             onClick={() => setPref(value)}
             className={cn(
               'pressable flex h-16 flex-col items-center justify-center gap-1 rounded-[18px] font-label text-sm',
-              pref === value ? 'bg-bh-yellow font-medium text-[#141414]' : 'bg-surface text-subtle',
+              pref === value ? 'metal font-medium text-[#141414]' : 'bg-surface text-subtle',
             )}
           >
             <Icon className="size-[18px]" />
@@ -137,7 +137,7 @@ function SoundPicker() {
             }}
             className={cn(
               'pressable flex h-16 flex-col items-center justify-center gap-1 rounded-[18px] font-label text-sm',
-              enabled === on ? 'bg-bh-yellow font-medium text-[#141414]' : 'bg-surface text-subtle',
+              enabled === on ? 'metal font-medium text-[#141414]' : 'bg-surface text-subtle',
             )}
           >
             <Icon className="size-[18px]" />

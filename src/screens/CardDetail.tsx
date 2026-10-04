@@ -73,7 +73,7 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
       {due && !canMarkPaid(due) && paidThisMonth(state.payments, card.id) && <PaidNote month={new Date()} />}
       {due && canMarkPaid(due) && (
         <button onClick={markPaid} className="pressable mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-ink font-semibold text-page">
-          <CheckCircle2Icon className="size-[18px] text-bh-yellow" />
+          <CheckCircle2Icon className="size-[18px] text-metal" />
           {formatDate(due, 'LLLL')} ekstresi ödendi
         </button>
       )}
@@ -176,7 +176,7 @@ function Gauge({ color, due, previousDue }: { color: string; due: Date | null; p
       <svg viewBox={`0 0 ${W} 150`} className="w-full" role="img" aria-label={due ? `Son ödemeye ${left} gün kaldı` : 'Banka kartı'}>
         <path d={arc(1)} fill="none" stroke="var(--line)" strokeWidth={22} />
         {progress > 0.01 && <path d={arc(progress)} fill="none" stroke={color} strokeWidth={22} />}
-        {due && <circle cx={end.x} cy={end.y} r={9} className="fill-bh-yellow" />}
+        {due && <circle cx={end.x} cy={end.y} r={9} className="fill-metal" />}
       </svg>
       <div className="absolute inset-x-0 bottom-1.5 text-center">
         {due ? (
