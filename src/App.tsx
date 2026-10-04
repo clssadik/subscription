@@ -1,7 +1,8 @@
 import type { User } from '@supabase/supabase-js'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { flushSync } from 'react-dom'
 import { AddSheet, type SheetTarget } from '@/components/AddSheet'
+import { ScrollPage } from '@/components/ScrollPage'
 import { BottomNav, type Tab } from '@/components/BottomNav'
 import { Toaster } from '@/components/ui/sonner'
 import { useUser } from '@/lib/auth'
@@ -62,10 +63,6 @@ function Main({ user }: { user: User }) {
   // Kart detayı hangi sekmeden açıldıysa onun üstünde açılır; geri basınca o sekmeye dönülür
   const [cardId, setCardId] = useState<string | null>(null)
   const [sheet, setSheet] = useState<SheetTarget>(null)
-
-  useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [tab, detailId, cardId])
 
   // Sayfa geçişi (iPhone'daki gibi): detay sağ kenardan gelir, eski sayfa biraz sola kayıp kararır; geri dönünce tersi (View Transitions).
   // Alt menüden sekme değişince yeni sayfa sekmenin yönünden kısa bir kaymayla gelir (Web Animations; sekmeler silinmediği için).
@@ -138,17 +135,23 @@ function Main({ user }: { user: User }) {
         <main
           key={ready ? screen : 'loading'}
           data-screen-active
-          className={cn(cssMotion && `screen-${cssMotion}`, 'mx-auto min-h-svh max-w-md px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-32')}
-        >
-          {!ready ? (
-            <LoadingSkeleton />
-          ) : detailId ? (
-            <SubscriptionDetail id={detailId} nav={nav} />
-          ) : cardId ? (
-            <CardDetail id={cardId} nav={nav} onBack={() => go('pop', () => setCardId(null))} />
-          ) : (
-            tab === 'account' && <AccountScreen user={user} />
+          // Liste sekmeleri gibi sabit ve kendi kayan alanı var: sayfanın kendisi kaymaz (iPhone'da yukarıdan çekince yenileme olmaz, iki uçta esner)
+          className={cn(
+            cssMotion && `screen-${cssMotion}`,
+            'fixed inset-x-0 top-0 mx-auto flex h-svh max-w-md flex-col px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-24',
           )}
+        >
+          <ScrollPage>
+            {!ready ? (
+              <LoadingSkeleton />
+            ) : detailId ? (
+              <SubscriptionDetail id={detailId} nav={nav} />
+            ) : cardId ? (
+              <CardDetail id={cardId} nav={nav} onBack={() => go('pop', () => setCardId(null))} />
+            ) : (
+              tab === 'account' && <AccountScreen user={user} />
+            )}
+          </ScrollPage>
         </main>
       )}
       <BottomNav
@@ -158,7 +161,7 @@ function Main({ user }: { user: User }) {
           // Açık sekmeye tekrar basınca en başa kay
           if (t === tab && !detailId && !cardId) {
             scrollToTop(t)
-            window.scrollTo({ top: 0, behavior: 'smooth' })
+            document.querySelector('[data-screen-active] [data-scroller]')?.scrollTo({ top: 0, behavior: 'smooth' })
             return
           }
           // Aynı sekmeye basınca detaydan listeye geri dönülür

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { SubscriptionQuickStart } from '@/components/QuickStart'
+import { ScrollPage } from '@/components/ScrollPage'
 import { AddButton, ScreenHeader, SearchBar, SearchButton } from '@/components/ScreenHeader'
 import { PinnedLayout } from '@/components/PinnedLayout'
 import { ShareBar } from '@/components/ShareBar'
@@ -94,10 +95,10 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
   return (
     <>
       {subscriptions.length === 0 ? (
-        <>
+        <ScrollPage>
           {header}
           <SubscriptionQuickStart nav={nav} />
-        </>
+        </ScrollPage>
       ) : (
         <PinnedLayout
           scrollKey="subscriptions"

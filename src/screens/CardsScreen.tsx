@@ -1,4 +1,5 @@
 import { CardQuickStart } from '@/components/QuickStart'
+import { ScrollPage } from '@/components/ScrollPage'
 import { AddButton, ScreenHeader } from '@/components/ScreenHeader'
 import { useState } from 'react'
 import { BankBrand } from '@/components/BankMark'
@@ -19,10 +20,10 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
 
   if (cards.length === 0) {
     return (
-      <>
+      <ScrollPage>
         <ScreenHeader title="Kartlar" action={<AddButton label="Kart ekle" onClick={() => nav.addCard()} />} />
         <CardQuickStart nav={nav} />
-      </>
+      </ScrollPage>
     )
   }
 

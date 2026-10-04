@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { HomeQuickStart } from '@/components/QuickStart'
+import { ScrollPage } from '@/components/ScrollPage'
 import { AddButton, DateHeader } from '@/components/ScreenHeader'
 import { ShareBar } from '@/components/ShareBar'
 import { daysUntil, dueLabel, hasDue, monthItems, nextCardDue, nextRenewal, type MonthItem } from '@/lib/dates'
@@ -105,10 +106,10 @@ export function HomeScreen({ nav }: { nav: Nav }) {
 
   if (subscriptions.length === 0 && cards.length === 0) {
     return (
-      <>
+      <ScrollPage>
         <DateHeader action={<AddButton label="Yeni ekle" onClick={() => nav.add()} />} />
         <HomeQuickStart nav={nav} />
-      </>
+      </ScrollPage>
     )
   }
 
