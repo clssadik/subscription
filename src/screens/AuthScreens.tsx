@@ -88,7 +88,11 @@ function Welcome({ onStart, onLogin }: { onStart: () => void; onLogin: () => voi
       <LogoWall />
       <NotificationStack className="my-4 min-h-[64px] flex-1" />
       <div>
-        <h1 className="text-[34px] leading-[1.1] font-semibold tracking-[-0.02em]">Ne zaman, ne kadar, hangi karttan.</h1>
+        <h1 className="text-[34px] leading-[1.1] font-semibold tracking-[-0.02em]">
+          Ne zaman, ne kadar,
+          <br />
+          hangi karttan.
+        </h1>
         <div className="mt-6 flex items-center justify-between">
           <button onClick={onLogin} className="min-h-11 text-sm text-subtle underline-offset-4 hover:underline">
             Hesabım var
