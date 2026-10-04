@@ -25,16 +25,25 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
   const [shown, setShown] = useState(target)
   // Her açılışta artar: form temiz başlasın (kapanınca silinmediği için eski yazılar kalmasın)
   const [opened, setOpened] = useState(0)
+  // Panel açıkken tür elle değiştirildi mi (sadece o zaman kayma animasyonu oynar)
+  const [switched, setSwitched] = useState(false)
   // Panel her açıldığında türü hedefe göre sıfırla
   if (target !== lastTarget) {
     setLastTarget(target)
     if (target) {
       setKind(target.kind)
+      setSwitched(false)
       setShown(target)
       setOpened((n) => n + 1)
     }
   }
   const editing = !!shown?.id
+  function pick(next: 'subscription' | 'card') {
+    if (next === kind) return
+    haptic()
+    setSwitched(true)
+    setKind(next)
+  }
 
   // Kapanırken klavyeyi önce indir: klavye panel kayarken kapanınca sayfa sarsılıyor
   function close() {
@@ -53,21 +62,28 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
 
           {!editing && (
             <div className="mt-3 flex gap-2">
-              <KindButton active={kind === 'subscription'} onClick={() => setKind('subscription')}>
+              <KindButton active={kind === 'subscription'} onClick={() => pick('subscription')}>
                 <RepeatIcon className="size-5" /> Abonelik
               </KindButton>
-              <KindButton active={kind === 'card'} onClick={() => setKind('card')}>
+              <KindButton active={kind === 'card'} onClick={() => pick('card')}>
                 <CreditCardIcon className="size-5" /> Kart
               </KindButton>
             </div>
           )}
 
-          {shown && kind === 'subscription' && (
-            <SubscriptionFields key={`${shown.id ?? 'new-sub'}-${opened}`} id={shown.kind === 'subscription' ? shown.id : undefined} preset={shown} onDone={close} />
-          )}
-          {shown && kind === 'card' && (
-            <CardFields key={`${shown.id ?? 'new-card'}-${opened}`} id={shown.kind === 'card' ? shown.id : undefined} preset={shown} onDone={close} />
-          )}
+          {/* Abonelik ↔ Kart değişince form yandan kayarak gelir: Kart sağda, Abonelik solda (düğmelerin sırası gibi).
+              İlk açılışta kaymaz; panel zaten aşağıdan geliyor. */}
+          <div
+            key={kind}
+            className={cn(switched && 'animate-in fade-in duration-300 ease-out', switched && (kind === 'card' ? 'slide-in-from-right-8' : 'slide-in-from-left-8'))}
+          >
+            {shown && kind === 'subscription' && (
+              <SubscriptionFields key={`${shown.id ?? 'new-sub'}-${opened}`} id={shown.kind === 'subscription' ? shown.id : undefined} preset={shown} onDone={close} />
+            )}
+            {shown && kind === 'card' && (
+              <CardFields key={`${shown.id ?? 'new-card'}-${opened}`} id={shown.kind === 'card' ? shown.id : undefined} preset={shown} onDone={close} />
+            )}
+          </div>
         </div>
       </DrawerContent>
     </Drawer>
