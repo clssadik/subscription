@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Logo } from '@/components/Logo'
-import { SERVICES } from '@/lib/services'
+import { FEATURED_SERVICES } from '@/lib/services'
 import { cn } from '@/lib/utils'
 
 // Giriş ekranındaki kutular: birkaç saniyede bir rastgele bir kutunun rengi, şekli ya da logosu değişir.
@@ -18,7 +18,7 @@ const SHAPES = [
   '35px',
   '12px',
 ]
-const LOGOS = SERVICES.filter((s) => s.icon)
+const LOGOS = FEATURED_SERVICES.filter((s) => s.icon)
 const MAX_LOGOS = 2
 
 interface Tile {

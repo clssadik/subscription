@@ -18,6 +18,32 @@ export const BANKS: { key: string; name: string; color: string }[] = [
   { key: 'teb', name: 'TEB', color: '#009A44' },
   { key: 'kuveytturk', name: 'Kuveyt Türk', color: '#00704A' },
   { key: 'papara', name: 'Papara', color: '#141414' },
+  // Diğer bankalar (logo eklenene kadar baş harfle görünür)
+  { key: 'cepteteb', name: 'CEPTETEB', color: '#009A44' },
+  { key: 'sekerbank', name: 'Şekerbank', color: '#009846' },
+  { key: 'fibabanka', name: 'Fibabanka', color: '#00539F' },
+  { key: 'odeabank', name: 'Odeabank', color: '#6D2077' },
+  { key: 'alternatifbank', name: 'Alternatif Bank', color: '#E2231A' },
+  { key: 'anadolubank', name: 'Anadolubank', color: '#0A3D8F' },
+  { key: 'burgan', name: 'Burgan Bank', color: '#1B365D' },
+  { key: 'hsbc', name: 'HSBC', color: '#DB0011' },
+  { key: 'icbc', name: 'ICBC Turkey', color: '#C8102E' },
+  // Katılım bankaları
+  { key: 'albaraka', name: 'Albaraka Türk', color: '#F58220' },
+  { key: 'turkiyefinans', name: 'Türkiye Finans', color: '#003E7E' },
+  { key: 'ziraatkatilim', name: 'Ziraat Katılım', color: '#B5121B' },
+  { key: 'vakifkatilim', name: 'Vakıf Katılım', color: '#3A3937' },
+  { key: 'emlakkatilim', name: 'Emlak Katılım', color: '#00579F' },
+  { key: 'hayatfinans', name: 'Hayat Finans', color: '#00A79D' },
+  // Dijital cüzdanlar ve kartlar
+  { key: 'ininal', name: 'ininal', color: '#00B5E2' },
+  { key: 'tosla', name: 'Tosla', color: '#4B32C3' },
+  { key: 'paycell', name: 'Paycell', color: '#FFC72C' },
+  { key: 'param', name: 'Param', color: '#003DA5' },
+  { key: 'colendi', name: 'Colendi', color: '#2D3CFF' },
+  { key: 'wise', name: 'Wise', color: '#163300' },
+  { key: 'revolut', name: 'Revolut', color: '#191C1F' },
+  { key: 'payoneer', name: 'Payoneer', color: '#FF4800' },
 ]
 
 const norm = (s: string) => s.toLocaleLowerCase('tr').replace(/[^a-z0-9çğıöşü]/g, '')
@@ -26,11 +52,13 @@ const norm = (s: string) => s.toLocaleLowerCase('tr').replace(/[^a-z0-9çğıö�
 function matchBank(name: string) {
   const n = norm(name)
   if (n.length < 2) return undefined
-  return BANKS.find((b) => {
-    const full = norm(b.name)
-    const first = norm(b.name.split(' ')[0])
-    return full.startsWith(n) || n.startsWith(full) || n.startsWith(first)
-  })
+  // Önce tam ada bak ("Ziraat Katılım" → Ziraat Katılım), sonra ilk kelimeye ("Garanti Bonus" → Garanti BBVA)
+  return (
+    BANKS.find((b) => {
+      const full = norm(b.name)
+      return full.startsWith(n) || n.startsWith(full)
+    }) ?? BANKS.find((b) => n.startsWith(norm(b.name.split(' ')[0])))
+  )
 }
 
 export function bankColor(name: string) {
