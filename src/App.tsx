@@ -75,6 +75,16 @@ function Main({
     window.scrollTo(0, 0)
   }, [tab, detailId])
 
+  // Sayfa geçişi: detaya girince sağdan, geri dönünce soldan kayar; sekme değişince hafifçe belirir
+  const screen = `${tab}:${detailId ?? ''}:${cardId ?? ''}`
+  const depth = (detailId ? 1 : 0) + (tab === 'cards' && cardId ? 1 : 0)
+  const [last, setLast] = useState({ screen, tab, depth, motion: 'screen-fade' })
+  if (last.screen !== screen) {
+    // Alt menüden başka sekmeye geçmek "geri" sayılmaz, sadece belirir
+    const motion = depth > last.depth ? 'screen-push' : depth < last.depth && tab === last.tab ? 'screen-pop' : 'screen-fade'
+    setLast({ screen, tab, depth, motion })
+  }
+
   /** Ekleme/düzenleme girişsiz yapılamaz: önce giriş ekranına götür */
   function openSheet(target: NonNullable<SheetTarget>) {
     if (user) return setSheet(target)
@@ -101,13 +111,15 @@ function Main({
     <>
       {/* Özet ve Abonelikler ekrana sığar (sayfa kaymaz); orada sadece liste kayar */}
       <main
+        key={ready ? screen : 'loading'}
         className={cn(
+          last.motion,
           'mx-auto max-w-md px-3 pt-[max(1rem,env(safe-area-inset-top))]',
           (tab === 'home' || tab === 'subscriptions' || tab === 'history' || (tab === 'cards' && !cardId)) && !detailId && ready ? 'flex h-svh flex-col overflow-y-auto pb-24' : 'min-h-svh pb-32',
         )}
       >
         {!ready ? (
-          <p className="pt-24 text-center text-sm text-subtle">Yükleniyor…</p>
+          <LoadingSkeleton />
         ) : detailId ? (
           <SubscriptionDetail id={detailId} nav={nav} />
         ) : (
@@ -133,5 +145,27 @@ function Main({
       />
       <AddSheet target={sheet} onClose={() => setSheet(null)} />
     </>
+  )
+}
+
+/** Veriler gelene kadar Anasayfa'nın iskeleti: aynı yerlerde nefes alan gri kutular */
+function LoadingSkeleton() {
+  return (
+    <div aria-busy aria-label="Yükleniyor" className="grid gap-2">
+      <div className="mb-1 flex items-center justify-between">
+        <div className="skeleton h-8 w-36 rounded-xl" />
+        <div className="skeleton size-11 rounded-full" />
+      </div>
+      <div className="skeleton h-32 rounded-[22px]" />
+      <div className="skeleton h-[92px] rounded-[22px]" />
+      <div className="grid grid-cols-2 gap-2">
+        <div className="skeleton h-[60px] rounded-[18px]" />
+        <div className="skeleton h-[60px] rounded-[18px]" />
+      </div>
+      <div className="skeleton mt-3 h-3 w-28 rounded" />
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="skeleton h-[54px] rounded-[18px]" />
+      ))}
+    </div>
   )
 }

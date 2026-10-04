@@ -1,5 +1,6 @@
 import { CheckIcon } from 'lucide-react'
 import { useLayoutEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { HomeQuickStart } from '@/components/QuickStart'
@@ -7,6 +8,7 @@ import { AddButton, DateHeader } from '@/components/ScreenHeader'
 import { ShareBar } from '@/components/ShareBar'
 import { daysUntil, dueLabel, hasDue, monthItems, nextCardDue, nextRenewal, type MonthItem } from '@/lib/dates'
 import { formatDate, formatMoney } from '@/lib/format'
+import { haptic } from '@/lib/haptics'
 import { useStore } from '@/lib/store'
 import { useScrollLimit } from '@/lib/useScrollLimit'
 import { CURRENCIES } from '@/lib/types'
@@ -74,9 +76,15 @@ export function HomeScreen({ nav }: { nav: Nav }) {
     .sort((a, b) => a.date.getTime() - b.date.getTime())[0]
 
   function toggle(i: MonthItem) {
-    if (i.kind === 'subscription')
-      dispatch({ type: 'payment/toggle', kind: 'subscription', refId: i.subscription.id, dueDate: formatDate(i.date, 'yyyy-MM-dd'), amount: i.subscription.amount, currency: i.subscription.currency })
-    else dispatch({ type: 'payment/toggle', kind: 'card', refId: i.card.id, dueDate: formatDate(i.date, 'yyyy-MM-dd') })
+    haptic()
+    const dueDate = formatDate(i.date, 'yyyy-MM-dd')
+    const run = () =>
+      i.kind === 'subscription'
+        ? dispatch({ type: 'payment/toggle', kind: 'subscription', refId: i.subscription.id, dueDate, amount: i.subscription.amount, currency: i.subscription.currency })
+        : dispatch({ type: 'payment/toggle', kind: 'card', refId: i.card.id, dueDate })
+    run()
+    // Ödendi işaretlenince kısa onay; işaret kaldırılınca mesaj yok
+    if (!i.paid) toast(`${i.kind === 'subscription' ? i.subscription.name : `${i.card.bankName} ekstresi`} ödendi`, { action: { label: 'Geri al', onClick: run } })
   }
 
   if (subscriptions.length === 0 && cards.length === 0) {
@@ -219,14 +227,14 @@ export function HomeScreen({ nav }: { nav: Nav }) {
                 const key = `${i.kind}-${i.kind === 'card' ? i.card.id : i.subscription.id}-${i.date.getTime()}`
                 const past = daysUntil(i.date) < 0
                 return (
-                  <li key={key} className="flex items-center gap-3 rounded-[18px] bg-surface py-2 pr-3 pl-1.5">
+                  <li key={key} className="flex items-center gap-3 rounded-[18px] bg-surface py-2 pr-3 pl-1.5 transition-transform duration-100 has-[button:active]:scale-[0.98]">
                     <button
                       onClick={() => toggle(i)}
                       aria-label={i.paid ? 'Ödenmedi olarak işaretle' : 'Ödendi olarak işaretle'}
                       aria-pressed={i.paid}
                       className="flex size-11 shrink-0 items-center justify-center"
                     >
-                      <span className={cn('flex size-6 items-center justify-center rounded-full border-[1.5px]', i.paid ? 'border-bh-green bg-bh-green text-white' : 'border-subtle/50')}>
+                      <span className={cn('flex size-6 items-center justify-center rounded-full border-[1.5px] transition-colors', i.paid ? 'check-pop border-bh-green bg-bh-green text-white' : 'border-subtle/50')}>
                         {i.paid && <CheckIcon className="size-4" strokeWidth={2.5} />}
                       </span>
                     </button>

@@ -1,4 +1,5 @@
 import { toast } from 'sonner'
+import { haptic } from './haptics'
 import { useStore } from './store'
 
 /** Silme gibi işlemleri "Geri al" butonlu bir bildirimle yapar. */
@@ -6,6 +7,7 @@ export function useUndoable() {
   const { state, dispatch } = useStore()
   return (message: string, run: () => void) => {
     const before = state
+    haptic()
     run()
     toast(message, {
       duration: 5000,

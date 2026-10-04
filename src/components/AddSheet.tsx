@@ -2,6 +2,7 @@ import { format } from 'date-fns'
 import { CreditCardIcon, RepeatIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { haptic } from '@/lib/haptics'
 import { DaySelect, Field, FieldGroup, inputClass, PrimaryButton, Segmented, selectClass } from '@/components/FormBits'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer'
 import { bankColor, bankName as fullBankName, cardColor } from '@/lib/banks'
@@ -118,6 +119,7 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
       serviceKey: key,
     }
     dispatch({ type: 'subscription/save', subscription })
+    haptic()
     toast.success(sub ? 'Abonelik güncellendi' : newCard ? 'Abonelik ve kart eklendi' : 'Abonelik eklendi')
     onDone()
   }
@@ -257,6 +259,7 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
     const problem = cardProblem(value)
     if (problem) return setError(problem)
     dispatch({ type: 'card/save', card: buildCard(value, card) })
+    haptic()
     toast.success(card ? 'Kart güncellendi' : 'Kart eklendi')
     onDone()
   }

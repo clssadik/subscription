@@ -165,6 +165,38 @@
 }
 .bloom { animation: bloom 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
+/* Sayfa geçişleri: sekme değişince hafif yukarı süzülerek belirir; detay sağdan kayarak gelir, geri dönünce soldan */
+@keyframes screen-fade {
+  from { opacity: 0; transform: translateY(6px); }
+}
+@keyframes screen-push {
+  from { opacity: 0; transform: translateX(28px); }
+}
+@keyframes screen-pop {
+  from { opacity: 0; transform: translateX(-28px); }
+}
+.screen-fade { animation: screen-fade 200ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.screen-push { animation: screen-push 260ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.screen-pop { animation: screen-pop 260ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+/* "Ödendi" işareti dolunca küçük bir zıplama */
+@keyframes check-pop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.check-pop { animation: check-pop 280ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+/* Yükleniyor iskeleti: yavaşça nefes alan gri kutular */
+@keyframes skeleton {
+  50% { opacity: 0.45; }
+}
+.skeleton { background: var(--surface); animation: skeleton 1.4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-fade, .screen-push, .screen-pop, .check-pop, .skeleton { animation: none; }
+}
+
 /* Liquid glass: alt menüdeki buzlu cam. Arkadan geçen içerik bulanık görünür, kenarda ince ışık parlaması. */
 .glass {
   -webkit-backdrop-filter: blur(16px) saturate(190%);

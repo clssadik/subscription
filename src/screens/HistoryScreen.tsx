@@ -81,6 +81,16 @@ export function HistoryScreen() {
           </section>
         }
       >
+        {/* Henüz hiçbir şey ödendi işaretlenmemişse ne yapılacağını söyle */}
+        {payments.length === 0 && (
+          <div className="mt-4 flex flex-col items-center rounded-[22px] bg-surface px-6 py-8 text-center">
+            <span className="flex size-12 items-center justify-center rounded-full bg-bh-green/15 text-bh-green">
+              <CheckIcon className="size-6" strokeWidth={2.2} />
+            </span>
+            <p className="mt-3 font-medium">Henüz ödeme yok</p>
+            <p className="mt-1 text-sm text-subtle">Anasayfada bir ödemenin yanındaki yuvarlağa dokununca ödendi olarak burada görünür.</p>
+          </div>
+        )}
         {[...groups.entries()].map(([month, list]) => (
           <section key={month} className="mb-3">
             <h2 className="label mt-4 mb-1.5 px-1 text-subtle">{formatDate(parseISO(`${month}-01`), 'LLLL yyyy')}</h2>
