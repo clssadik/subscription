@@ -58,8 +58,7 @@ function initialTiles() {
   return tiles.map((t) => ({ ...t, prev: t.color, v: 0 }))
 }
 
-/** Duvar bulunduğu alanın tamamını doldurur: ekran uzadıkça kutular da uzar, ortada boşluk kalmaz */
-export function LogoWall({ className }: { className?: string }) {
+export function LogoWall() {
   const [tiles, setTiles] = useState(initialTiles)
 
   useEffect(() => {
@@ -82,16 +81,16 @@ export function LogoWall({ className }: { className?: string }) {
   }, [])
 
   return (
-    <div className={cn('grid grid-cols-3 grid-rows-3 gap-2', className)} aria-hidden>
+    <div className="grid grid-cols-3 gap-2" aria-hidden>
       {tiles.map((t, i) => (
         <div
           key={i}
-          className="relative flex min-h-[68px] items-center justify-center overflow-hidden transition-[border-radius] duration-500 ease-out"
+          className="relative flex h-[clamp(68px,13svh,116px)] items-center justify-center overflow-hidden transition-[border-radius] duration-500 ease-out"
           style={{ background: t.prev, borderRadius: t.shape }}
         >
           <span
             key={t.v}
-            className={cn('absolute top-1/2 left-1/2 aspect-square w-[300%] -translate-x-1/2 -translate-y-1/2 rounded-full', t.v > 0 && 'bloom')}
+            className={cn('absolute top-1/2 left-1/2 aspect-square w-[200%] -translate-x-1/2 -translate-y-1/2 rounded-full', t.v > 0 && 'bloom')}
             style={{ background: t.color }}
             // Animasyon bitince alttaki eski rengi de güncelle; kenarda ince çizgi kalmasın
             onAnimationEnd={() => setTiles((all) => all.map((x, j) => (j === i ? { ...x, prev: x.color } : x)))}
