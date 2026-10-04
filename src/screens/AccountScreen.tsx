@@ -37,7 +37,7 @@ export function AccountScreen({ user }: { user: User }) {
     <>
       <ScreenHeader title="Hesap" />
       <section className="flex flex-col items-center rounded-[120px_120px_22px_22px] metal px-4 pt-8 pb-5 text-center text-[#141414]">
-        <div className="flex size-16 items-center justify-center rounded-full bg-[#141414] font-label text-2xl font-medium text-metal">
+        <div className="flex size-16 items-center justify-center rounded-full bg-white font-label text-2xl font-medium text-[#141414] dark:bg-[#141414] dark:text-metal">
           {initial(email)}
         </div>
         <p className="mt-3 max-w-full truncate font-medium">{email}</p>

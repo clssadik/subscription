@@ -27,7 +27,7 @@ Logosu olmayan bir servis eklendiğinde uygulama bunu Supabase'deki `missing_log
 
 ## Tasarım kuralları (Titanyum bento)
 
-- Renkler `src/index.css` içinde. Vurgu titanyum: yüzeylerde `.metal` (fırçalanmış gümüş geçiş, üstünde koyu yazı),
+- Renkler `src/index.css` içinde. Vurgu titanyum: yüzeylerde `.metal` (koyu temada gümüş + koyu yazı, açık temada koyu titanyum + beyaz yazı; üstünden ışık parıltısı geçer),
   halka/ikon/çizgide düz `metal` rengi (`ring-metal`, `text-metal`). Sarı artık vurgu olarak kullanılmaz;
   Bauhaus mavi/kırmızı sadece süslemelerde kalır, renk ekrana asıl servis ve banka logolarından gelir.
   Tema varsayılan olarak telefonun ayarını izler (açık = soğuk açık gri, koyu = grafit); Hesap ekranından elle seçilebilir (`src/lib/theme.ts`).

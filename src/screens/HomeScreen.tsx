@@ -185,7 +185,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
                       </>
                     )}
                   </span>
-                  <span aria-hidden className="w-px self-stretch bg-black/15" />
+                  <span aria-hidden className="w-px self-stretch bg-current opacity-20" />
                   <span className="min-w-0 flex-1">
                     {/* "Sıradaki" yazısı küçülürken kapanır */}
                     <span className="label block h-[calc(14px-14px*var(--p,0))] overflow-hidden opacity-[calc(0.7-1.4*var(--p,0))]">Sıradaki</span>
