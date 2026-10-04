@@ -76,6 +76,9 @@ function Main({ user }: { user: User }) {
   // Açılmış liste sekmeleri (hep yerinde kalır)
   const [visited, setVisited] = useState<Tab[]>([tab])
   const listShown = ready && !detailId && !cardId && isListTab(tab)
+  useEffect(() => {
+    document.documentElement.classList.toggle('no-page-bounce', listShown)
+  }, [listShown])
 
   function go(next: Motion, update: () => void) {
     if (next === 'tab-right' || next === 'tab-left') {
@@ -122,7 +125,7 @@ function Main({ user }: { user: User }) {
               inert={!active}
               aria-hidden={!active || undefined}
               className={cn(
-                'fixed inset-x-0 top-0 mx-auto flex h-svh max-w-md flex-col overflow-hidden px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-24',
+                'fixed inset-x-0 top-0 mx-auto flex h-svh max-w-md flex-col px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-24',
                 !active && 'invisible',
               )}
             >

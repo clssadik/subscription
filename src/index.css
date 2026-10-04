@@ -118,6 +118,11 @@
   }
   body {
     @apply bg-page text-ink antialiased;
+  }
+  /* Liste sekmelerinde sayfanın kendisi esnemez (sadece içteki liste esner); detay ve Hesap sayfası iPhone'daki gibi esner.
+     Sınıfı src/App.tsx koyar. */
+  html.no-page-bounce,
+  html.no-page-bounce body {
     overscroll-behavior-y: none;
   }
 }

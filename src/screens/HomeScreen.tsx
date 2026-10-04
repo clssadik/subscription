@@ -236,7 +236,8 @@ export function HomeScreen({ nav }: { nav: Nav }) {
         </div>
         </div>
         {/* Listenin üst boşluğu bloğun açık haldeki yüksekliği kadar */}
-        <div ref={content} style={{ paddingTop: blockHeight }}>
+        {/* En az kayan alan boyu + 1px: liste kısa olsa da iPhone'daki gibi esner */}
+        <div ref={content} className="min-h-[calc(100%+1px)]" style={{ paddingTop: blockHeight }}>
             {/* Bu ayın bütün ödemeleri; soldaki yuvarlak "ödendi" işareti */}
             <h2 className="label mt-3 mb-2 px-1 text-subtle">{formatDate(new Date(), 'LLLL')} ödemeleri</h2>
             <ul className="grid gap-1.5">

@@ -77,7 +77,7 @@ export function PinnedLayout({
                 </div>
               </div>
             </div>
-            <div ref={content} style={{ paddingTop: blockHeight }}>
+            <div ref={content} className="min-h-[calc(100%+1px)]" style={{ paddingTop: blockHeight }}>
               {children}
             </div>
           </>
