@@ -2,6 +2,7 @@ import { CheckCircle2Icon, ChevronLeftIcon, PencilIcon } from 'lucide-react'
 import { addMonths } from 'date-fns'
 import { toast } from 'sonner'
 import { haptic } from '@/lib/haptics'
+import { play } from '@/lib/sound'
 import { Logo } from '@/components/Logo'
 import { PaidNote } from '@/components/PaidNote'
 import { RoundButton } from '@/components/ScreenHeader'
@@ -26,6 +27,7 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
   function markPaid() {
     if (!due) return
     haptic()
+    play('paid')
     const dueDate = toKey(due)
     dispatch({ type: 'payment/toggle', kind: 'card', refId: card!.id, dueDate })
     toast(`${card!.bankName} ${formatDate(due, 'LLLL')} ödemesi işaretlendi`, {

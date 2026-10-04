@@ -9,6 +9,7 @@ import { ShareBar } from '@/components/ShareBar'
 import { daysUntil, dueLabel, hasDue, monthItems, nextCardDue, nextRenewal, type MonthItem } from '@/lib/dates'
 import { formatDate, formatMoney } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
+import { play } from '@/lib/sound'
 import { useStore } from '@/lib/store'
 import { useScrollLimit } from '@/lib/useScrollLimit'
 import { CURRENCIES } from '@/lib/types'
@@ -83,7 +84,8 @@ export function HomeScreen({ nav }: { nav: Nav }) {
         ? dispatch({ type: 'payment/toggle', kind: 'subscription', refId: i.subscription.id, dueDate, amount: i.subscription.amount, currency: i.subscription.currency })
         : dispatch({ type: 'payment/toggle', kind: 'card', refId: i.card.id, dueDate })
     run()
-    // Ödendi işaretlenince kısa onay; işaret kaldırılınca mesaj yok
+    // Ödendi işaretlenince ses ve kısa onay; işaret kaldırılınca ikisi de yok
+    if (!i.paid) play('paid')
     if (!i.paid) toast(`${i.kind === 'subscription' ? i.subscription.name : `${i.card.bankName} ekstresi`} ödendi`, { action: { label: 'Geri al', onClick: run } })
   }
 

@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js'
-import { FlaskConicalIcon, LogOutIcon, MoonIcon, SmartphoneIcon, SunIcon, Trash2Icon } from 'lucide-react'
+import { FlaskConicalIcon, LogOutIcon, MoonIcon, SmartphoneIcon, SunIcon, Trash2Icon, Volume2Icon, VolumeXIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { formatDate, initial } from '@/lib/format'
@@ -7,6 +7,7 @@ import { clearCache, useStore } from '@/lib/store'
 import { DEMO_ID, demoSignOut } from '@/lib/demo'
 import { randomCards, randomSubscriptions } from '@/lib/seed'
 import { useUndoable } from '@/lib/undo'
+import { play, useSoundEnabled } from '@/lib/sound'
 import { supabase } from '@/lib/supabase'
 import { type ThemePref, useTheme } from '@/lib/theme'
 import { cn } from '@/lib/utils'
@@ -49,6 +50,7 @@ export function AccountScreen({ user }: { user: User }) {
       </div>
 
       <ThemePicker />
+      <SoundPicker />
 
       <p className="mt-4 px-1 text-sm text-subtle">
         {demo
@@ -101,6 +103,41 @@ function ThemePicker() {
             className={cn(
               'pressable flex h-16 flex-col items-center justify-center gap-1 rounded-[18px] font-label text-sm',
               pref === value ? 'bg-bh-yellow font-medium text-[#141414]' : 'bg-surface text-subtle',
+            )}
+          >
+            <Icon className="size-[18px]" />
+            {label}
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// Ödendi, kaydet ve sil sesleri. Açınca örnek olarak "ding" çalar. Seçim bu cihazda saklanır.
+function SoundPicker() {
+  const [enabled, setEnabled] = useSoundEnabled()
+  const options = [
+    { on: true, label: 'Açık', Icon: Volume2Icon },
+    { on: false, label: 'Kapalı', Icon: VolumeXIcon },
+  ]
+  return (
+    <section className="mt-4">
+      <h2 className="label px-1 text-subtle">Sesler</h2>
+      <div className="mt-2 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Sesler">
+        {options.map(({ on, label, Icon }) => (
+          <button
+            key={label}
+            type="button"
+            role="radio"
+            aria-checked={enabled === on}
+            onClick={() => {
+              setEnabled(on)
+              if (on) play('paid')
+            }}
+            className={cn(
+              'pressable flex h-16 flex-col items-center justify-center gap-1 rounded-[18px] font-label text-sm',
+              enabled === on ? 'bg-bh-yellow font-medium text-[#141414]' : 'bg-surface text-subtle',
             )}
           >
             <Icon className="size-[18px]" />

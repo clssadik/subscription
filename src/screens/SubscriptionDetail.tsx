@@ -2,6 +2,7 @@ import { CheckCircle2Icon, ChevronLeftIcon, PencilIcon } from 'lucide-react'
 import { parseISO } from 'date-fns'
 import { toast } from 'sonner'
 import { haptic } from '@/lib/haptics'
+import { play } from '@/lib/sound'
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { PaidNote } from '@/components/PaidNote'
@@ -27,6 +28,7 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
 
   function markPaid() {
     haptic()
+    play('paid')
     const dueDate = toKey(next)
     const label = formatDate(next, 'd MMMM')
     dispatch({ type: 'payment/toggle', kind: 'subscription', refId: sub!.id, dueDate, amount: sub!.amount, currency: sub!.currency })
