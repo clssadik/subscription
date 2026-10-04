@@ -107,6 +107,7 @@ function Main({ user }: { user: User }) {
     back: () => go('pop', () => setDetailId(null)),
   }
 
+  // Ekranlar dört kenara sabit (fixed inset-0): iPhone ana ekran uygulamasında svh/vh yüksekliği yanlış gelip sayfa taşabiliyordu
   return (
     <>
       {/* Liste sekmeleri ekrana sığar (sayfa kaymaz); sadece içlerindeki liste kayar. Görünmeyenler yerinde bekler. */}
@@ -120,7 +121,7 @@ function Main({ user }: { user: User }) {
               inert={!active}
               aria-hidden={!active || undefined}
               className={cn(
-                'fixed inset-x-0 top-0 mx-auto flex h-svh max-w-md flex-col px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-24',
+                'fixed inset-0 mx-auto flex max-w-md flex-col px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-24',
                 // Görünmeyen sekme ekranın dışında bekler: iPhone görünmez de olsa üstteki listeye parmağı verip kaydırmayı/esnemeyi yutuyordu
                 !active && 'pointer-events-none invisible -translate-x-[200vw]',
               )}
@@ -139,7 +140,7 @@ function Main({ user }: { user: User }) {
           // Liste sekmeleri gibi sabit ve kendi kayan alanı var: sayfanın kendisi kaymaz (iPhone'da yukarıdan çekince yenileme olmaz, iki uçta esner)
           className={cn(
             cssMotion && `screen-${cssMotion}`,
-            'fixed inset-x-0 top-0 mx-auto flex h-svh max-w-md flex-col px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-24',
+            'fixed inset-0 mx-auto flex max-w-md flex-col px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-24',
           )}
         >
           <ScrollPage>
