@@ -4,11 +4,15 @@ import { toast } from 'sonner'
 import { haptic } from '@/lib/haptics'
 import { play } from '@/lib/sound'
 import { Logo } from '@/components/Logo'
+import { Money } from '@/components/Money'
 import { PaidNote } from '@/components/PaidNote'
 import { RoundButton } from '@/components/ScreenHeader'
 import { canMarkPaid, daysUntil, hasDue, monthlyCost, nextCardCycle, paidThisMonth, toKey } from '@/lib/dates'
+import { luminance } from '@/lib/color'
 import { formatDate, formatMoney } from '@/lib/format'
+import { serviceColor } from '@/lib/services'
 import { useStore } from '@/lib/store'
+import type { Subscription } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { BankMark } from '@/components/BankMark'
 import type { Nav } from '@/App'
@@ -21,7 +25,8 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
   // Banka kartında son ödeme yok
   const cycle = hasDue(card) ? nextCardCycle(card, state.payments) : null
   const due = cycle?.due ?? null
-  const onCard = state.subscriptions.filter((s) => s.cardId === card.id)
+  // Aylık maliyete göre büyükten küçüğe: banka kartında yaydaki dilimlerle liste aynı sırada
+  const onCard = state.subscriptions.filter((s) => s.cardId === card.id).sort((a, b) => monthlyCost(b) - monthlyCost(a))
   const monthlyTry = onCard.filter((s) => s.currency === 'TRY').reduce((sum, s) => sum + monthlyCost(s), 0)
 
   function markPaid() {
@@ -50,17 +55,19 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
         <p className="num mt-1.5 rounded-full bg-surface px-3.5 py-1 text-xl tracking-[0.06em]">•••• {card.last4}</p>
       </div>
 
-      <Gauge color={card.color} due={due} previousDue={cycle?.previousDue ?? null} />
-
-      <div className={cn('mt-2 grid gap-2', cycle ? 'grid-cols-3' : 'grid-cols-1')}>
-        {cycle && (
-          <>
+      {/* Kredi kartı: son ödemeye kalan gün. Banka kartında son ödeme yok: yay aboneliklerin aylık paylarını gösterir. */}
+      {cycle ? (
+        <>
+          <Gauge color={card.color} due={due} previousDue={cycle.previousDue} />
+          <div className="mt-2 grid grid-cols-3 gap-2">
             <Stat label="Kesim" value={formatDate(cycle.statement, 'd MMM')} sub={formatDate(cycle.statement, 'EEEE')} />
             <Stat label="Son ödeme" value={formatDate(cycle.due, 'd MMM')} sub={formatDate(cycle.due, 'EEEE')} />
-          </>
-        )}
-        <Stat label="Bu karttan" value={formatMoney(monthlyTry)} sub={`${onCard.length} abonelik`} />
-      </div>
+            <Stat label="Bu karttan" value={formatMoney(monthlyTry)} sub={`${onCard.length} abonelik`} />
+          </div>
+        </>
+      ) : (
+        <ShareArc subscriptions={onCard} total={monthlyTry} />
+      )}
 
       {/* Gelecek ayın ekstresi, ay değişmeden işaretlenemez */}
       {due && !canMarkPaid(due) && paidThisMonth(state.payments, card.id) && <PaidNote month={new Date()} />}
@@ -80,7 +87,11 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
                 <button onClick={() => nav.openSubscription(s.id)} className="pressable flex w-full items-center gap-3 rounded-[18px] bg-surface px-3 py-2.5 text-left">
                   <Logo serviceKey={s.serviceKey} name={s.name} size={30} />
                   <span className="flex-1 truncate font-medium">{s.name}</span>
-                  <span className="num text-[15px]">{formatMoney(s.amount, s.currency)}</span>
+                  {!cycle && s.currency === 'TRY' && <span aria-hidden className="size-2.5 shrink-0 rounded-[3px]" style={{ background: arcColor(s) }} />}
+                  <span className="num text-[15px]">
+                    {formatMoney(s.amount, s.currency)}
+                    {s.cycle === 'yearly' && <span className="text-[11px] text-subtle">/yıl</span>}
+                  </span>
                 </button>
               </li>
             ))}
@@ -88,6 +99,57 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
         </>
       )}
     </>
+  )
+}
+
+/** Yaydaki dilim rengi: servisin rengi; siyah markalar (GitHub, Notion) koyu zeminde kaybolmasın diye yazı renginde */
+function arcColor(s: Subscription) {
+  const c = serviceColor(s.serviceKey, s.name)
+  return luminance(c) < 0.2 ? 'var(--ink)' : c
+}
+
+/**
+ * Banka kartı için yarım daire: her abonelik aylık TL maliyeti oranında kendi renginde bir dilim (soldan büyükten küçüğe).
+ * Ortada aylık toplam. Yabancı para birimleri kur bilinmediği için yayda yok (Anasayfa'daki şerit gibi).
+ */
+function ShareArc({ subscriptions, total }: { subscriptions: Subscription[]; total: number }) {
+  const W = 276
+  const R = 112
+  const cx = W / 2
+  const cy = 140
+  const GAP = 0.012
+  const point = (p: number) => `${cx - R * Math.cos(Math.PI * p)} ${cy - R * Math.sin(Math.PI * p)}`
+  const arc = (from: number, to: number) => `M ${point(from)} A ${R} ${R} 0 0 1 ${point(to)}`
+
+  const items = subscriptions.filter((s) => s.currency === 'TRY').map((s) => ({ id: s.id, value: monthlyCost(s), color: arcColor(s) }))
+  const sum = items.reduce((t, i) => t + i.value, 0)
+  // Her dilimin başı = kendinden öncekilerin payları toplamı; aralarda küçük boşluk
+  const slices = items.map((i, n) => {
+    const from = items.slice(0, n).reduce((t, x) => t + x.value, 0) / sum
+    const to = from + i.value / sum
+    return { ...i, from: n === 0 ? 0 : from + GAP, to: n === items.length - 1 ? 1 : to - GAP }
+  })
+
+  return (
+    <div className="relative mx-auto mt-3 w-[86%]">
+      <svg viewBox={`0 0 ${W} 150`} className="w-full" role="img" aria-label={`Bu karttan aylık ${formatMoney(total)}, ${items.length} abonelik`}>
+        {slices.length === 0 && <path d={arc(0, 1)} fill="none" stroke="var(--line)" strokeWidth={22} />}
+        {slices.map((sl) => sl.to > sl.from && <path key={sl.id} d={arc(sl.from, sl.to)} fill="none" stroke={sl.color} strokeWidth={22} />)}
+      </svg>
+      <div className="absolute inset-x-0 bottom-1.5 text-center">
+        {items.length > 0 ? (
+          <>
+            <Money amount={total} size={40} />
+            <div className="mt-0.5 text-xs text-subtle">aylık · banka kartı</div>
+          </>
+        ) : (
+          <>
+            <span className="font-label text-2xl font-medium">Banka kartı</span>
+            <div className="mt-0.5 text-xs text-subtle">henüz abonelik yok</div>
+          </>
+        )}
+      </div>
+    </div>
   )
 }
 
