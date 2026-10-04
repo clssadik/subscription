@@ -158,16 +158,23 @@
 :root { --logo-tile: #141414; --logo-ink: #FFFFFF; }
 :root.dark { --logo-tile: #FFFFFF; --logo-ink: #141414; }
 
-/* Anasayfa'daki üst bloğun küçülmesi: --p 0 (açık) → 1 (küçük). Kayıtlı değişken olduğu için yumuşakça geçer;
-   bloktaki boylar ve yazı boyutları bu değişkene bağlı (src/screens/HomeScreen.tsx). */
+/* Anasayfa'daki üst bloğun küçülmesi: --p 0 (açık) → 1 (küçük); bloktaki boylar ve yazı boyutları buna bağlı (src/screens/HomeScreen.tsx).
+   Destekleyen tarayıcıda --p'yi listenin kaydırması sürer: kaydırmayla aynı karede hesaplanır, parmağın gerisinde kalmaz.
+   220px = HomeScreen'deki COLLAPSE. */
 @property --p {
   syntax: '<number>';
   inherits: true;
   initial-value: 0;
 }
-.shrink-block { transition: --p 340ms cubic-bezier(0.32, 0.72, 0, 1); }
-@media (prefers-reduced-motion: reduce) {
-  .shrink-block { transition: none; }
+@keyframes shrink-block {
+  to { --p: 1; }
+}
+@supports (animation-timeline: scroll()) {
+  .shrink-block {
+    animation: shrink-block linear both;
+    animation-timeline: scroll(nearest block);
+    animation-range: 0 220px;
+  }
 }
 
 /* Giriş ekranı kutuları: yeni renk ortadan daire olarak büyür */

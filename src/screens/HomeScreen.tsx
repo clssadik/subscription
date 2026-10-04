@@ -19,29 +19,31 @@ import { cn } from '@/lib/utils'
 import { BankMark } from '@/components/BankMark'
 import type { Nav } from '@/App'
 
-// Bu kadar aşağı kaydırınca blok küçülür; en üste bu kadar yaklaşınca açılır (arada titremesin diye iki ayrı eşik)
-const COLLAPSE_AT = 48
-const EXPAND_AT = 16
+// Üst bloğun tamamen küçülmesi için gereken kaydırma (px): bloğun küçülme mesafesinin iki katı, telefonda çok hızlı olmasın.
+// Değişirse src/index.css'teki .shrink-block animation-range da değişmeli.
+const COLLAPSE = 220
+// Tarayıcı kaydırmaya bağlı animasyonu biliyor mu (iOS 26+). Biliyorsa küçülmeyi CSS yapar, JavaScript hiçbir şey yazmaz.
+const SCROLL_TIMELINE = typeof CSS !== 'undefined' && CSS.supports('animation-timeline: scroll()')
 // Tüm para birimleri aynı tipografiyi kullanır: virgülden önceki ana kısım aynı boyut/renk, sonrası küçük ve soluk
 const AMOUNT_SIZE = 'calc(42px - 16px * var(--p, 0))'
 
 export function HomeScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const { cards, subscriptions, payments } = state
-  // Kaydırınca üst blok (toplam, sıradaki, iki küçük kart) küçülür; tarih başlığı sabit. Blok parmağı adım adım izlemez: eşiği geçince
-  // --p 0 → 1 kısa bir animasyonla değişir (src/index.css'teki @property --p). iPhone'da kaydırmaya bağlı yeniden boyutlama takılıyordu;
-  // böylece liste kayarken hiçbir şey yeniden boyutlanmaz.
+  // Kaydırınca üst blok (toplam, sıradaki, iki küçük kart) birlikte küçülür; tarih başlığı sabit. --p 0 (en üstte) → 1 (COLLAPSE px kaydırınca).
+  // Yeni iPhone'larda --p'yi kaydırmaya bağlı CSS animasyonu sürer (kaydırmayla aynı karede, geride kalmaz; src/index.css .shrink-block).
+  // Eskilerde kaydırma olayından, karede en fazla bir kez ve sadece bloğa yazılır.
   // Blok listenin üstüne bindirilir (akışta yer kaplamaz): küçülürken liste alanının boyutu değişmez, hızlı kaydırmada zıplama olmaz.
   // Listenin üst boşluğu bloğun açık haldeki yüksekliği kadardır; blok boyu değişirse (ör. yazı tipi yüklenince) en üstteyken yeniden ölçülür.
   const block = useRef<HTMLDivElement>(null)
-  const compact = useRef(false)
+  const progress = useRef(0)
   const [blockHeight, setBlockHeight] = useState(0)
   const [scrolled, setScrolled] = useState(false)
   useLayoutEffect(() => {
     const el = block.current
     if (!el) return
     // Sadece blok tamamen açıkken ölç (açılma animasyonunun ara boyları listenin boşluğunu oynatmasın)
-    const measure = () => !compact.current && getComputedStyle(el).getPropertyValue('--p').trim() === '0' && setBlockHeight(el.offsetHeight)
+    const measure = () => Number(getComputedStyle(el).getPropertyValue('--p')) === 0 && setBlockHeight(el.offsetHeight)
     measure()
     const ro = new ResizeObserver(measure)
     ro.observe(el)
@@ -52,13 +54,18 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   const content = useRef<HTMLDivElement>(null)
   const limit = useScrollLimit(scroller, content)
   useScrollMemory('home', scroller, blockHeight > 0)
+  const frame = useRef(0)
   function onScroll(e: React.UIEvent<HTMLDivElement>) {
-    const y = e.currentTarget.scrollTop
-    setScrolled(y > 0)
-    const next = y > (compact.current ? EXPAND_AT : COLLAPSE_AT)
-    if (next === compact.current) return
-    compact.current = next
-    block.current?.style.setProperty('--p', next ? '1' : '0')
+    const el = e.currentTarget
+    setScrolled(el.scrollTop > 0)
+    if (SCROLL_TIMELINE || frame.current) return
+    frame.current = requestAnimationFrame(() => {
+      frame.current = 0
+      const p = Math.round(Math.min(1, Math.max(0, el.scrollTop / COLLAPSE)) * 1000) / 1000
+      if (p === progress.current) return
+      progress.current = p
+      block.current?.style.setProperty('--p', String(p))
+    })
   }
   const items = monthItems(cards, subscriptions, payments)
   const subItems = items.filter((i) => i.kind === 'subscription')
