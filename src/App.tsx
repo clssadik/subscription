@@ -28,7 +28,7 @@ export interface Nav {
   back: () => void
 }
 
-type Motion = 'push' | 'pop' | 'fade'
+type Motion = 'push' | 'pop' | 'fade' | 'none'
 
 type Pending = { sheet: NonNullable<SheetTarget>; tab: Tab } | null
 
@@ -80,12 +80,12 @@ function Main({
   }, [tab, detailId, cardId])
 
   // Sayfa geçişi (iPhone'daki gibi): detay sağ kenardan gelir, eski sayfa biraz sola kayıp kararır; geri dönünce tersi.
-  // Alt menüden sekme değişince yumuşak geçiş. Animasyonlar src/index.css'te (::view-transition).
+  // Alt menüden sekme değişince animasyon yok, sayfa anında değişir (iPhone'daki sekmeler gibi). Animasyonlar src/index.css'te (::view-transition).
   // View Transitions olmayan tarayıcılarda sadece yeni sayfa kısa bir animasyonla belirir.
   const screen = `${tab}:${detailId ?? ''}:${cardId ?? ''}`
   const [motion, setMotion] = useState<Motion>('fade')
   function go(next: Motion, update: () => void) {
-    if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (next === 'none' || !document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setMotion(next)
       return update()
     }
@@ -150,7 +150,7 @@ function Main({
         onTab={(t) => {
           if (t !== 'account') savePending(null)
           if (t === tab && !detailId && !cardId) return
-          go('fade', () => {
+          go('none', () => {
             setTab(t)
             setDetailId(null)
             setCardId(null)
