@@ -17,6 +17,7 @@ export function PinnedLayout({
   top,
   children,
   fogLevel = 'normal',
+  pinned = true,
 }: {
   /** Kaydırma yerinin hatırlandığı ad (sekme adı) */
   scrollKey: string
@@ -24,6 +25,8 @@ export function PinnedLayout({
   top: ReactNode
   children: ReactNode
   fogLevel?: FogLevel
+  /** false = başlık ve blok sabit kalmaz, listeyle birlikte yukarı kayar */
+  pinned?: boolean
 }) {
   const scroller = useRef<HTMLDivElement>(null)
   const block = useRef<HTMLDivElement>(null)
@@ -33,7 +36,7 @@ export function PinnedLayout({
   const [scrolled, setScrolled] = useState(false)
   const edge = fog(TOP_FOG[fogLevel])
   const limit = useScrollLimit(scroller, content)
-  useScrollMemory(scrollKey, scroller, blockHeight > 0)
+  useScrollMemory(scrollKey, scroller, !pinned || blockHeight > 0)
   useLayoutEffect(() => {
     const el = block.current
     if (!el) return
@@ -52,29 +55,42 @@ export function PinnedLayout({
         onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
         className="relative -mx-3 min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+80px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {/* Blok, kaydırma sınırı kadar yüksek bir kutunun içinde yapışık: liste sona gelip esneyince blok da onunla gider */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10" style={{ height: limit }}>
-        {/* Yüksekliği sıfır: akışta yer kaplamaz, liste altından geçer */}
-        <div className="pointer-events-auto sticky top-0 h-0">
-          <div ref={block} className="absolute inset-x-0 top-0 px-3 pb-2">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 -z-10"
-              style={{ background: `linear-gradient(to bottom, var(--page) calc(100% - 30px), ${edge})` }}
-            />
-            <div
-              aria-hidden
-              className={cn('pointer-events-none absolute inset-x-0 top-full h-8 transition-opacity', scrolled ? 'opacity-100' : 'opacity-0')}
-              style={{ background: `linear-gradient(to bottom, ${edge}, transparent)` }}
-            />
-            {header}
-            {top}
-          </div>
-        </div>
-        </div>
-        <div ref={content} style={{ paddingTop: blockHeight }}>
-          {children}
-        </div>
+        {pinned ? (
+          <>
+            {/* Blok, kaydırma sınırı kadar yüksek bir kutunun içinde yapışık: liste sona gelip esneyince blok da onunla gider */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-10" style={{ height: limit }}>
+              {/* Yüksekliği sıfır: akışta yer kaplamaz, liste altından geçer */}
+              <div className="pointer-events-auto sticky top-0 h-0">
+                <div ref={block} className="absolute inset-x-0 top-0 px-3 pb-2">
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 -z-10"
+                    style={{ background: `linear-gradient(to bottom, var(--page) calc(100% - 30px), ${edge})` }}
+                  />
+                  <div
+                    aria-hidden
+                    className={cn('pointer-events-none absolute inset-x-0 top-full h-8 transition-opacity', scrolled ? 'opacity-100' : 'opacity-0')}
+                    style={{ background: `linear-gradient(to bottom, ${edge}, transparent)` }}
+                  />
+                  {header}
+                  {top}
+                </div>
+              </div>
+            </div>
+            <div ref={content} style={{ paddingTop: blockHeight }}>
+              {children}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Sabit değil: başlık ve blok listenin başında durur, onunla birlikte kayar */}
+            <div className="pb-2">
+              {header}
+              {top}
+            </div>
+            <div ref={content}>{children}</div>
+          </>
+        )}
       </div>
     </div>
   )
