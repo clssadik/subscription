@@ -22,15 +22,17 @@ export function transition(motion: Motion, update: () => void) {
 }
 
 /**
- * iPhone'da geçiş sırasında oluşturulan kayan alan bazen parmakla kaymıyor (kilitli kalıyor).
+ * iPhone'da geçiş animasyonu sırasında oluşturulan kayan alan, ekrana bir kez dokunulana kadar parmakla kaymıyor (kilitli kalıyor).
  * Geçiş bitince her kayan alanın taşmasını bir anlığına kapatıp açarak telefonun onu yeniden tanımasını sağlar; kaydırma yeri korunur.
  */
-function wakeScrollers() {
+export function wakeScrollers() {
   for (const el of document.querySelectorAll<HTMLElement>('[data-scroller]')) {
     const top = el.scrollTop
     el.style.overflowY = 'hidden'
     void el.offsetHeight
     el.style.overflowY = ''
+    // 1px kaydırıp geri al: telefon kayan alanı programla kaydırılınca da yeniden tanıyor
+    el.scrollTop = top + 1
     el.scrollTop = top
   }
 }

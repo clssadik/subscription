@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { useUser } from '@/lib/auth'
 import { initial } from '@/lib/format'
 import { StoreProvider, useStore } from '@/lib/store'
-import { transition, type Motion } from '@/lib/transition'
+import { transition, wakeScrollers, type Motion } from '@/lib/transition'
 import { scrollToTop } from '@/lib/useScrollMemory'
 import { cn } from '@/lib/utils'
 import { AccountScreen } from '@/screens/AccountScreen'
@@ -96,6 +96,12 @@ function Main({ user }: { user: User }) {
       {/* Liste sekmeleri ekrana sığar (sayfa kaymaz); sadece içlerindeki liste kayar. İç içe ikinci bir kayan alan olmasın: iPhone'da kaydırma kilitlenebiliyor */}
       <main
         key={ready ? screen : 'loading'}
+        onAnimationEnd={(e) => {
+          if (e.target !== e.currentTarget) return
+          // Sayfa animasyonu bitti: listeyi telefona yeniden tanıt (yoksa ilk dokunuşa kadar kaymıyor)
+          setCssMotion(null)
+          requestAnimationFrame(wakeScrollers)
+        }}
         className={cn(
           cssMotion && `screen-${cssMotion}`,
           'mx-auto max-w-md px-3 pt-[max(1rem,env(safe-area-inset-top))]',
