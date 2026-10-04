@@ -71,12 +71,13 @@ function Main({
   const [resume] = useState(() => (user ? takePending() : null))
   const [tab, setTab] = useState<Tab>(resume?.tab ?? 'home')
   const [detailId, setDetailId] = useState<string | null>(null)
+  // Kart detayı hangi sekmeden açıldıysa onun üstünde açılır; geri basınca o sekmeye dönülür
   const [cardId, setCardId] = useState<string | null>(null)
   const [sheet, setSheet] = useState<SheetTarget>(resume?.sheet ?? null)
 
   useEffect(() => {
     window.scrollTo(0, 0)
-  }, [tab, detailId])
+  }, [tab, detailId, cardId])
 
   // Sayfa geçişi (iPhone'daki gibi): detay sağ kenardan gelir, eski sayfa biraz sola kayıp kararır; geri dönünce tersi.
   // Alt menüden sekme değişince yumuşak geçiş. Animasyonlar src/index.css'te (::view-transition).
@@ -112,7 +113,6 @@ function Main({
       go('push', () => {
         setCardId(id)
         setDetailId(null)
-        setTab('cards')
       }),
     back: () => go('pop', () => setDetailId(null)),
   }
@@ -125,24 +125,21 @@ function Main({
         className={cn(
           !document.startViewTransition && `screen-${motion}`,
           'mx-auto max-w-md px-3 pt-[max(1rem,env(safe-area-inset-top))]',
-          (tab === 'home' || tab === 'subscriptions' || tab === 'history' || (tab === 'cards' && !cardId)) && !detailId && ready ? 'flex h-svh flex-col overflow-y-auto pb-24' : 'min-h-svh pb-32',
+          (tab === 'home' || tab === 'subscriptions' || tab === 'history' || tab === 'cards') && !detailId && !cardId && ready ? 'flex h-svh flex-col overflow-y-auto pb-24' : 'min-h-svh pb-32',
         )}
       >
         {!ready ? (
           <LoadingSkeleton />
         ) : detailId ? (
           <SubscriptionDetail id={detailId} nav={nav} />
+        ) : cardId ? (
+          <CardDetail id={cardId} nav={nav} onBack={() => go('pop', () => setCardId(null))} />
         ) : (
           <>
             {tab === 'home' && <HomeScreen nav={nav} />}
             {tab === 'subscriptions' && <SubscriptionsScreen nav={nav} />}
             {tab === 'account' && (user ? <AccountScreen user={user} /> : <LoginScreen />)}
-            {tab === 'cards' &&
-              (cardId ? (
-                <CardDetail id={cardId} nav={nav} onBack={() => go('pop', () => setCardId(null))} />
-              ) : (
-                <CardsScreen nav={nav} onSelect={(id) => go('push', () => setCardId(id))} />
-              ))}
+            {tab === 'cards' && <CardsScreen nav={nav} onSelect={nav.openCard} />}
             {tab === 'history' && <HistoryScreen nav={nav} />}
           </>
         )}
