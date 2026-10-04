@@ -184,8 +184,8 @@
 .screen-fade { animation: screen-fade 200ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 .screen-push { animation: screen-push 340ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 .screen-pop { animation: screen-pop 340ms cubic-bezier(0.2, 0.8, 0.2, 1); }
-.screen-tab-right { animation: screen-tab-right 340ms cubic-bezier(0.2, 0.8, 0.2, 1); }
-.screen-tab-left { animation: screen-tab-left 340ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.screen-tab-right { animation: screen-tab-right 440ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.screen-tab-left { animation: screen-tab-left 440ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 
 /* iPhone tarzı sayfa geçişi (View Transitions, iOS 18+). Yön <html data-motion="push|pop|fade"> ile seçilir (src/App.tsx).
    push: yeni sayfa sağ kenardan gelir, eski sayfa %30 sola kayıp kararır. pop: tersi, kapanan sayfa üstte sağa çıkar.
@@ -217,7 +217,7 @@ html[data-motion='pop']::view-transition-new(root) { animation-name: vt-from-lef
 @keyframes vt-tab-out-left { to { opacity: 0; transform: translateX(-40px); } }
 @keyframes vt-tab-out-right { to { opacity: 0; transform: translateX(40px); } }
 html[data-motion^='tab']::view-transition-old(root),
-html[data-motion^='tab']::view-transition-new(root) { animation-duration: 340ms; }
+html[data-motion^='tab']::view-transition-new(root) { animation-duration: 440ms; }
 html[data-motion='tab-right']::view-transition-old(root) { animation-name: vt-tab-out-left; }
 html[data-motion='tab-right']::view-transition-new(root) { animation-name: vt-tab-in-right; }
 html[data-motion='tab-left']::view-transition-old(root) { animation-name: vt-tab-out-right; }
