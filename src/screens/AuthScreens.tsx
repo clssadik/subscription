@@ -1,5 +1,5 @@
-import { ArrowRightIcon, CheckIcon, ChevronLeftIcon } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowRightIcon, ChevronLeftIcon } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { siApple, siGoogle } from 'simple-icons'
 import { toast } from 'sonner'
 import logoUrl from '@/assets/subly-logo.svg'
@@ -10,7 +10,7 @@ import { RoundButton } from '@/components/ScreenHeader'
 import { holdSignIn, releaseSignIn } from '@/lib/auth'
 import { DEMO_CODE, DEMO_EMAIL, demoSignIn } from '@/lib/demo'
 import { haptic } from '@/lib/haptics'
-import { play } from '@/lib/sound'
+import { holdKeyboard } from '@/lib/keyboard'
 import { isConfigured, supabase } from '@/lib/supabase'
 import { transition } from '@/lib/transition'
 import { cn } from '@/lib/utils'
@@ -48,6 +48,7 @@ export function AuthFlow() {
     } catch {
       // depolama kapalıysa karşılama bir dahaki açılışta yine çıkar
     }
+    holdKeyboard('email')
     transition('push', () => setStep(next))
   }
 
@@ -68,7 +69,10 @@ export function AuthFlow() {
           onLegal={setLegal}
         />
       )}
-      {step === 'code' && <CodeStep mode={mode} email={email} onBack={() => transition('pop', () => setStep(mode))} />}
+      {step === 'code' && <CodeStep mode={mode} email={email} onBack={() => {
+            holdKeyboard('email')
+            transition('pop', () => setStep(mode))
+          }} />}
       <LegalSheet page={legal} onClose={() => setLegal(null)} />
     </main>
   )
@@ -142,17 +146,23 @@ function EmailStep({
 }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const input = useRef<HTMLInputElement>(null)
   const signup = mode === 'signup'
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     const address = email.trim().toLowerCase()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) return setError('Geçerli bir e-posta gir.')
+    // Kod ekranı sunucu cevabından sonra açılıyor; klavye şimdiden açılsın ki oradaki alan devralsın
+    holdKeyboard('numeric')
     setBusy(true)
     setError('')
     const problem = await sendCode(address)
     setBusy(false)
-    if (problem) return setError(problem)
+    if (problem) {
+      input.current?.focus()
+      return setError(problem)
+    }
     onSent(address)
   }
 
@@ -196,8 +206,10 @@ function EmailStep({
       <form onSubmit={submit} className="grid gap-2">
         <label htmlFor="email" className="sr-only">E-posta</label>
         <input
+          ref={input}
           id="email"
           type="email"
+          autoFocus
           inputMode="email"
           autoComplete="email"
           autoCapitalize="none"
@@ -231,7 +243,7 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [focused, setFocused] = useState(true)
-  // Kod doğru: kutular yeşile döner, kısa bir an sonra Anasayfa açılır
+  // Kod doğru: butonda kısa bir "Giriş yapılıyor…", sonra Anasayfa yumuşakça açılır
   const [done, setDone] = useState(false)
 
   async function verify(value: string) {
@@ -257,10 +269,9 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
       if (error) return fail(friendly(error.message))
     }
     haptic()
-    play('paid')
     setDone(true)
     document.querySelector<HTMLInputElement>('input[autocomplete="one-time-code"]')?.blur()
-    window.setTimeout(releaseSignIn, 900)
+    window.setTimeout(releaseSignIn, 300)
   }
 
   async function resend() {
@@ -318,11 +329,9 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
                 <span
                   key={i}
                   className={cn(
-                    'num flex h-14 items-center justify-center rounded-[14px] text-2xl transition-[background-color,color,box-shadow,transform] duration-300',
-                    done ? 'check-pop bg-bh-green text-white' : 'bg-surface',
+                    'num flex h-14 items-center justify-center rounded-[14px] bg-surface text-2xl',
                     active && !done && 'ring-2 ring-bh-yellow',
                   )}
-                  style={done ? { animationDelay: `${i * 40}ms` } : undefined}
                 >
                   {code[i] ?? ''}
                 </span>
@@ -331,12 +340,8 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
           </span>
         </label>
         {error && <p className="px-1 text-sm text-bh-red" role="alert">{error}</p>}
-        <button type="submit" disabled={busy} className={cn(primary, done && 'bg-bh-green text-white')}>
-          {done ? (
-            <span className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
-              <CheckIcon className="size-5" strokeWidth={2.6} /> {mode === 'signup' ? 'Hesap oluşturuldu' : 'Giriş yapıldı'}
-            </span>
-          ) : busy ? 'Kontrol ediliyor…' : mode === 'signup' ? 'Hesabı oluştur' : 'Giriş yap'}
+        <button type="submit" disabled={busy || done} className={primary}>
+          {done ? 'Giriş yapılıyor…' : busy ? 'Kontrol ediliyor…' : mode === 'signup' ? 'Hesabı oluştur' : 'Giriş yap'}
         </button>
       </form>
 
