@@ -13,8 +13,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
       manifest: {
-        name: 'Abonelik Takip',
-        short_name: 'Abonelikler',
+        name: 'Subly',
+        short_name: 'Subly',
         description: 'Abonelik ve kredi kartı ödemelerini takip et',
         lang: 'tr',
         theme_color: '#141414',
