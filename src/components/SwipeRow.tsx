@@ -7,6 +7,12 @@ import { cn } from '@/lib/utils'
 /** Yuvarlak düğmenin çapı ve satırla arası: satır bu kadar sola kayınca düğme tam görünür */
 const BUTTON = 48
 const OPEN = -(BUTTON + 2 * 12)
+/** Bırakınca açık kalması için en az bu kadar çekilmeli (açık mesafesinin oranı); az çekiş geri kapanır */
+const OPEN_AT = 0.65
+/** Bırakınca açılma/kapanma süresi (ms): acele etmeden yerine otursun */
+const SETTLE_MS = 520
+/** Açık mesafeden sonrası dirençli: parmak gittikçe satır daha az kayar */
+const resist = (x: number) => (x >= OPEN ? x : OPEN + (x - OPEN) * 0.3)
 /** iOS'taki gibi yay: düğme açılırken hafifçe büyüyüp yerine oturur */
 const SPRING = 'cubic-bezier(0.34, 1.56, 0.64, 1)'
 const EASE = 'cubic-bezier(0.32, 0.72, 0, 1)'
@@ -94,7 +100,7 @@ export function SwipeRow({
           height: BUTTON,
           opacity: removing ? 0 : reveal,
           transform: `translateY(-50%) scale(${removing ? 0.4 : 0.4 + 0.6 * reveal})`,
-          transition: dragging ? 'none' : `transform 380ms ${SPRING}, opacity 200ms ease`,
+          transition: dragging ? 'none' : `transform ${SETTLE_MS}ms ${SPRING}, opacity 300ms ease`,
         }}
         className="absolute top-1/2 right-3 flex items-center justify-center rounded-full bg-bh-red text-white active:brightness-90"
       >
@@ -107,7 +113,7 @@ export function SwipeRow({
         className={cn('relative select-none rounded-[18px]', surface)}
         style={{
           transform: removing ? 'translateX(-110%)' : `translateX(${x}px)`,
-          transition: dragging ? 'none' : `transform ${removing ? 240 : 380}ms ${EASE}`,
+          transition: dragging ? 'none' : `transform ${removing ? 240 : SETTLE_MS}ms ${EASE}`,
           touchAction: 'pan-y',
         }}
         onPointerDown={(e) => {
@@ -135,7 +141,7 @@ export function SwipeRow({
               setDragging(true)
             }
           }
-          if (s.dir === 'h') setX(Math.max(OPEN - 20, Math.min(0, s.base + dx)))
+          if (s.dir === 'h') setX(resist(Math.min(0, s.base + dx)))
         }}
         onPointerUp={() => {
           const s = start.current
@@ -144,7 +150,7 @@ export function SwipeRow({
           release()
           if (!s) return
           if (s.dir === 'h') {
-            const open = x < OPEN / 2
+            const open = x < OPEN * OPEN_AT
             // "Sil" açılınca hafif titreşim
             if (open && s.base === 0) haptic()
             setX(open ? OPEN : 0)
