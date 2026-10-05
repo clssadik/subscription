@@ -4,33 +4,6 @@ import './index.css'
 import App from './App.tsx'
 import { guardDocumentScroll } from '@/lib/transition'
 
-// GEÇİCİ: ana ekran uygulamasında ekran ölçülerini üstte küçük bir yazıyla gösterir (sayfa boyu hatası için)
-if (matchMedia('(display-mode: standalone)').matches || location.search.includes('vh')) {
-  const probe = (h: string) => {
-    const d = document.createElement('div')
-    d.style.cssText = `position:fixed;top:0;left:0;width:1px;height:${h};visibility:hidden`
-    document.body.appendChild(d)
-    const v = Math.round(d.getBoundingClientRect().height)
-    d.remove()
-    return v
-  }
-  const box = document.createElement('div')
-  box.style.cssText = 'position:fixed;left:8px;right:8px;top:50%;z-index:9999;pointer-events:none;background:#D9381E;color:#fff;font:13px/1.5 monospace;padding:8px 10px;border-radius:10px'
-  const draw = () => {
-    box.textContent = [
-      `inner ${innerHeight} · client ${document.documentElement.clientHeight} · vv ${Math.round(visualViewport?.height ?? 0)} · screen ${screen.height}`,
-      `vh ${probe('100vh')} · svh ${probe('100svh')} · lvh ${probe('100lvh')} · dvh ${probe('100dvh')}`,
-      `safeTop ${probe('env(safe-area-inset-top)')} · safeBottom ${probe('env(safe-area-inset-bottom)')}`,
-    ].join('\n')
-    box.style.whiteSpace = 'pre-wrap'
-  }
-  window.addEventListener('load', () => {
-    document.body.appendChild(box)
-    draw()
-    window.setInterval(draw, 1000)
-  })
-}
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
