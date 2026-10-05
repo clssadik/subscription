@@ -174,7 +174,8 @@ export function TearTicket({
       {/* Kesik çizgi; koparılabiliyorsa solunda makas */}
       <div aria-hidden className="-mt-3 mb-3 flex h-0 items-center">
         {canTear && <ScissorsIcon className="tear-hint mr-1.5 -ml-1 size-4 shrink-0 -rotate-90 opacity-70" />}
-        <span className="flex-1 border-t border-dashed border-current opacity-25" />
+        {/* Kesik çizgi elle çizilir: iPhone 1px'lik "dashed" kenarlığı aralıksız düz çizgi gibi gösteriyor */}
+        <span className="h-px flex-1 bg-[repeating-linear-gradient(to_right,currentColor_0_6px,transparent_6px_11px)] opacity-35" />
       </div>
       {stub}
       {!canTear && note && <p className="mt-2.5 text-[12px] opacity-60">{note}</p>}
