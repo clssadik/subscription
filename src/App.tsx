@@ -2,10 +2,12 @@ import type { User } from '@supabase/supabase-js'
 import { useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { AddSheet, type SheetTarget } from '@/components/AddSheet'
+import { InstallGate } from '@/components/InstallGate'
 import { ScrollPage } from '@/components/ScrollPage'
 import { BottomNav, type Tab } from '@/components/BottomNav'
 import { Toaster } from '@/components/ui/sonner'
 import { useUser } from '@/lib/auth'
+import { shouldShowInstallGate, skipInstallGate } from '@/lib/install'
 import { initials, useSettings } from '@/lib/settings'
 import { StoreProvider, useStore } from '@/lib/store'
 import { transition, type Motion } from '@/lib/transition'
@@ -42,6 +44,19 @@ const isListTab = (t: Tab) => LIST_TABS.includes(t)
 
 export default function App() {
   const user = useUser()
+  // Telefonda tarayıcıdan açıldıysa önce ana ekrana ekleme rehberi
+  const [gate, setGate] = useState(shouldShowInstallGate)
+  if (gate)
+    return (
+      <InstallGate
+        onContinue={() =>
+          transition('fade', () => {
+            skipInstallGate()
+            setGate(false)
+          })
+        }
+      />
+    )
   return (
     <>
       {/* Giriş yapılmamışken sadece karşılama / giriş ekranları (alt menü yok) */}
