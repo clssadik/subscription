@@ -4,8 +4,8 @@ import './index.css'
 import App from './App.tsx'
 import { guardDocumentScroll } from '@/lib/transition'
 
-// GEÇİCİ: ?vh ile açılınca ekran ölçülerini gösterir (ana ekran uygulamasında sayfa boyu hatası için)
-function showViewportProbe() {
+// GEÇİCİ: ana ekran uygulamasında ekran ölçülerini üstte küçük bir yazıyla gösterir (sayfa boyu hatası için)
+if (matchMedia('(display-mode: standalone)').matches || location.search.includes('vh')) {
   const probe = (h: string) => {
     const d = document.createElement('div')
     d.style.cssText = `position:fixed;top:0;left:0;width:1px;height:${h};visibility:hidden`
@@ -14,31 +14,22 @@ function showViewportProbe() {
     d.remove()
     return v
   }
-  const rows = {
-    standalone: matchMedia('(display-mode: standalone)').matches,
-    innerHeight: innerHeight,
-    clientHeight: document.documentElement.clientHeight,
-    visualViewport: Math.round(visualViewport?.height ?? 0),
-    screenHeight: screen.height,
-    '100vh': probe('100vh'),
-    '100svh': probe('100svh'),
-    '100lvh': probe('100lvh'),
-    '100dvh': probe('100dvh'),
-    safeTop: probe('env(safe-area-inset-top)'),
-    safeBottom: probe('env(safe-area-inset-bottom)'),
+  const box = document.createElement('div')
+  box.style.cssText = 'position:fixed;left:8px;right:8px;top:50%;z-index:9999;pointer-events:none;background:#D9381E;color:#fff;font:13px/1.5 monospace;padding:8px 10px;border-radius:10px'
+  const draw = () => {
+    box.textContent = [
+      `inner ${innerHeight} · client ${document.documentElement.clientHeight} · vv ${Math.round(visualViewport?.height ?? 0)} · screen ${screen.height}`,
+      `vh ${probe('100vh')} · svh ${probe('100svh')} · lvh ${probe('100lvh')} · dvh ${probe('100dvh')}`,
+      `safeTop ${probe('env(safe-area-inset-top)')} · safeBottom ${probe('env(safe-area-inset-bottom)')}`,
+    ].join('\n')
+    box.style.whiteSpace = 'pre-wrap'
   }
-  document.getElementById('splash')?.remove()
-  document.body.innerHTML = `<pre style="font:16px/1.6 monospace;padding:70px 20px;color:#141414">${Object.entries(rows).map(([k, v]) => `${k}: ${v}`).join('\n')}</pre>`
+  window.addEventListener('load', () => {
+    document.body.appendChild(box)
+    draw()
+    window.setInterval(draw, 1000)
+  })
 }
-if (location.search.includes('vh')) showViewportProbe()
-// Ana ekran uygulamasında adres yazılamadığı için: ekranın en üstüne 2 saniyede 5 kez dokununca da açılır
-let taps: number[] = []
-document.addEventListener('click', (e) => {
-  if (e.clientY > 120) return
-  const now = Date.now()
-  taps = [...taps.filter((t) => now - t < 2000), now]
-  if (taps.length >= 5) showViewportProbe()
-})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
