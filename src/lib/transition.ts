@@ -18,6 +18,10 @@ export function transition(motion: Motion, update: () => void) {
   const ignore = () => {}
   t.ready.catch(ignore)
   t.finished.then(wakeScrollers, ignore)
+  // Safari bazen geçişi hiç bitirmiyor (abonelik sayfasındaki sürekli oynayan koçan ipucu varken görüldü): ekran normal görünür
+  // ama geçiş katmanı açık kaldığı için hiçbir liste kaymaz. Animasyon süresi (en çok 480ms) dolunca geçiş zorla bitirilir;
+  // zaten bittiyse bu hiçbir şey yapmaz.
+  window.setTimeout(() => t.skipTransition(), 800)
   return true
 }
 
