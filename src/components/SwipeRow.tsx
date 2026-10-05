@@ -4,9 +4,17 @@ import { haptic } from '@/lib/haptics'
 import { HOLD_MS } from '@/lib/useLongPress'
 import { cn } from '@/lib/utils'
 
-const OPEN = -84
+/** Yuvarlak düğmenin çapı ve satırla arası: satır bu kadar sola kayınca düğme tam görünür */
+const BUTTON = 48
+const OPEN = -(BUTTON + 2 * 12)
+/** iOS'taki gibi yay: düğme açılırken hafifçe büyüyüp yerine oturur */
+const SPRING = 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+const EASE = 'cubic-bezier(0.32, 0.72, 0, 1)'
 
-/** Sola kaydırınca altından kırmızı "Sil" (ya da actionLabel) çıkan satır. Dokununca onTap çalışır. */
+/**
+ * Sola kaydırınca sağında yuvarlak kırmızı "Sil" (ya da actionLabel) düğmesi çıkan satır (iOS Mesajlar gibi).
+ * Düğme satır kaydıkça küçükten büyüyüp belirir. Basınca satır sola kayıp kapanır, sonra onDelete çalışır. Dokununca onTap çalışır.
+ */
 export function SwipeRow({
   children,
   onTap,
@@ -27,6 +35,28 @@ export function SwipeRow({
 }) {
   const [x, setX] = useState(0)
   const [dragging, setDragging] = useState(false)
+  // Silinirken: satır sola kayıp çıkar, ardından yüksekliği kapanır
+  const [removing, setRemoving] = useState<null | 'slide' | 'collapse'>(null)
+  const box = useRef<HTMLDivElement>(null)
+  const reveal = Math.min(1, Math.max(0, x / OPEN))
+  function remove() {
+    haptic()
+    setRemoving('slide')
+    window.setTimeout(() => {
+      const el = box.current
+      if (el) el.style.height = `${el.offsetHeight}px`
+      requestAnimationFrame(() => setRemoving('collapse'))
+      window.setTimeout(() => {
+        onDelete()
+        // Satır listeden kalkmadıysa (ör. silme geri alındıysa aynı satır kalır) eski hâline döner
+        window.setTimeout(() => {
+          if (box.current) box.current.style.height = ''
+          setRemoving(null)
+          setX(0)
+        }, 400)
+      }, 260)
+    }, 240)
+  }
   const start = useRef<{ x: number; y: number; base: number; dir: 'h' | 'v' | null } | null>(null)
   // Basılı tutunca satır hafifçe küçülür. Kısa gecikme: kaydırmaya başlayan parmak satırı küçültmesin.
   const [pressed, setPressed] = useState(false)
@@ -42,25 +72,42 @@ export function SwipeRow({
 
   return (
     // Satırın kendi yatay kaydırması var: sayfanın sağa çekerek geri dönüşü burada çalışmaz
-    <div data-no-swipe-back className={cn('relative overflow-hidden rounded-[18px] transition-transform duration-100', pressed && 'scale-[0.98]', className)}>
+    <div
+      ref={box}
+      data-no-swipe-back
+      // Kesilmez: sola kayan satır sayfa kenarına kadar gider (iOS gibi); sadece kapanırken kırpılır
+      className={cn('relative transition-transform duration-100', pressed && 'scale-[0.98]', className)}
+      style={
+        removing === 'collapse'
+          ? { height: 0, opacity: 0, overflow: 'hidden', transition: `height 260ms ${EASE}, opacity 200ms ease` }
+          : undefined
+      }
+    >
       <button
-        onClick={onDelete}
+        onClick={remove}
         aria-label={actionLabel}
         tabIndex={x === 0 ? -1 : 0}
-        // Kaydırılmadıkça gizli; yoksa yuvarlak köşenin arkasından ince kırmızı bir çizgi sızıyor
-        style={{ visibility: x === 0 && !dragging ? 'hidden' : 'visible' }}
-        className="absolute inset-y-0 right-0 flex w-[84px] items-center justify-center gap-1 bg-bh-red text-sm font-medium text-white"
+        // Kaydırılmadıkça gizli
+        style={{
+          visibility: x === 0 && !dragging && !removing ? 'hidden' : 'visible',
+          width: BUTTON,
+          height: BUTTON,
+          opacity: removing ? 0 : reveal,
+          transform: `translateY(-50%) scale(${removing ? 0.4 : 0.4 + 0.6 * reveal})`,
+          transition: dragging ? 'none' : `transform 380ms ${SPRING}, opacity 200ms ease`,
+        }}
+        className="absolute top-1/2 right-3 flex items-center justify-center rounded-full bg-bh-red text-white active:brightness-90"
       >
-        <ActionIcon className="size-4" /> {actionLabel}
+        <ActionIcon className="size-[22px]" strokeWidth={2} />
       </button>
       <div
         role="button"
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && onTap?.()}
-        className={cn('relative select-none', surface)}
+        className={cn('relative select-none rounded-[18px]', surface)}
         style={{
-          transform: `translateX(${x}px)`,
-          transition: dragging ? 'none' : 'transform 220ms cubic-bezier(.2,.8,.2,1)',
+          transform: removing ? 'translateX(-110%)' : `translateX(${x}px)`,
+          transition: dragging ? 'none' : `transform ${removing ? 240 : 380}ms ${EASE}`,
           touchAction: 'pan-y',
         }}
         onPointerDown={(e) => {
