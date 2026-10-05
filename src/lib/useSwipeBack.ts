@@ -4,7 +4,13 @@ import { wakeScrollers } from './transition'
 /** Bırakınca geri dönmek için en az bu kadar çekilmeli (ekran genişliğine oranla) ya da hızlıca fırlatılmalı (px/ms) */
 const COMPLETE_AT = 0.35
 const FLING = 0.5
-const EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)'
+// iOS'un sayfa geçişindeki eğri (sayfa açılış/kapanış geçişleriyle aynı, src/index.css): hızlı başlar, uzun ve yumuşak durur
+const EASE = 'cubic-bezier(0.32, 0.72, 0, 1)'
+/** Bırakınca kalan yolun süresi (ms): yavaş bırakılan da acele etmesin, hızlı fırlatılan da sürünmesin */
+const MIN_MS = 380
+const MAX_MS = 560
+/** Gölge: sayfa kenarındaki koyuluk, sayfa sağa gittikçe söner */
+const shadow = (p: number) => `-10px 0 30px rgb(0 0 0 / ${(0.18 * (1 - p)).toFixed(3)})`
 
 /**
  * iPhone'daki gibi sağa çekerek geri dönme: detay sayfası parmağı izleyerek sağa kayar, alttan önceki sayfa (sola kaymış ve
@@ -38,7 +44,7 @@ export function useSwipeBack(
     const place = (x: number) => {
       const p = Math.min(1, Math.max(0, x / width()))
       el.style.translate = `${x}px 0`
-      el.style.boxShadow = '-8px 0 24px rgb(0 0 0 / 0.12)'
+      el.style.boxShadow = shadow(p)
       if (below) {
         below.style.visibility = 'visible'
         below.style.translate = `${-30 * (1 - p)}% 0`
@@ -80,8 +86,9 @@ export function useSwipeBack(
         }
         last = { x: e.clientX, t: e.timeStamp, v: 0 }
       }
+      // Hız yumuşatılır: tek bir kare parmağın gerçek hızını yanlış gösterebiliyor
       const dt = e.timeStamp - last.t
-      if (dt > 0) last = { x: e.clientX, t: e.timeStamp, v: (e.clientX - last.x) / dt }
+      if (dt > 0) last = { x: e.clientX, t: e.timeStamp, v: 0.7 * ((e.clientX - last.x) / dt) + 0.3 * last.v }
       place(Math.max(0, dx))
     }
     const up = (e: PointerEvent) => {
@@ -90,14 +97,22 @@ export function useSwipeBack(
       start = null
       if (!active) return
       active = false
+      // Parmak bir süre durup öyle kalktıysa fırlatma sayılmaz
+      if (e.timeStamp - last.t > 80) last.v = 0
       const done = dx / width() > COMPLETE_AT || last.v > FLING
       const to = done ? width() : 0
-      // Kalan yolu bırakılan hıza yakın bir sürede tamamla
-      const ms = Math.min(320, Math.max(160, (Math.abs(to - dx) / Math.max(Math.abs(last.v), 1)) * 1.2))
+      const p = dx / width()
+      // Kalan yol bırakılan hıza göre ama sınırlar içinde; geri oturma hep aynı sakin sürede
+      const ms = done ? Math.min(MAX_MS, Math.max(MIN_MS, ((to - dx) / Math.max(last.v, 0.6)) * 2)) : 420
       const options = { duration: ms, easing: EASE, fill: 'forwards' as const }
-      const anim = el.animate([{ translate: `${dx}px 0` }, { translate: `${to}px 0` }], options)
+      const anim = el.animate(
+        [
+          { translate: `${dx}px 0`, boxShadow: shadow(p) },
+          { translate: `${to}px 0`, boxShadow: shadow(done ? 1 : 0) },
+        ],
+        options,
+      )
       if (below) {
-        const p = dx / width()
         below.animate(
           [
             { translate: `${-30 * (1 - p)}% 0`, filter: `brightness(${0.75 + 0.25 * p})` },
