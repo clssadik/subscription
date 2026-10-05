@@ -15,11 +15,15 @@ export function transition(motion: Motion, update: () => void) {
   document.documentElement.dataset.motion = motion
   busyUntil = Infinity
   const t = document.startViewTransition(() => flushSync(update))
+  running = t
   // Sayfa arka plandayken ya da arka arkaya basınca geçiş atlanır; güncelleme yine yapılır, hata sayılmasın
   const ignore = () => {}
   t.ready.catch(ignore)
   // Geçiş hatayla bitse bile kilit kalkmalı (yoksa hiçbir hareket kaydırmaz)
-  const settle = () => (busyUntil = performance.now() + SETTLE_MS)
+  const settle = () => {
+    busyUntil = performance.now() + SETTLE_MS
+    if (running === t) running = null
+  }
   t.finished.then(() => {
     settle()
     wakeScrollers()
@@ -32,6 +36,8 @@ export function transition(motion: Motion, update: () => void) {
 // dokunuş da onu yakalar: liste hiç kaymaz, kilitlenmiş gibi görünür. Belgenin kendisi hiç kaymamalı.
 const SETTLE_MS = 250
 let busyUntil = 0
+/** Süren sayfa geçişi: ekrana dokunulunca hemen bitirilir (geçiş sürerken liste kaydırılamıyor, beklemek gerekmesin) */
+let running: ViewTransition | null = null
 
 /**
  * Belgeyi kaydıracak hareketleri durdurur: geçiş sürerken ya da yeni bitmişken, boş belgeye başlayan ya da belge hâlâ esnemişken
@@ -46,6 +52,8 @@ export function guardDocumentScroll() {
     'touchstart',
     (e) => {
       cancelAnimationFrame(glide)
+      // iPhone'daki gibi: geçiş sürerken dokununca animasyon kesilir, sayfa hemen son hâline gelir ve parmak onu kaydırır
+      running?.skipTransition()
       const t = e.target
       const risky = performance.now() < busyUntil || t === document.documentElement || t === document.body || window.scrollY !== 0
       drag = risky
