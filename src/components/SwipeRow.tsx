@@ -41,7 +41,8 @@ export function SwipeRow({
   }
 
   return (
-    <div className={cn('relative overflow-hidden rounded-[18px] transition-transform duration-100', pressed && 'scale-[0.98]', className)}>
+    // Satırın kendi yatay kaydırması var: sayfanın sağa çekerek geri dönüşü burada çalışmaz
+    <div data-no-swipe-back className={cn('relative overflow-hidden rounded-[18px] transition-transform duration-100', pressed && 'scale-[0.98]', className)}>
       <button
         onClick={onDelete}
         aria-label={actionLabel}

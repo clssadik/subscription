@@ -203,6 +203,8 @@ export function TearTicket({
       {/* Koçan */}
       <div
         ref={root}
+        // Sağa çekmek koçanı keser; sayfanın sağa çekerek geri dönüşü burada çalışmaz
+        data-no-swipe-back
         role={canTear ? 'button' : undefined}
         tabIndex={canTear ? 0 : undefined}
         aria-label={canTear ? hint : undefined}

@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { AddSheet, type SheetTarget } from '@/components/AddSheet'
 import { ScrollPage } from '@/components/ScrollPage'
@@ -10,6 +10,7 @@ import { initials, useSettings } from '@/lib/settings'
 import { StoreProvider, useStore } from '@/lib/store'
 import { transition, type Motion } from '@/lib/transition'
 import { scrollToTop } from '@/lib/useScrollMemory'
+import { useSwipeBack } from '@/lib/useSwipeBack'
 import { cn } from '@/lib/utils'
 import { AccountScreen } from '@/screens/AccountScreen'
 import { AuthFlow } from '@/screens/AuthScreens'
@@ -94,6 +95,22 @@ function Main({ user }: { user: User }) {
     setCssMotion(viaView ? null : next)
   }
 
+  // Detay sayfasında sağa çekerek geri dönüş (iPhone gibi): altta önceki sekme görünür. Bırakınca geri dönüş animasyonsuz yapılır,
+  // çünkü sayfa zaten parmakla kaydırılıp kapatıldı (src/lib/useSwipeBack.ts).
+  const detailPage = useRef<HTMLElement>(null)
+  const inDetail = ready && !!(detailId || cardId)
+  useSwipeBack(detailPage, {
+    enabled: inDetail,
+    key: screen,
+    under: () => document.querySelector<HTMLElement>(`main[data-tab="${tab}"]`),
+    onBack: () =>
+      flushSync(() => {
+        setCssMotion(null)
+        if (detailId) setDetailId(null)
+        else setCardId(null)
+      }),
+  })
+
   const nav: Nav = {
     add: (preset) => setSheet({ kind: 'subscription', ...preset }),
     addCard: (bankName) => setSheet({ kind: 'card', bankName }),
@@ -117,6 +134,7 @@ function Main({ user }: { user: User }) {
           return (
             <main
               key={t}
+              data-tab={t}
               data-screen-active={active || undefined}
               inert={!active}
               aria-hidden={!active || undefined}
@@ -136,10 +154,13 @@ function Main({ user }: { user: User }) {
       {!listShown && (
         <main
           key={ready ? screen : 'loading'}
+          ref={detailPage}
           data-screen-active
           // Liste sekmeleri gibi sabit ve kendi kayan alanı var: sayfanın kendisi kaymaz (iPhone'da yukarıdan çekince yenileme olmaz, iki uçta esner)
           className={cn(
             cssMotion && `screen-${cssMotion}`,
+            // Yatay hareketleri tarayıcı değil sağa çekerek geri dönüş alır; dikey kaydırma normal
+            inDetail && 'touch-pan-y',
             'app-screen mx-auto flex max-w-md flex-col bg-page px-3 pt-[var(--top-gap)] pb-24',
           )}
         >
