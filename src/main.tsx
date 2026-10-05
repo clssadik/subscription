@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { guardDocumentScroll } from '@/lib/transition'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -23,6 +24,9 @@ if (splash) {
 const resetPage = () => document.visibilityState === 'visible' && window.scrollTo(0, 0)
 document.addEventListener('visibilitychange', resetPage)
 window.addEventListener('pageshow', resetPage)
+
+// Sayfa geçişine denk gelen hareketler bütün belgeyi kaydırıp listeyi kilitlemesin (src/lib/transition.ts)
+guardDocumentScroll()
 
 // Kopyalama kapalı: yazı alanları dışında kopyalama, kesme ve sağ tık menüsü engellenir (görünüm: src/index.css)
 const inField = (t: EventTarget | null) => t instanceof HTMLElement && !!t.closest('input, textarea, [contenteditable="true"]')

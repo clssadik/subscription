@@ -284,8 +284,6 @@ html[data-motion='fade']::view-transition-new(root) { animation-name: vt-fade-in
   30% { transform: translateX(5px); }
 }
 .tear-hint { display: inline-block; animation: tear-hint 1.8s ease-in-out infinite; }
-/* Sayfa geçişi sırasında durur: sürekli oynayan animasyon Safari'de geçişin bitmesini engelleyebiliyor (src/lib/transition.ts) */
-:root:active-view-transition .tear-hint { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) {
   .tear-hint { animation: none; }
 }

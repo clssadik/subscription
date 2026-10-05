@@ -118,8 +118,7 @@ function Main({ user }: { user: User }) {
             <main
               key={t}
               data-screen-active={active || undefined}
-              // inert kullanılmaz: Safari'de geri dönüşte kalkan inert, sekmenin kayan alanını bazen kilitli bırakıyordu.
-              // Gizli sekme zaten görünmez (invisible: odak ve ekran okuyucu dışı) ve dokunuş almaz.
+              inert={!active}
               aria-hidden={!active || undefined}
               className={cn(
                 'app-screen mx-auto flex max-w-md flex-col bg-page px-3 pt-[var(--top-gap)] pb-24',

@@ -13,16 +13,57 @@ export function transition(motion: Motion, update: () => void) {
     return false
   }
   document.documentElement.dataset.motion = motion
+  busyUntil = Infinity
   const t = document.startViewTransition(() => flushSync(update))
   // Sayfa arka plandayken ya da arka arkaya basınca geçiş atlanır; güncelleme yine yapılır, hata sayılmasın
   const ignore = () => {}
   t.ready.catch(ignore)
-  t.finished.then(wakeScrollers, ignore)
-  // Safari bazen geçişi hiç bitirmiyor (abonelik sayfasındaki sürekli oynayan koçan ipucu varken görüldü): ekran normal görünür
-  // ama geçiş katmanı açık kaldığı için hiçbir liste kaymaz. Animasyon süresi (en çok 480ms) dolunca geçiş zorla bitirilir;
-  // zaten bittiyse bu hiçbir şey yapmaz.
-  window.setTimeout(() => t.skipTransition(), 800)
+  // Geçiş hatayla bitse bile kilit kalkmalı (yoksa hiçbir hareket kaydırmaz)
+  const settle = () => (busyUntil = performance.now() + SETTLE_MS)
+  t.finished.then(() => {
+    settle()
+    wakeScrollers()
+  }, settle)
   return true
+}
+
+// Geçiş sürerken ve bittikten hemen sonra (telefon dokunuşun yerini bir an daha eski katmana göre buluyor) dokunuş sayfaların değil
+// boş belgenin (html) üstüne düşer. iPhone Safari o hareketle bütün belgeyi esnetir; belge esneyip geri dönerken gelen her yeni
+// dokunuş da onu yakalar: liste hiç kaymaz, kilitlenmiş gibi görünür. Belgenin kendisi hiç kaymamalı.
+const SETTLE_MS = 250
+let busyUntil = 0
+
+/**
+ * Belgeyi kaydıracak hareketleri durdurur: geçiş sürerken ya da yeni bitmişken, boş belgeye başlayan ya da belge hâlâ esnemişken
+ * başlayan hareketler. Bu hareket boşa gitmesin diye açık sayfanın listesi parmağı elle izler (bırakınca kayma devam etmez).
+ * Dokunma/tıklama etkilenmez. src/main.tsx açılışta bir kez çağırır.
+ */
+export function guardDocumentScroll() {
+  let drag: { y: number; list: HTMLElement | null } | null = null
+  const opts = { capture: true, passive: true }
+  window.addEventListener(
+    'touchstart',
+    (e) => {
+      const t = e.target
+      const risky = performance.now() < busyUntil || t === document.documentElement || t === document.body || window.scrollY !== 0
+      drag = risky ? { y: e.touches[0].clientY, list: document.querySelector<HTMLElement>('[data-screen-active] [data-scroller]') } : null
+    },
+    opts,
+  )
+  window.addEventListener(
+    'touchmove',
+    (e) => {
+      if (!drag || !e.cancelable) return
+      e.preventDefault()
+      const y = e.touches[0].clientY
+      if (drag.list) drag.list.scrollTop -= y - drag.y
+      drag.y = y
+    },
+    { capture: true, passive: false },
+  )
+  const end = () => (drag = null)
+  window.addEventListener('touchend', end, opts)
+  window.addEventListener('touchcancel', end, opts)
 }
 
 /**
