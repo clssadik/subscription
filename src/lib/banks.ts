@@ -65,15 +65,17 @@ export function bankColor(name: string) {
   return matchBank(name)?.color
 }
 
-// Beyaz tek renk logolar: src/assets/banks/<anahtar>.svg (tam logo) ve symbols/<anahtar>.svg (sadece sembol)
-const svgs = import.meta.glob('../assets/banks/**/*.svg', { eager: true, query: '?url', import: 'default' }) as Record<string, string>
+// Beyaz tek renk logolar: kaynakları src/assets/banks/<anahtar>.svg (tam logo) ve symbols/<anahtar>.svg (sadece sembol).
+// Uygulama bunların yüksek çözünürlüklü PNG kopyalarını kullanır (src/assets/banks/png, scripts/bank-logos.mjs üretir):
+// SVG'lerdeki beyaza çeviren maskeyi iPhone Safari düşük çözünürlükte çizip logoları bulanıklaştırıyordu.
+const pngs = import.meta.glob('../assets/banks/png/**/*.png', { eager: true, query: '?url', import: 'default' }) as Record<string, string>
 
 /** Banka logosu: büyük yerlerde tam logo, küçük kutularda sembol. Sembol yoksa baş harf gösterilir. */
 export function bankLogo(name: string) {
   const key = matchBank(name)?.key
   return {
-    logo: key ? svgs[`../assets/banks/${key}.svg`] : undefined,
-    symbol: key ? svgs[`../assets/banks/symbols/${key}.svg`] : undefined,
+    logo: key ? pngs[`../assets/banks/png/${key}.png`] : undefined,
+    symbol: key ? pngs[`../assets/banks/png/symbols/${key}.png`] : undefined,
     letter: (name.trim()[0] ?? '?').toLocaleUpperCase('tr'),
     // Bu logolarda yazı çok ince ya da küçük: karoda sembol + banka adı daha okunaklı
     wide: key === 'isbank' || key === 'teb' || key === 'enpara',

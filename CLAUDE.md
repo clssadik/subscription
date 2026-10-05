@@ -24,6 +24,8 @@ Logosu olmayan bir servis eklendiğinde uygulama bunu Supabase'deki `missing_log
 - Logo eklenince not kendiliğinden kapanır (`migrate()` logosu olanları listeden düşer).
 - Banka logoları ayrı: `src/assets/banks/<anahtar>.svg` (beyaz tek renk tam logo) ve `symbols/<anahtar>.svg`
   (sadece sembol, küçük kutular için). Anahtar `BANKS` içindeki `key` (`src/lib/banks.ts`). Sembolü olmayan bankada baş harf görünür.
+  SVG ekledikten/değiştirdikten sonra `node scripts/bank-logos.mjs` çalıştır: uygulama `src/assets/banks/png/` içindeki
+  yüksek çözünürlüklü PNG kopyalarını kullanır (SVG maskesi iPhone'da bulanık çiziliyor).
 
 ## Tasarım kuralları (Gündüz / Gece Bauhaus bento)
 
