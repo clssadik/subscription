@@ -8,8 +8,8 @@
 <title>Subly</title>
 </head>
 <body style="margin:0;padding:0;background:#F1ECE2;-webkit-text-size-adjust:100%">
-<!-- Gelen kutusunda konu satırının altında görünen kısa önizleme -->
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#F1ECE2">Kodun: {{ .Token }} · 1 saat geçerli, tek kullanımlık.</div>
+<!-- Gelen kutusunda konu sat&#305;r&#305;n&#305;n alt&#305;nda g&#246;r&#252;nen k&#305;sa &#246;nizleme -->
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#F1ECE2">Kodun: {{ .Token }} &#183; 1 saat ge&#231;erli, tek kullan&#305;ml&#305;k.</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F1ECE2" style="background:#F1ECE2">
 <tr><td align="center" style="padding:32px 16px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:460px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#141414">
@@ -26,17 +26,17 @@
 </tr></table>
 </td></tr>
 
-<!-- Başlık -->
+<!-- Ba&#351;l&#305;k -->
 <tr><td style="padding:0 4px">
-<h1 style="margin:0;font-size:26px;line-height:1.2;font-weight:700;letter-spacing:-0.4px">Subly'ye hoş geldin</h1>
-<p style="margin:10px 0 0;font-size:15px;line-height:1.55;color:#4A453D">Hesabını oluşturmak için aşağıdaki kodu uygulamadaki kod ekranına yaz. Şifre yok; bundan sonra her girişte e-postana yeni bir kod gelecek.</p>
+<h1 style="margin:0;font-size:26px;line-height:1.2;font-weight:700;letter-spacing:-0.4px">Subly'ye ho&#351; geldin</h1>
+<p style="margin:10px 0 0;font-size:15px;line-height:1.55;color:#4A453D">Hesab&#305;n&#305; olu&#351;turmak i&#231;in a&#351;a&#287;&#305;daki kodu uygulamadaki kod ekran&#305;na yaz. &#350;ifre yok; bundan sonra her giri&#351;te e-postana yeni bir kod gelecek.</p>
 </td></tr>
 
-<!-- Fiş: üstte kod, kesik çizginin altında geçerlilik -->
+<!-- Fi&#351;: &#252;stte kod, kesik &#231;izginin alt&#305;nda ge&#231;erlilik -->
 <tr><td style="padding:24px 4px 0">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#141414" style="background:#141414;border-radius:22px;color:#F2F2F2">
 <tr><td colspan="3" style="padding:22px 22px 18px">
-<div style="font-size:11px;letter-spacing:1.6px;font-weight:600;color:#9A9A9A">GİRİŞ KODU</div>
+<div style="font-size:11px;letter-spacing:1.6px;font-weight:600;color:#9A9A9A">G&#304;R&#304;&#350; KODU</div>
 <div style="margin-top:10px;font-family:'SF Mono',Menlo,Consolas,'Courier New',monospace;font-size:40px;line-height:1;font-weight:600;letter-spacing:10px;color:#FFFFFF">{{ .Token }}</div>
 </td></tr>
 <tr>
@@ -47,46 +47,46 @@
 <tr><td colspan="3" style="padding:14px 22px 20px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:13px;color:#BDBDBD">
 <tr>
-<td style="padding:2px 0">Geçerlilik</td>
-<td align="right" style="padding:2px 0;color:#F2F2F2">1 saat · tek kullanımlık</td>
+<td style="padding:2px 0">Ge&#231;erlilik</td>
+<td align="right" style="padding:2px 0;color:#F2F2F2">1 saat &#183; tek kullan&#305;ml&#305;k</td>
 </tr>
 <tr>
 <td style="padding:2px 0">Hesap</td>
-<td align="right" style="padding:2px 0;color:#F2F2F2">{{ .Email }}</td>
+<td align="right" style="padding:2px 0;color:#F2F2F2"><a href="mailto:{{ .Email }}" style="color:#F2F2F2;text-decoration:none">{{ .Email }}</a></td>
 </tr>
 </table>
 </td></tr>
 </table>
 </td></tr>
 
-<!-- Nasıl kullanılır -->
+<!-- Nas&#305;l kullan&#305;l&#305;r -->
 <tr><td style="padding:26px 4px 0">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="background:#FFFFFF;border-radius:18px">
 <tr><td style="padding:18px 20px">
 <div style="font-size:11px;letter-spacing:1.6px;font-weight:600;color:#857C6D">NASIL KULLANILIR</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px;font-size:14px;line-height:1.5;color:#141414">
-<tr><td width="24" valign="top" style="padding:4px 0;font-weight:600">1</td><td style="padding:4px 0">Subly'de kod ekranına dön.</td></tr>
-<tr><td width="24" valign="top" style="padding:4px 0;font-weight:600">2</td><td style="padding:4px 0">6 haneyi yaz; son haneyle giriş kendiliğinden yapılır. iPhone kodu klavyenin üstünde de önerebilir.</td></tr>
-<tr><td width="24" valign="top" style="padding:4px 0;font-weight:600">3</td><td style="padding:4px 0">Süre dolduysa uygulamada <b>Tekrar gönder</b>'e bas; yeni kod gelir.</td></tr>
+<tr><td width="24" valign="top" style="padding:4px 0;font-weight:600">1</td><td style="padding:4px 0">Subly'de kod ekran&#305;na d&#246;n.</td></tr>
+<tr><td width="24" valign="top" style="padding:4px 0;font-weight:600">2</td><td style="padding:4px 0">6 haneyi yaz; son haneyle giri&#351; kendili&#287;inden yap&#305;l&#305;r. iPhone kodu klavyenin &#252;st&#252;nde de &#246;nerebilir.</td></tr>
+<tr><td width="24" valign="top" style="padding:4px 0;font-weight:600">3</td><td style="padding:4px 0">S&#252;re dolduysa uygulamada <b>Tekrar g&#246;nder</b>'e bas; yeni kod gelir.</td></tr>
 </table>
 </td></tr>
 </table>
 </td></tr>
 
-<!-- Güvenlik -->
+<!-- G&#252;venlik -->
 <tr><td style="padding:14px 4px 0">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #E2DBCD;border-radius:18px">
 <tr><td style="padding:16px 20px;font-size:13px;line-height:1.55;color:#4A453D">
-<b style="color:#141414">Bu kodu kimseyle paylaşma.</b> Subly senden hiçbir zaman e-postayla, mesajla ya da telefonla kod istemez.
-Bu isteği sen yapmadıysan endişelenme: kod girilmeden kimse hesabına giremez, bu e-postayı yok sayabilirsin.
+<b style="color:#141414">Bu kodu kimseyle payla&#351;ma.</b> Subly senden hi&#231;bir zaman e-postayla, mesajla ya da telefonla kod istemez.
+Bu iste&#287;i sen yapmad&#305;ysan endi&#351;elenme: kod girilmeden kimse hesab&#305;na giremez, bu e-postay&#305; yok sayabilirsin.
 </td></tr>
 </table>
 </td></tr>
 
 <!-- Alt bilgi -->
 <tr><td style="padding:26px 4px 0;font-size:12px;line-height:1.6;color:#857C6D">
-<b style="color:#4A453D">Subly</b> · Abonelik ve kart ödemelerini tek yerde takip et.<br>
-Bu e-postayı, {{ .Email }} adresiyle Subly hesabı açılmak istendiği için aldın.
+<b style="color:#4A453D">Subly</b> &#183; Abonelik ve kart &#246;demelerini tek yerde takip et.<br>
+Bu e-postay&#305;, <a href="mailto:{{ .Email }}" style="color:#857C6D;text-decoration:none">{{ .Email }}</a> adresiyle Subly hesab&#305; a&#231;&#305;lmak istendi&#287;i i&#231;in ald&#305;n.
 </td></tr>
 
 </table>
