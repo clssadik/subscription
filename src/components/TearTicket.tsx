@@ -205,9 +205,12 @@ export function TearTicket({
         tabIndex={canTear ? 0 : undefined}
         aria-label={canTear ? hint : undefined}
         onKeyDown={(e) => canTear && (e.key === 'Enter' || e.key === ' ') && tear()}
-        className={cn('relative z-10 origin-top-right select-none', canTear && 'cursor-grab')}
+        // -mt-px: koçan gövdenin altına 1px biner. iPhone'da ikisinin arasında zemin renginde ince bir boşluk kalıp
+        // kesik çizginin yerinde düz açık renkli bir çizgi gibi görünüyordu.
+        className={cn('relative z-10 -mt-px origin-top-right select-none', canTear && 'cursor-grab')}
         style={{
-          transform: pose(progress),
+          // Kesilmezken dönüşüm yok: iPhone dönen katmanın kenarını yumuşatıp yine ince bir çizgi bırakıyor
+          transform: progress > 0 ? pose(progress) : undefined,
           // Kalktıkça altına gölge düşer
           filter: progress > 0 ? `drop-shadow(0 ${4 + progress * 14}px ${8 + progress * 18}px rgb(0 0 0 / ${0.15 + progress * 0.3}))` : undefined,
           opacity: entering ? 0 : 1,
