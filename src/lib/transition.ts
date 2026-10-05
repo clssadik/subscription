@@ -56,9 +56,8 @@ export function guardDocumentScroll() {
       running?.skipTransition()
       const t = e.target
       const risky = performance.now() < busyUntil || t === document.documentElement || t === document.body || window.scrollY !== 0
-      drag = risky
-        ? { y: e.touches[0].clientY, t: e.timeStamp, v: 0, list: document.querySelector<HTMLElement>('[data-screen-active] [data-scroller]') }
-        : null
+      // Liste ilk harekette seçilir: dokunuş anında açık sayfa değişebiliyor (ör. sağa çekip kapanan sayfa hemen bitirilir)
+      drag = risky ? { y: e.touches[0].clientY, t: e.timeStamp, v: 0, list: null } : null
     },
     opts,
   )
@@ -71,6 +70,7 @@ export function guardDocumentScroll() {
       const dt = e.timeStamp - drag.t
       // Parmağın hızı (px/ms, yumuşatılmış): bırakınca liste bu hızla kaymaya devam eder
       if (dt > 0) drag.v = 0.7 * ((drag.y - y) / dt) + 0.3 * drag.v
+      drag.list ??= document.querySelector<HTMLElement>('[data-screen-active] [data-scroller]')
       if (drag.list) drag.list.scrollTop += drag.y - y
       drag.y = y
       drag.t = e.timeStamp

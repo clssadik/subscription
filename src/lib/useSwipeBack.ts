@@ -2,8 +2,8 @@ import { useEffect, useRef, type RefObject } from 'react'
 import { wakeScrollers } from './transition'
 
 /** Bırakınca geri dönmek için en az bu kadar çekilmeli (ekran genişliğine oranla) ya da hızlıca fırlatılmalı (px/ms) */
-const COMPLETE_AT = 0.35
-const FLING = 0.5
+const COMPLETE_AT = 0.3
+const FLING = 0.35
 // iOS'un sayfa geçişindeki eğri (sayfa açılış/kapanış geçişleriyle aynı, src/index.css): hızlı başlar, uzun ve yumuşak durur
 const EASE = 'cubic-bezier(0.32, 0.72, 0, 1)'
 /** Bırakınca kalan yolun süresi (ms): yavaş bırakılan da acele etmesin, hızlı fırlatılan da sürünmesin */
@@ -122,17 +122,33 @@ export function useSwipeBack(
         )
       }
       const b = below
-      anim.onfinish = () => {
-        if (done) {
-          // Detay kalkar, alt sayfa sekme olarak görünür hâle gelir; ardından elle verilen duruş silinir
-          latest.current.onBack()
-          clear(b)
-          wakeScrollers()
-        } else {
+      if (!done) {
+        anim.onfinish = () => {
           clear(el)
           clear(b)
         }
+        return
       }
+      // Detay kalkar, alt sayfa sekme olarak görünür hâle gelir; ardından elle verilen duruş silinir
+      let finished = false
+      const finish = () => {
+        if (finished) return
+        finished = true
+        window.removeEventListener('touchstart', early, true)
+        window.removeEventListener('pointerdown', early, true)
+        latest.current.onBack()
+        clear(b)
+        wakeScrollers()
+      }
+      // Sayfa kayarak kapanırken ekrana dokunulursa beklemeden bitir: o dokunuş önceki sayfayı hemen kaydırabilsin
+      // (yoksa sayfa kapanana kadar dokunuş boşa gidiyordu)
+      const early = () => {
+        anim.cancel()
+        finish()
+      }
+      window.addEventListener('touchstart', early, true)
+      window.addEventListener('pointerdown', early, true)
+      anim.onfinish = finish
     }
     const cancel = (e: PointerEvent) => {
       if (!start || e.pointerId !== start.id) return
