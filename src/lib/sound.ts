@@ -29,19 +29,24 @@ export function setSoundEnabled(next: boolean) {
   listeners.forEach((l) => l())
 }
 
-/** Tek nota: başta hızlı yükselir, sonra yumuşakça söner. glide verilirse frekans o değere kayar. */
-function note(c: AudioContext, at: number, freq: number, length: number, { type = 'sine' as OscillatorType, volume = 0.12, glide = 0 } = {}) {
+/** Tek nota: başta hızlı yükselir, sonra yumuşakça söner. */
+function note(c: AudioContext, at: number, freq: number, length: number, volume: number, attack: number) {
   const osc = c.createOscillator()
   const gain = c.createGain()
-  osc.type = type
   osc.frequency.setValueAtTime(freq, at)
-  if (glide) osc.frequency.exponentialRampToValueAtTime(glide, at + length)
   gain.gain.setValueAtTime(0.0001, at)
-  gain.gain.exponentialRampToValueAtTime(volume, at + 0.01)
+  gain.gain.exponentialRampToValueAtTime(volume, at + attack)
   gain.gain.exponentialRampToValueAtTime(0.0001, at + length)
   osc.connect(gain).connect(c.destination)
   osc.start(at)
-  osc.stop(at + length + 0.02)
+  osc.stop(at + length + 0.05)
+}
+
+/** Cam çan: ana nota ve iki ince üst ses birlikte; çabuk söndükleri için parlak ama yumuşak duyulur */
+function bell(c: AudioContext, at: number, freq: number, length: number, volume: number) {
+  note(c, at, freq, length, volume, 0.004)
+  note(c, at, freq * 2.76, length * 0.45, volume * 0.35, 0.002)
+  note(c, at, freq * 5.4, length * 0.2, volume * 0.12, 0.001)
 }
 
 /** Sadece bir dokunuşun içinden (onClick) çağrılmalı: iPhone sesi ancak öyle başlatır. */
@@ -55,20 +60,14 @@ export function play(sound: Sound) {
     }
     if (ctx.state === 'suspended') void ctx.resume()
     const t = ctx.currentTime + 0.01
-    if (sound === 'paid') {
-      // "Ding": iki parlak nota, yukarı doğru
-      note(ctx, t, 1047, 0.18)
-      note(ctx, t + 0.08, 1568, 0.32)
-    } else if (sound === 'undo') {
-      // Geri alma: "ding"in tersi, iki yumuşak nota aşağı doğru
-      note(ctx, t, 1568, 0.14, { volume: 0.1 })
-      note(ctx, t + 0.07, 1047, 0.24, { volume: 0.1 })
-    } else if (sound === 'save') {
-      // Yumuşak onay: hafifçe yükselen tek nota
-      note(ctx, t, 784, 0.2, { type: 'triangle', volume: 0.1, glide: 988 })
+    if (sound === 'undo') {
+      // Geri alma: onay sesinin tersi, aşağı doğru iki çan
+      bell(ctx, t, 1976, 0.35, 0.06)
+      bell(ctx, t + 0.09, 1318, 0.45, 0.06)
     } else {
-      // Silme: alçalan, alçak bir nota
-      note(ctx, t, 392, 0.26, { volume: 0.14, glide: 196 })
+      // Ödendi, kaydet ve sil aynı ses: yukarı doğru iki cam çan
+      bell(ctx, t, 1318, 0.5, 0.09)
+      bell(ctx, t + 0.1, 1976, 0.7, 0.08)
     }
   } catch {
     // Tarayıcı ses desteklemiyorsa sessizce geç
