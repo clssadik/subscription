@@ -11,15 +11,18 @@ const OPEN = -(BUTTON + 2 * 12)
 const OPEN_AT = 0.65
 /** Bırakınca açılma/kapanma süresi (ms): acele etmeden yerine otursun */
 const SETTLE_MS = 520
-/** Açık mesafeden sonrası dirençli: parmak gittikçe satır daha az kayar */
-const resist = (x: number) => (x >= OPEN ? x : OPEN + (x - OPEN) * 0.3)
+/** Açık mesafeden sonrası hafif dirençli */
+const resist = (x: number) => (x >= OPEN ? x : OPEN + (x - OPEN) * 0.8)
+/** Satır genişliğinin bu oranından fazla çekilince bırakmak doğrudan siler (iOS'taki tam kaydırma) */
+const FULL_AT = 0.5
 /** iOS'taki gibi yay: düğme açılırken hafifçe büyüyüp yerine oturur */
 const SPRING = 'cubic-bezier(0.34, 1.56, 0.64, 1)'
 const EASE = 'cubic-bezier(0.32, 0.72, 0, 1)'
 
 /**
  * Sola kaydırınca sağında yuvarlak kırmızı "Sil" (ya da actionLabel) düğmesi çıkan satır (iOS Mesajlar gibi).
- * Düğme satır kaydıkça küçükten büyüyüp belirir. Basınca satır sola kayıp kapanır, sonra onDelete çalışır. Dokununca onTap çalışır.
+ * Düğme satır kaydıkça küçükten büyüyüp belirir. Basınca satır sola kayıp kapanır, sonra onDelete çalışır.
+ * Satır yarısından fazla çekilip bırakılırsa düğmeye basmadan silinir. Dokununca onTap çalışır.
  */
 export function SwipeRow({
   children,
@@ -45,6 +48,10 @@ export function SwipeRow({
   const [removing, setRemoving] = useState<null | 'slide' | 'collapse'>(null)
   const box = useRef<HTMLDivElement>(null)
   const reveal = Math.min(1, Math.max(0, x / OPEN))
+  // Tam kaydırma: eşik geçilince düğme uzayıp simgesi satırın yanına gelir, hafif titreşim olur; bırakınca silinir
+  const [full, setFull] = useState(false)
+  // Düğme satırla sayfa kenarı arasındaki boşluğu doldurana kadar uzar (yuvarlak → hap)
+  const pill = Math.max(BUTTON, -x - 24)
   function remove() {
     haptic()
     setRemoving('slide')
@@ -58,6 +65,7 @@ export function SwipeRow({
         window.setTimeout(() => {
           if (box.current) box.current.style.height = ''
           setRemoving(null)
+          setFull(false)
           setX(0)
         }, 400)
       }, 260)
@@ -96,13 +104,17 @@ export function SwipeRow({
         // Kaydırılmadıkça gizli
         style={{
           visibility: x === 0 && !dragging && !removing ? 'hidden' : 'visible',
-          width: BUTTON,
+          width: pill,
           height: BUTTON,
+          paddingLeft: full ? 13 : 0,
+          justifyContent: full ? 'flex-start' : 'center',
           opacity: removing ? 0 : reveal,
-          transform: `translateY(-50%) scale(${removing ? 0.4 : 0.4 + 0.6 * reveal})`,
-          transition: dragging ? 'none' : `transform ${SETTLE_MS}ms ${SPRING}, opacity 300ms ease`,
+          transform: `translateY(-50%) scale(${removing ? (full ? 1 : 0.4) : 0.4 + 0.6 * reveal})`,
+          transition: dragging
+            ? 'padding 200ms ease'
+            : `transform ${SETTLE_MS}ms ${SPRING}, width ${SETTLE_MS}ms ${EASE}, opacity 300ms ease`,
         }}
-        className="absolute top-1/2 right-3 flex items-center justify-center rounded-full bg-bh-red text-white active:brightness-90"
+        className="absolute top-1/2 right-3 flex items-center rounded-full bg-bh-red text-white active:brightness-90"
       >
         <ActionIcon className="size-[22px]" strokeWidth={2} />
       </button>
@@ -141,7 +153,15 @@ export function SwipeRow({
               setDragging(true)
             }
           }
-          if (s.dir === 'h') setX(resist(Math.min(0, s.base + dx)))
+          if (s.dir === 'h') {
+            const next = resist(Math.min(0, s.base + dx))
+            setX(next)
+            const isFull = next < -(box.current?.offsetWidth ?? 300) * FULL_AT
+            if (isFull !== full) {
+              if (isFull) haptic()
+              setFull(isFull)
+            }
+          }
         }}
         onPointerUp={() => {
           const s = start.current
@@ -150,6 +170,7 @@ export function SwipeRow({
           release()
           if (!s) return
           if (s.dir === 'h') {
+            if (full) return remove()
             const open = x < OPEN * OPEN_AT
             // "Sil" açılınca hafif titreşim
             if (open && s.base === 0) haptic()
@@ -163,6 +184,7 @@ export function SwipeRow({
         onPointerCancel={() => {
           start.current = null
           setDragging(false)
+          setFull(false)
           release()
           setX(0)
         }}
