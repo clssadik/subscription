@@ -23,8 +23,18 @@ function isDark() {
   return pref === 'dark' || (pref === 'auto' && media.matches)
 }
 
+// Ana ekran uygulamasında iPhone saat çubuğunun rengini sadece sayfa yüklenirken okuyor; çalışırken değiştirmek işe yaramıyor.
+// Bu yüzden orada açık/koyu değişince sayfa bir kez yeniden yüklenir (index.html'deki betik yeni rengi baştan uygular).
+const standalone = matchMedia('(display-mode: standalone)').matches
+let applied: boolean | null = null
+
 function apply() {
   const dark = isDark()
+  if (standalone && applied !== null && applied !== dark) {
+    location.reload()
+    return
+  }
+  applied = dark
   document.documentElement.classList.toggle('dark', dark)
   // Saat çubuğunun rengi. iPhone ana ekran uygulamasında var olan etiketin içeriğini değiştirmek çubuğu boyamıyor;
   // etiket silinip yenisi eklenince boyuyor.
