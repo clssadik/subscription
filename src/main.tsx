@@ -5,7 +5,7 @@ import App from './App.tsx'
 import { guardDocumentScroll } from '@/lib/transition'
 
 // GEÇİCİ: ?vh ile açılınca ekran ölçülerini gösterir (ana ekran uygulamasında sayfa boyu hatası için)
-if (location.search.includes('vh')) {
+function showViewportProbe() {
   const probe = (h: string) => {
     const d = document.createElement('div')
     d.style.cssText = `position:fixed;top:0;left:0;width:1px;height:${h};visibility:hidden`
@@ -29,8 +29,16 @@ if (location.search.includes('vh')) {
   }
   document.getElementById('splash')?.remove()
   document.body.innerHTML = `<pre style="font:16px/1.6 monospace;padding:70px 20px;color:#141414">${Object.entries(rows).map(([k, v]) => `${k}: ${v}`).join('\n')}</pre>`
-  throw new Error('vh probe')
 }
+if (location.search.includes('vh')) showViewportProbe()
+// Ana ekran uygulamasında adres yazılamadığı için: ekranın en üstüne 2 saniyede 5 kez dokununca da açılır
+let taps: number[] = []
+document.addEventListener('click', (e) => {
+  if (e.clientY > 120) return
+  const now = Date.now()
+  taps = [...taps.filter((t) => now - t < 2000), now]
+  if (taps.length >= 5) showViewportProbe()
+})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
