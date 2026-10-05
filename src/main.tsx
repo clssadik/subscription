@@ -4,6 +4,34 @@ import './index.css'
 import App from './App.tsx'
 import { guardDocumentScroll } from '@/lib/transition'
 
+// GEÇİCİ: ?vh ile açılınca ekran ölçülerini gösterir (ana ekran uygulamasında sayfa boyu hatası için)
+if (location.search.includes('vh')) {
+  const probe = (h: string) => {
+    const d = document.createElement('div')
+    d.style.cssText = `position:fixed;top:0;left:0;width:1px;height:${h};visibility:hidden`
+    document.body.appendChild(d)
+    const v = Math.round(d.getBoundingClientRect().height)
+    d.remove()
+    return v
+  }
+  const rows = {
+    standalone: matchMedia('(display-mode: standalone)').matches,
+    innerHeight: innerHeight,
+    clientHeight: document.documentElement.clientHeight,
+    visualViewport: Math.round(visualViewport?.height ?? 0),
+    screenHeight: screen.height,
+    '100vh': probe('100vh'),
+    '100svh': probe('100svh'),
+    '100lvh': probe('100lvh'),
+    '100dvh': probe('100dvh'),
+    safeTop: probe('env(safe-area-inset-top)'),
+    safeBottom: probe('env(safe-area-inset-bottom)'),
+  }
+  document.getElementById('splash')?.remove()
+  document.body.innerHTML = `<pre style="font:16px/1.6 monospace;padding:70px 20px;color:#141414">${Object.entries(rows).map(([k, v]) => `${k}: ${v}`).join('\n')}</pre>`
+  throw new Error('vh probe')
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
