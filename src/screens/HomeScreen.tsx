@@ -102,7 +102,16 @@ export function HomeScreen({ nav }: { nav: Nav }) {
     run()
     // Ödendi işaretlenince ses ve kısa onay; işaret kaldırılınca ikisi de yok
     if (!i.paid) play('paid')
-    if (!i.paid) toast(`${i.kind === 'subscription' ? i.subscription.name : `${i.card.bankName} ekstresi`} ödendi`, { action: { label: 'Geri al', onClick: run } })
+    if (!i.paid) toast(`${i.kind === 'subscription' ? i.subscription.name : `${i.card.bankName} ekstresi`} ödendi`, {
+        action: {
+          label: 'Geri al',
+          onClick: () => {
+            haptic()
+            play('undo')
+            run()
+          },
+        },
+      })
   }
 
   if (subscriptions.length === 0 && cards.length === 0) {

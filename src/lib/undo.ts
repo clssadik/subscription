@@ -13,7 +13,14 @@ export function useUndoable() {
     run()
     toast(message, {
       duration: 5000,
-      action: { label: 'Geri al', onClick: () => dispatch({ type: 'state/restore', state: before }) },
+      action: {
+        label: 'Geri al',
+        onClick: () => {
+          haptic()
+          play('undo')
+          dispatch({ type: 'state/restore', state: before })
+        },
+      },
     })
   }
 }
