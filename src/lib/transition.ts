@@ -35,18 +35,22 @@ let busyUntil = 0
 
 /**
  * Belgeyi kaydıracak hareketleri durdurur: geçiş sürerken ya da yeni bitmişken, boş belgeye başlayan ya da belge hâlâ esnemişken
- * başlayan hareketler. Bu hareket boşa gitmesin diye açık sayfanın listesi parmağı elle izler (bırakınca kayma devam etmez).
+ * başlayan hareketler. Bu hareket boşa gitmesin diye açık sayfanın listesi parmağı elle izler, bırakınca iPhone'daki gibi süzülür.
  * Dokunma/tıklama etkilenmez. src/main.tsx açılışta bir kez çağırır.
  */
 export function guardDocumentScroll() {
-  let drag: { y: number; list: HTMLElement | null } | null = null
+  let drag: { y: number; t: number; v: number; list: HTMLElement | null } | null = null
+  let glide = 0
   const opts = { capture: true, passive: true }
   window.addEventListener(
     'touchstart',
     (e) => {
+      cancelAnimationFrame(glide)
       const t = e.target
       const risky = performance.now() < busyUntil || t === document.documentElement || t === document.body || window.scrollY !== 0
-      drag = risky ? { y: e.touches[0].clientY, list: document.querySelector<HTMLElement>('[data-screen-active] [data-scroller]') } : null
+      drag = risky
+        ? { y: e.touches[0].clientY, t: e.timeStamp, v: 0, list: document.querySelector<HTMLElement>('[data-screen-active] [data-scroller]') }
+        : null
     },
     opts,
   )
@@ -56,14 +60,41 @@ export function guardDocumentScroll() {
       if (!drag || !e.cancelable) return
       e.preventDefault()
       const y = e.touches[0].clientY
-      if (drag.list) drag.list.scrollTop -= y - drag.y
+      const dt = e.timeStamp - drag.t
+      // Parmağın hızı (px/ms, yumuşatılmış): bırakınca liste bu hızla kaymaya devam eder
+      if (dt > 0) drag.v = 0.7 * ((drag.y - y) / dt) + 0.3 * drag.v
+      if (drag.list) drag.list.scrollTop += drag.y - y
       drag.y = y
+      drag.t = e.timeStamp
     },
     { capture: true, passive: false },
   )
-  const end = () => (drag = null)
-  window.addEventListener('touchend', end, opts)
-  window.addEventListener('touchcancel', end, opts)
+  window.addEventListener(
+    'touchend',
+    (e) => {
+      const d = drag
+      drag = null
+      // Parmak durup öyle kalktıysa ya da hareket yoksa süzülme yok
+      if (!d?.list || e.timeStamp - d.t > 80 || Math.abs(d.v) < 0.1) return
+      // iPhone'daki gibi süzülme: hız her milisaniyede biraz azalır, liste ucuna gelince durur
+      const list = d.list
+      let v = d.v
+      const max = list.scrollHeight - list.clientHeight
+      let pos = list.scrollTop
+      let last = performance.now()
+      const step = (now: number) => {
+        const dt = now - last
+        last = now
+        pos = Math.min(max, Math.max(0, pos + v * dt))
+        list.scrollTop = pos
+        v *= Math.pow(0.997, dt)
+        if (Math.abs(v) > 0.02 && pos > 0 && pos < max) glide = requestAnimationFrame(step)
+      }
+      glide = requestAnimationFrame(step)
+    },
+    opts,
+  )
+  window.addEventListener('touchcancel', () => (drag = null), opts)
 }
 
 /**
