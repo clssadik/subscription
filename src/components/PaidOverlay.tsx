@@ -23,8 +23,9 @@ export function PaidOverlay({ title, detail, onClose }: { title: string; detail:
         <path d="M30 49.5 L42.5 62 L67 36" fill="none" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" className="paid-check" />
       </svg>
       <div className="text-center animate-in fade-in slide-in-from-bottom-2 duration-300 [animation-delay:150ms] [animation-fill-mode:both]">
-        <p className="num num-bold text-[34px] leading-none">Ödendi</p>
-        <p className="mt-2 text-[15px] text-subtle">{title}</p>
+        {/* Satır yüksekliği 1 olunca iPhone, kayarak gelen bu blokta Ö harfinin noktalarını kesiyor: biraz pay bırakılır */}
+        <p className="num num-bold text-[34px] leading-[1.2]">Ödendi</p>
+        <p className="mt-1 text-[15px] text-subtle">{title}</p>
         <p className="mt-0.5 text-[13px] text-subtle">{detail}</p>
       </div>
     </div>,
