@@ -26,7 +26,17 @@ function isDark() {
 function apply() {
   const dark = isDark()
   document.documentElement.classList.toggle('dark', dark)
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#000000' : '#F1ECE2')
+  // Saat çubuğunun rengi. iPhone ana ekran uygulamasında var olan etiketin içeriğini değiştirmek çubuğu boyamıyor;
+  // etiket silinip yenisi eklenince boyuyor.
+  const color = dark ? '#000000' : '#F1ECE2'
+  const old = document.querySelector('meta[name="theme-color"]')
+  if (old?.getAttribute('content') !== color) {
+    old?.remove()
+    const meta = document.createElement('meta')
+    meta.name = 'theme-color'
+    meta.content = color
+    document.head.appendChild(meta)
+  }
   listeners.forEach((l) => l())
 }
 

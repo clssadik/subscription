@@ -202,11 +202,9 @@
    Ana ekran uygulamasında boy sabit 100svh: uygulamadan çıkıp dönünce iPhone görünen alanı bir an kısa hesaplayabiliyor,
    svh bundan etkilenmez. 100lvh KULLANMA: durum çubuğu "default" iken lvh saat çubuğunu da sayıyor (iPhone 16 Pro'da 852,
    görünen alan 793), sayfanın altı ve alt menü 59pt ekran dışına taşıyordu (2026-10-05 telefonda ölçüldü). */
-/* Sayfa içeriğinin üstten boşluğu. Ana ekran uygulamasında iOS 26 üst kenara bulanık bir geçiş çiziyor; başlık onun altında kalsın diye daha geniş. */
+/* Sayfa içeriğinin üstten boşluğu. Durum çubuğu "default" olduğu için sayfa saat çubuğunun altından başlıyor (safe-area-inset-top 0);
+   ana ekran uygulamasında da Safari'deki kadar boşluk yeterli. */
 :root { --top-gap: max(1rem, calc(env(safe-area-inset-top) + 14px)); }
-@media (display-mode: standalone) {
-  :root { --top-gap: max(2.75rem, calc(env(safe-area-inset-top) + 14px)); }
-}
 .app-screen { position: fixed; inset: 0; }
 .app-bottom { position: fixed; left: 0; right: 0; bottom: 0; }
 @media (display-mode: standalone) {
