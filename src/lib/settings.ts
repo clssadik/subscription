@@ -1,7 +1,10 @@
-import { useSyncExternalStore } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
+import { DEMO_ID } from './demo'
+import { isConfigured, supabase } from './supabase'
 
-// Kullanıcının ayarları: profil adı ve bildirim tercihleri. Şimdilik bu cihazda, kullanıcıya göre ayrı saklanır.
-// 2. adımda (Supabase) hesaba taşınacak: 4. adımda bildirimleri sunucu gönderecek, ayarları oradan okuyacak.
+// Kullanıcının ayarları: profil adı ve bildirim tercihleri. Hesapta (Supabase user_settings tablosu) saklanır,
+// cihazda da bir kopyası durur (hızlı ve internetsiz açılış). 4. adımda bildirimleri gönderen sunucu ayarları oradan okuyacak.
+// Test hesabında sadece cihazda kalır.
 
 /** Kaç gün önce hatırlatılsın; 0 = ödeme günü */
 export type ReminderDay = 0 | 1 | 3 | 7
@@ -67,7 +70,28 @@ function read(userId: string): Settings {
   return value
 }
 
-function write(userId: string, value: Settings) {
+/** Hesaptaki ayarlarla mı çalışılıyor (test hesabı ya da Supabase'siz kurulumda hayır) */
+const remote = (userId: string) => isConfigured && userId !== DEMO_ID
+
+// Art arda değişiklikler (ör. saat seçerken) tek seferde gönderilsin
+const pending = new Map<string, number>()
+function push(userId: string, value: Settings) {
+  window.clearTimeout(pending.get(userId))
+  pending.set(
+    userId,
+    window.setTimeout(async () => {
+      pending.delete(userId)
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({ user_id: userId, name: value.name, notify: value.notify, updated_at: new Date().toISOString() })
+      // Gönderilemezse cihazdaki kopya kalır; bir sonraki değişiklikte yine denenir
+      if (error) console.warn('Ayarlar kaydedilemedi:', error.message)
+    }, 600),
+  )
+}
+
+function write(userId: string, value: Settings, sync = true) {
+  if (sync && remote(userId)) push(userId, value)
   cache.set(userId, value)
   try {
     localStorage.setItem(key(userId), JSON.stringify(value))
@@ -82,9 +106,31 @@ const subscribe = (l: () => void) => {
   return () => listeners.delete(l)
 }
 
+// Hesaptaki ayarlar her açılışta bir kez okunur
+const loaded = new Set<string>()
+async function loadRemote(userId: string) {
+  if (loaded.has(userId)) return
+  loaded.add(userId)
+  const { data, error } = await supabase.from('user_settings').select('name, notify').eq('user_id', userId).maybeSingle()
+  if (error) {
+    loaded.delete(userId)
+    return
+  }
+  if (data) {
+    const notify = (data.notify ?? {}) as Partial<NotifySettings>
+    write(userId, { ...DEFAULT_SETTINGS, name: data.name ?? '', notify: { ...DEFAULT_SETTINGS.notify, ...notify } }, false)
+  } else {
+    // Hesapta henüz yok (ilk giriş): cihazdakini hesaba kaydet
+    push(userId, read(userId))
+  }
+}
+
 /** Ayarları okur; update ile bir kısmını değiştirir (bildirim ayarları için updateNotify) */
 export function useSettings(userId: string) {
   const settings = useSyncExternalStore(subscribe, () => read(userId))
+  useEffect(() => {
+    if (remote(userId)) void loadRemote(userId)
+  }, [userId])
   const update = (patch: Partial<Settings>) => write(userId, { ...read(userId), ...patch })
   const updateNotify = (patch: Partial<NotifySettings>) => {
     const current = read(userId)
