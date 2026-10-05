@@ -11,7 +11,9 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
+      includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png', 'push-handler.js'],
+      // Bildirimleri gösteren kod (public/push-handler.js) servis çalışanına eklenir
+      workbox: { importScripts: ['push-handler.js'] },
       manifest: {
         name: 'Subly',
         short_name: 'Subly',

@@ -1,8 +1,11 @@
-import { BellRingIcon } from 'lucide-react'
+import { BellOffIcon, BellRingIcon, CheckIcon, SendIcon, SmartphoneIcon } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 import { Segmented } from '@/components/FormBits'
 import { Logo } from '@/components/Logo'
 import { Chips, Group, Row, Switch, SubPageHeader } from '@/components/SettingsList'
 import { haptic } from '@/lib/haptics'
+import { sendTestPush, usePush } from '@/lib/push'
 import { REMINDER_DAYS, daysLabel, useSettings, type NotifySettings, type ReminderDay } from '@/lib/settings'
 import { useStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
@@ -10,7 +13,7 @@ import { cn } from '@/lib/utils'
 const DAY_LABELS: Record<ReminderDay, string> = { 0: 'Ödeme günü', 1: '1 gün önce', 3: '3 gün önce', 7: '1 hafta önce' }
 const DAY_OPTIONS = REMINDER_DAYS.map((d) => ({ value: d, label: DAY_LABELS[d] }))
 
-/** Bildirim ayarları. Telefona gönderme 4. adımda gelecek; ayarlar şimdiden kaydedilir. */
+/** Bildirim ayarları ve bu telefonun bildirim izni. Gönderen: supabase/functions/send-reminders (her 15 dakikada). */
 export function NotificationSettings({ userId, onBack }: { userId: string; onBack: () => void }) {
   const { state } = useStore()
   const { settings, updateNotify } = useSettings(userId)
@@ -29,10 +32,7 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
     <>
       <SubPageHeader title="Bildirimler" onBack={onBack} />
 
-      <div className="mt-3 flex items-start gap-3 rounded-[18px] bg-bh-yellow/25 p-3.5 text-sm dark:bg-bh-yellow/15">
-        <BellRingIcon className="mt-0.5 size-[18px] shrink-0" />
-        <p>Telefona bildirim gönderme yakında açılacak. Ayarların şimdiden kaydediliyor; açıldığında bunlara göre haber vereceğiz.</p>
-      </div>
+      <PushCard />
 
       <Group>
         <Row label="Hatırlatmalar" trailing={<Switch label="Hatırlatmalar" checked={n.enabled} onChange={(enabled) => updateNotify({ enabled })} />} />
@@ -115,5 +115,72 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
         )}
       </div>
     </>
+  )
+}
+
+/** Bu telefonun bildirim durumu: izin iste, açık olduğunu göster ya da neden olmadığını anlat */
+function PushCard() {
+  const { state, enable } = usePush()
+  const [busy, setBusy] = useState(false)
+  if (!state) return <div className="skeleton mt-3 h-[76px] rounded-[18px]" />
+
+  async function allow() {
+    setBusy(true)
+    try {
+      await enable()
+    } catch {
+      toast.error('Bildirim izni kaydedilemedi. Tekrar dene.')
+    }
+    setBusy(false)
+  }
+
+  async function test() {
+    setBusy(true)
+    const problem = await sendTestPush()
+    setBusy(false)
+    if (problem) toast.error(problem)
+    else toast('Deneme bildirimi gönderildi')
+  }
+
+  const box = 'mt-3 flex items-center gap-3 rounded-[18px] bg-surface p-3.5'
+  const icon = 'flex size-9 shrink-0 items-center justify-center rounded-full'
+  const button = 'pressable shrink-0 rounded-full bg-ink px-3.5 py-2 text-[13px] font-medium text-page disabled:opacity-50'
+
+  if (state === 'on')
+    return (
+      <div className={box}>
+        <span className={cn(icon, 'bg-bh-green/15 text-bh-green')}><CheckIcon className="size-5" strokeWidth={2.4} /></span>
+        <p className="min-w-0 flex-1 text-sm"><b className="font-medium">Bu telefon bildirim alıyor.</b><br /><span className="text-subtle">Ayarlara göre seçtiğin saatte gelir.</span></p>
+        <button type="button" onClick={test} disabled={busy} className={cn(button, 'flex items-center gap-1.5 bg-page text-ink')}>
+          <SendIcon className="size-3.5" /> Dene
+        </button>
+      </div>
+    )
+  if (state === 'default')
+    return (
+      <div className={box}>
+        <span className={cn(icon, 'bg-page')}><BellRingIcon className="size-5" /></span>
+        <p className="min-w-0 flex-1 text-sm"><b className="font-medium">Bildirimleri aç</b><br /><span className="text-subtle">Ödeme yaklaşınca bu telefona haber verelim.</span></p>
+        <button type="button" onClick={allow} disabled={busy} className={button}>İzin ver</button>
+      </div>
+    )
+  if (state === 'install')
+    return (
+      <div className={box}>
+        <span className={cn(icon, 'bg-page')}><SmartphoneIcon className="size-5" /></span>
+        <p className="min-w-0 flex-1 text-sm"><b className="font-medium">Önce ana ekrana ekle</b><br /><span className="text-subtle">iPhone bildirimleri sadece ana ekrandaki Subly'ye gönderir.</span></p>
+      </div>
+    )
+  return (
+    <div className={box}>
+      <span className={cn(icon, 'bg-page')}><BellOffIcon className="size-5" /></span>
+      <p className="min-w-0 flex-1 text-sm">
+        {state === 'denied' ? (
+          <><b className="font-medium">Bildirimler kapalı</b><br /><span className="text-subtle">Ayarlar → Bildirimler → Subly'den açabilirsin.</span></>
+        ) : (
+          <><b className="font-medium">Bu tarayıcı bildirim desteklemiyor</b><br /><span className="text-subtle">Ayarların yine de kaydediliyor.</span></>
+        )}
+      </p>
+    </div>
   )
 }
