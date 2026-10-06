@@ -154,7 +154,7 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Set
       if (diff >= 0 && days.includes(diff))
         out.push({ key: `sub:${sub.id}:${toKey(date)}:${diff}`, title: sub.name, body: `${cap(when(diff))} yenileniyor · ${money(sub.amount, sub.currency)}` })
       if (diff === -1 && notify.overdue && own !== 'off')
-        out.push({ key: `sub-late:${sub.id}:${toKey(date)}`, title: sub.name, body: `Dünkü ${money(sub.amount, sub.currency)} ödemesi henüz ödendi işaretlenmedi.` })
+        out.push({ key: `sub-late:${sub.id}:${toKey(date)}`, title: sub.name, body: `Dün yenilendi, ödendi işaretlenmedi · ${money(sub.amount, sub.currency)}` })
     }
   }
 
@@ -164,12 +164,12 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Set
     for (const { statement, due } of cardCyclesBetween(card, today - 1, today + 40)) {
       const diff = due - today
       if (notify.statement && statement === today)
-        out.push({ key: `stmt:${card.id}:${toKey(statement)}`, title, body: `Ekstre kesildi. Son ödeme ${dateLabel(due)}.` })
+        out.push({ key: `stmt:${card.id}:${toKey(statement)}`, title, body: `Ekstre kesildi · son ödeme ${dateLabel(due)}` })
       if (isPaid(card.id, due)) continue
       if (diff >= 0 && notify.cardDays.includes(diff))
         out.push({ key: `card:${card.id}:${toKey(due)}:${diff}`, title, body: `Son ödeme ${when(diff)} · ${dateLabel(due)}` })
       if (diff === -1 && notify.overdue)
-        out.push({ key: `card-late:${card.id}:${toKey(due)}`, title, body: 'Son ödeme dündü ve henüz ödendi işaretlenmedi.' })
+        out.push({ key: `card-late:${card.id}:${toKey(due)}`, title, body: 'Son ödeme dündü, ödendi işaretlenmedi' })
     }
   }
 
@@ -193,8 +193,8 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Set
         cardCount += cardCyclesBetween(card, today, end).filter((c) => !isPaid(card.id, c.due)).length
     if (count + cardCount > 0) {
       const sums = [...totals].map(([c, a]) => money(a, c)).join(' + ')
-      const parts2 = [count ? `${count} abonelik (${sums})` : '', cardCount ? `${cardCount} kart ödemesi` : ''].filter(Boolean)
-      out.push({ key: `summary:${weekly ? 'w' : 'm'}`, title: weekly ? 'Bu hafta' : 'Bu ay', body: `${parts2.join(' ve ')} var.` })
+      const parts2 = [count ? `${count} abonelik · ${sums}` : '', cardCount ? `${cardCount} kart ödemesi` : ''].filter(Boolean)
+      out.push({ key: `summary:${weekly ? 'w' : 'm'}`, title: weekly ? 'Bu hafta' : 'Bu ay', body: parts2.join(' · ') })
     }
   }
   return out
@@ -264,7 +264,7 @@ Deno.serve(async (req) => {
     const { data: devices } = await db.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth').eq('user_id', data.user.id)
     let sent = 0
     for (const d of (devices ?? []) as PushRow[])
-      if (await push(d, { title: 'Monthwise', body: 'Bildirimler çalışıyor.', tag: 'test', url: '/' })) sent++
+      if (await push(d, { title: 'Deneme bildirimi', body: 'Hatırlatmalar bu telefona gelir.', tag: 'test', url: '/' })) sent++
     return Response.json({ sent })
   }
 
