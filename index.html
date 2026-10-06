@@ -61,9 +61,7 @@
         font: 200 24px/1 'Outfit', -apple-system, system-ui, sans-serif;
         transition: opacity 360ms ease, transform 360ms ease;
       }
-      /* Koyu temada açılış ekranı çok koyu gri (#121212): iPhone'un açılıştaki tek karelik grisiyle aynı tonda, çakma görünmez
-         (scripts/startup-images.mjs). Solarken altındaki siyah uygulama yumuşakça görünür. */
-      html.dark #splash { background: #121212; color: #F2F2F2; }
+      html.dark #splash { background: #000; color: #F2F2F2; }
       #splash img { width: 140px; height: 140px; animation: splash-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both, splash-breathe 1.6s 520ms ease-in-out infinite; }
       /* İnce, hepsi büyük harf; harf aralığının sağda bıraktığı boşluk soldaki dolguyla dengelenir (ortada dursun) */
       #splash span { text-transform: uppercase; letter-spacing: 0.24em; padding-left: 0.24em; animation: splash-in 520ms 90ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }

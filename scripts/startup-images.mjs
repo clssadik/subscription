@@ -19,9 +19,7 @@ const DEVICES = [
   [414, 896, 2], // XR, 11
   [375, 667, 2], // SE, 8
 ]
-// Koyu tema tam siyah değil: iPhone açılış görüntüsünü kaldırırken tek karelik kendi grisini (~#0E–#19) gösteriyor;
-// açılış görüntüsü ve açılış ekranı ona yakın koyu gri olunca siyah→gri→siyah çakması görünmez (2026-10-07 ekran kaydında ölçüldü).
-const THEMES = { light: '#F1ECE2', dark: '#121212' }
+const THEMES = { light: '#F1ECE2', dark: '#000000' }
 
 fs.mkdirSync('public/splash', { recursive: true })
 const links = []
