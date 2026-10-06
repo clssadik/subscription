@@ -11,12 +11,12 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-// Açılış ekranını (index.html #splash) göründüğü andan itibaren 1 sn gösterip soldurarak kaldır.
+// Açılış ekranını (index.html #splash) göründüğü andan itibaren 2 sn gösterip soldurarak kaldır.
 // Uygulama daha geç yüklenirse yüklenince kalkar (boş sayfa görünmesin).
 const splash = document.getElementById('splash')
 if (splash) {
   const shownAt = (window as Window & { splashAt?: number }).splashAt ?? 0
-  const wait = Math.max(0, shownAt + 1000 - performance.now())
+  const wait = Math.max(0, shownAt + 2000 - performance.now())
   window.setTimeout(() => {
     splash.classList.add('hide')
     window.setTimeout(() => splash.remove(), 400)
