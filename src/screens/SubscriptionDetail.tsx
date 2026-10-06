@@ -59,7 +59,7 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
       <div data-no-swipe-back>
         <div className="mb-3 flex items-center justify-between">
           <RoundButton label="Geri" onClick={nav.back}><ChevronLeftIcon className="size-5" /></RoundButton>
-          <span className="label text-subtle">Abonelik</span>
+          <span className="text-[17px] font-semibold">Abonelik</span>
           <RoundButton label="Düzenle" onClick={() => nav.edit({ kind: 'subscription', id: sub.id })}><PencilIcon className="size-[18px]" /></RoundButton>
         </div>
 

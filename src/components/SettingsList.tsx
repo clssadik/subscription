@@ -151,7 +151,7 @@ export function SubPageHeader({ title, onBack }: { title: string; onBack: () => 
       <RoundButton label="Geri" onClick={onBack}>
         <ChevronLeftIcon className="size-5" />
       </RoundButton>
-      <span className="label text-subtle">{title}</span>
+      <span className="text-[17px] font-semibold">{title}</span>
       <span className="size-11" />
     </div>
   )

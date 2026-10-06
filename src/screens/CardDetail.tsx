@@ -45,7 +45,7 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
     <>
       <div className="mb-3 flex items-center justify-between">
         <RoundButton label="Geri" onClick={onBack}><ChevronLeftIcon className="size-5" /></RoundButton>
-        <span className="label text-subtle">Kart</span>
+        <span className="text-[17px] font-semibold">Kart</span>
         <RoundButton label="Düzenle" onClick={() => nav.edit({ kind: 'card', id: card.id })}><PencilIcon className="size-[18px]" /></RoundButton>
       </div>
 
