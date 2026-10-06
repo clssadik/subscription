@@ -1,8 +1,8 @@
 import type { CSSProperties } from 'react'
 import { cn } from '@/lib/utils'
 
-/** Uygulama logosu: kutusuz prizma yıldızı (açılış ekranıyla aynı dosya, public/logo-mark.webp; scripts/app-logo.mjs üretir) */
-export const LOGO_URL = '/logo-mark.webp'
+/** Uygulama logosu: kutusuz hayalet (açılış ekranıyla aynı dosya, public/logo-ghost.webp; scripts/app-logo.mjs üretir) */
+export const LOGO_URL = '/logo-ghost.webp'
 
 /**
  * "MONTHWISE" yazısı: ince Outfit, hepsi büyük harf, aralıklı (açılış ekranıyla aynı, index.html #splash).
