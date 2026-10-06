@@ -104,18 +104,31 @@ export function TearTicket({
     return () => rise.cancel()
   }, [restore])
 
-  // Tanıtım: ilk açılışta koçan iki kez biraz kesilip geri açılır
+  // Tanıtım dürtmesi: koçan biraz kesilip bekler ve geri açılır. Tek bir animasyondur: tanıtım kapanınca yarıda
+  // durdurulmaz (koçan yarı kesik kalmasın), kullanıcı koçanı tutunca ya da koparınca animateCut onu keser.
+  function nudge(w: number) {
+    cancelAnimationFrame(tween.current)
+    const t0 = performance.now()
+    const [open, hold, close] = [520, 220, 620]
+    const step = (now: number) => {
+      const t = now - t0
+      const v =
+        t < open ? easeOut(t / open) : t < open + hold ? 1 : t < open + hold + close ? 1 - easeOut((t - open - hold) / close) : 0
+      setCut(w * 0.3 * v)
+      if (t < open + hold + close) tween.current = requestAnimationFrame(step)
+    }
+    tween.current = requestAnimationFrame(step)
+  }
+
+  // Tanıtım: ilk açılışta koçan iki kez biraz kesilip geri açılır.
+  // Kapanınca sadece bekleyen dürtmeler iptal edilir; çalışan animasyon iptal edilmez: ilk koparışta tanıtım kapanıyor
+  // ve burada animasyonu durdurmak koparma animasyonunu da durduruyordu (koçan yarı kesik takılı kalıyor, ödeme işlenmiyordu).
   useEffect(() => {
     if (!showTip || !root.current) return
     const w = root.current.offsetWidth
     setWidth(w)
-    const timers = [700, 2100].map((delay) =>
-      window.setTimeout(() => animateCut(0, w * 0.3, 520, () => window.setTimeout(() => animateCut(w * 0.3, 0, 620), 220)), delay),
-    )
-    return () => {
-      timers.forEach(clearTimeout)
-      cancelAnimationFrame(tween.current)
-    }
+    const timers = [700, 2100].map((delay) => window.setTimeout(() => !start.current && nudge(w), delay))
+    return () => timers.forEach(clearTimeout)
   }, [showTip])
 
   const closeTip = () => {
