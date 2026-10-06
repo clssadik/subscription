@@ -1,8 +1,6 @@
 import type { User } from '@supabase/supabase-js'
 import {
   BellIcon,
-  CalendarDaysIcon,
-  ClockIcon,
   FileTextIcon,
   FlaskConicalIcon,
   LogOutIcon,
@@ -27,7 +25,7 @@ import { formatMoney } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { isInstalled } from '@/lib/install'
 import { randomCards, randomSubscriptions } from '@/lib/seed'
-import { daysLabel, initials, useSettings } from '@/lib/settings'
+import { initials, useSettings } from '@/lib/settings'
 import { play, useSoundEnabled } from '@/lib/sound'
 import { clearCache, useStore } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
@@ -45,7 +43,6 @@ import { SpendingSummary } from './account/SpendingSummary'
 type Page = 'main' | 'profile' | 'notifications' | 'spending' | 'install'
 
 const THEME_LABELS: Record<ThemePref, string> = { auto: 'Otomatik', light: 'Açık', dark: 'Koyu' }
-const SUMMARY_LABELS = { off: 'Kapalı', weekly: 'Haftalık', monthly: 'Aylık' } as const
 
 export function AccountScreen({ user }: { user: User }) {
   const [page, setPage] = useState<Page>('main')
@@ -69,7 +66,7 @@ export function AccountScreen({ user }: { user: User }) {
 function AccountMain({ user, open }: { user: User; open: (page: Page) => void }) {
   const { state, dispatch } = useStore()
   const undoable = useUndoable()
-  const { settings, updateNotify } = useSettings(user.id)
+  const { settings } = useSettings(user.id)
   const { pref, setPref } = useTheme()
   const [sound, setSound] = useSoundEnabled()
   const [legal, setLegal] = useState<LegalPage | null>(null)
@@ -107,7 +104,7 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
         }}
         className="pressable flex w-full items-center gap-3 rounded-[22px] bg-surface p-3.5 text-left"
       >
-        <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-bh-yellow font-label text-xl font-medium text-[#141414]">
+        <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-ink font-label text-xl font-medium text-page">
           {initials(settings.name, email)}
         </span>
         <span className="min-w-0 flex-1">
@@ -118,29 +115,19 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
         </span>
       </button>
 
-      <Group title="Bildirimler">
+      {/* Bütün bildirim ayarları (hatırlatmalar, zamanlama, özet) kendi sayfasında */}
+      <Group>
         <Row
-          icon={<RowIcon Icon={BellIcon} className="bg-bh-yellow text-[#141414]" />}
-          label="Hatırlatmalar"
-          trailing={<Switch label="Hatırlatmalar" checked={notify.enabled} onChange={(enabled) => updateNotify({ enabled })} />}
-        />
-        <Row
-          icon={<RowIcon Icon={ClockIcon} className="bg-bh-blue text-white" />}
-          label="Zamanlama"
-          value={notify.enabled ? `${daysLabel(notify.subscriptionDays)} · ${notify.time}` : 'Kapalı'}
-          onClick={() => open('notifications')}
-        />
-        <Row
-          icon={<RowIcon Icon={CalendarDaysIcon} className="bg-bh-green text-white" />}
-          label="Özet bildirimi"
-          value={notify.enabled ? SUMMARY_LABELS[notify.summary] : 'Kapalı'}
+          icon={<RowIcon Icon={BellIcon} className="bg-bh-red text-white" />}
+          label="Bildirimler"
+          value={notify.enabled ? 'Açık' : 'Kapalı'}
           onClick={() => open('notifications')}
         />
       </Group>
 
       <Group title="Görünüm">
         <Row
-          icon={<RowIcon Icon={pref === 'dark' ? MoonIcon : pref === 'light' ? SunIcon : SmartphoneIcon} className="bg-page" />}
+          icon={<RowIcon Icon={pref === 'dark' ? MoonIcon : pref === 'light' ? SunIcon : SmartphoneIcon} className="bg-[#F28C28] text-white" />}
           label="Tema"
           value={THEME_LABELS[pref]}
           select={
@@ -160,7 +147,7 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
           }
         />
         <Row
-          icon={<RowIcon Icon={Volume2Icon} className="bg-page" />}
+          icon={<RowIcon Icon={Volume2Icon} className="bg-[#E5446D] text-white" />}
           label="Sesler"
           trailing={
             <Switch
@@ -177,19 +164,19 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
 
       <Group title="Diğer">
         <Row
-          icon={<RowIcon Icon={WalletIcon} className="bg-page" />}
+          icon={<RowIcon Icon={WalletIcon} className="bg-bh-green text-white" />}
           label="Harcama özeti"
           value={state.subscriptions.length ? `${formatMoney(monthly)}/ay` : undefined}
           onClick={() => open('spending')}
         />
         <Row
-          icon={<RowIcon Icon={SquarePlusIcon} className="bg-page" />}
+          icon={<RowIcon Icon={SquarePlusIcon} className="bg-[#5856D6] text-white" />}
           label="Ana ekrana ekle"
           value={isInstalled() ? 'Eklendi' : undefined}
           onClick={() => open('install')}
         />
-        <Row icon={<RowIcon Icon={FileTextIcon} className="bg-page" />} label="Kullanım şartları" onClick={() => setLegal('terms')} />
-        <Row icon={<RowIcon Icon={ShieldIcon} className="bg-page" />} label="Gizlilik" onClick={() => setLegal('privacy')} />
+        <Row icon={<RowIcon Icon={FileTextIcon} className="bg-[#8E8E93] text-white" />} label="Kullanım şartları" onClick={() => setLegal('terms')} />
+        <Row icon={<RowIcon Icon={ShieldIcon} className="bg-bh-blue text-white" />} label="Gizlilik" onClick={() => setLegal('privacy')} />
       </Group>
 
       {/* Sadece test hesabında: hızlı deneme için örnek veri */}
