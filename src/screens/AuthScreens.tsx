@@ -351,6 +351,7 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
             className="absolute inset-0 z-10 w-full bg-transparent text-transparent caret-transparent opacity-[0.01] outline-none"
           />
           <span className="grid grid-cols-6 gap-2" aria-hidden>
+            {/* Yazılacak kutu: sarı çerçeve ve (boşsa) iPhone'daki gibi yanıp sönen imleç */}
             {Array.from({ length: CODE_LENGTH }, (_, i) => {
               const active = focused && i === Math.min(code.length, CODE_LENGTH - 1)
               return (
@@ -361,7 +362,7 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
                     active && !done && 'ring-2 ring-bh-yellow',
                   )}
                 >
-                  {code[i] ?? ''}
+                  {code[i] ?? (active && !done && <span className="code-caret h-7 w-0.5 rounded-full bg-ink" />)}
                 </span>
               )
             })}

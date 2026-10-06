@@ -285,6 +285,13 @@ html[data-motion='fade']::view-transition-new(root) { animation-name: vt-fade-in
 }
 .tear-hint { display: inline-block; animation: tear-hint 1.8s ease-in-out infinite; }
 /* Ana ekrana ekleme rehberinde Safari'nin alt çubuğunu gösteren ok: yavaşça aşağı iner, geri gelir */
+/* Kod kutularında yazılacak yerin imleci (giriş kodu ekranı): iPhone'daki gibi yanıp söner */
+@keyframes code-caret {
+  0%, 45% { opacity: 1; }
+  55%, 100% { opacity: 0; }
+}
+.code-caret { animation: code-caret 1s ease-in-out infinite; }
+
 @keyframes install-nudge {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(6px); }
