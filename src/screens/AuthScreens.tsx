@@ -11,6 +11,7 @@ import { holdSignIn, releaseSignIn } from '@/lib/auth'
 import { DEMO_CODE, DEMO_EMAIL, demoSignIn } from '@/lib/demo'
 import { haptic } from '@/lib/haptics'
 import { holdKeyboard } from '@/lib/keyboard'
+import { useSettings, useSettingsSynced } from '@/lib/settings'
 import { isConfigured, supabase } from '@/lib/supabase'
 import { transition } from '@/lib/transition'
 import { cn } from '@/lib/utils'
@@ -373,5 +374,60 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
         <button type="button" onClick={resend} className="font-medium text-ink">Kodu tekrar gönder</button>
       </p>
     </>
+  )
+}
+
+/**
+ * Giriş yaptıktan sonra ad zorunlu: adı olmayan herkes (yeni ya da eski hesap) önce adını girer, atlanamaz.
+ * Hesaptaki ayarlar okunmadan gösterilmez (yeni telefonda ad sunucudan birkaç an sonra geliyor).
+ * Giriş ekranlarıyla aynı düzen; klavye açılınca sayfa kaymaz (data-keep-page, src/lib/keyboard.ts).
+ */
+export function NameGate({ userId }: { userId: string }) {
+  const { settings, update } = useSettings(userId)
+  const synced = useSettingsSynced(userId)
+  const [name, setName] = useState('')
+  const [error, setError] = useState('')
+  if (!synced || settings.name.trim()) return null
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault()
+    const value = name.trim().replace(/\s+/g, ' ')
+    if (value.length < 2) return setError('Ad soyad girin.')
+    haptic()
+    document.querySelector<HTMLInputElement>('#profile-name')?.blur()
+    transition('fade', () => update({ name: value.slice(0, 40) }))
+  }
+
+  return (
+    <main data-screen-active data-keep-page className="app-screen z-50 mx-auto flex max-w-md flex-col bg-page">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-[var(--top-gap)] pb-[max(1.25rem,env(safe-area-inset-bottom))] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex min-h-[calc(100%+1px)] flex-col">
+          <Brand size={40} className="mt-6 justify-center" />
+          <div className="mt-10 text-center">
+            <h1 className="num num-bold text-[30px] leading-tight">Ad soyad</h1>
+            <p className="mt-2 text-sm text-subtle">Hesapta görünecek ad.</p>
+          </div>
+          <form onSubmit={submit} className="mt-8 grid gap-2">
+            <label htmlFor="profile-name" className="sr-only">Ad soyad</label>
+            <input
+              id="profile-name"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value)
+                if (error) setError('')
+              }}
+              placeholder="Ad soyad"
+              autoComplete="name"
+              autoCapitalize="words"
+              enterKeyHint="done"
+              maxLength={40}
+              className={field}
+            />
+            {error && <p className="px-1 text-sm text-bh-red" role="alert">{error}</p>}
+            <button type="submit" disabled={!name.trim()} className={primary}>Devam</button>
+          </form>
+        </div>
+      </div>
+    </main>
   )
 }

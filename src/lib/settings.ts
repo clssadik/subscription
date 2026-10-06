@@ -106,8 +106,10 @@ const subscribe = (l: () => void) => {
   return () => listeners.delete(l)
 }
 
-// Hesaptaki ayarlar her açılışta bir kez okunur
+// Hesaptaki ayarlar her açılışta bir kez okunur. synced: okuma bitti (ad zorunluluğu buna bakar: yeni telefonda ad
+// sunucudan gelmeden "adı yok" sanılıp ad ekranı bir an çıkmasın)
 const loaded = new Set<string>()
+const synced = new Set<string>()
 async function loadRemote(userId: string) {
   if (loaded.has(userId)) return
   loaded.add(userId)
@@ -116,13 +118,20 @@ async function loadRemote(userId: string) {
     loaded.delete(userId)
     return
   }
+  synced.add(userId)
   if (data) {
     const notify = (data.notify ?? {}) as Partial<NotifySettings>
     write(userId, { ...DEFAULT_SETTINGS, name: data.name ?? '', notify: { ...DEFAULT_SETTINGS.notify, ...notify } }, false)
   } else {
     // Hesapta henüz yok (ilk giriş): cihazdakini hesaba kaydet
     push(userId, read(userId))
+    listeners.forEach((l) => l())
   }
+}
+
+/** Hesaptaki ayarlar okundu mu (test hesabında hep evet) */
+export function useSettingsSynced(userId: string) {
+  return useSyncExternalStore(subscribe, () => !remote(userId) || synced.has(userId))
 }
 
 /** Ayarları okur; update ile bir kısmını değiştirir (bildirim ayarları için updateNotify) */

@@ -16,7 +16,7 @@ import { scrollToTop } from '@/lib/useScrollMemory'
 import { useSwipeBack } from '@/lib/useSwipeBack'
 import { cn } from '@/lib/utils'
 import { AccountScreen, AccountSubPage, type AccountPage } from '@/screens/AccountScreen'
-import { AuthFlow } from '@/screens/AuthScreens'
+import { AuthFlow, NameGate } from '@/screens/AuthScreens'
 import { CardDetail } from '@/screens/CardDetail'
 import { CardsScreen } from '@/screens/CardsScreen'
 import { HistoryScreen } from '@/screens/HistoryScreen'
@@ -71,6 +71,8 @@ export default function App() {
       )}
       {/* İlk girişte bir kez bildirim izni (sadece ana ekran uygulamasında, izin henüz sorulmadıysa) */}
       {user && <PermissionGate />}
+      {/* Ad zorunlu: adı olmayan herkes önce adını girer (bildirim izninin de üstünde, ilk o görünür) */}
+      {user && <NameGate userId={user.id} />}
       <Toaster position="top-center" />
     </>
   )
