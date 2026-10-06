@@ -67,7 +67,7 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
             <div className="relative mt-3 flex gap-2 rounded-[18px] bg-line/50 p-1 dark:bg-surface">
               <span
                 aria-hidden
-                className={cn('absolute top-1 bottom-1 left-1 w-[calc(50%-0.5rem)] rounded-[14px] transition-transform duration-1000 ease-[cubic-bezier(0.45,0,0.2,1)]', raised)}
+                className={cn('absolute top-1 bottom-1 left-1 w-[calc(50%-0.5rem)] rounded-[14px] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]', raised)}
                 style={{ transform: kind === 'card' ? 'translateX(calc(100% + 0.5rem))' : 'translateX(0)' }}
               />
               <KindButton active={kind === 'subscription'} onClick={() => pick('subscription')}>
@@ -80,7 +80,7 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
           )}
 
           {/* Abonelik ↔ Kart: iki form yan yana durur, seçiciyle aynı anda ve aynı eğriyle birlikte kayar (eski form bir yandan
-              çıkarken yenisi öbür yandan girer). 1 sn, yavaş başlayıp yavaş duran eğri: hızlı başlayan hâli aceleci bulundu. Panel boyu ikisinden uzun olanınki: zıplamaz.
+              çıkarken yenisi öbür yandan girer). Panel boyu ikisinden uzun olanınki: zıplamaz.
               Düzenlemede sadece o kaydın formu. Görünmeyen form dokunulamaz (inert). */}
           {shown && editing ? (
             shown.kind === 'card' ? (
@@ -92,7 +92,7 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
             shown && (
               <div className="-mx-4 overflow-x-clip px-4">
                 <div
-                  className="flex w-[calc(200%+2rem)] gap-8 transition-transform duration-1000 ease-[cubic-bezier(0.45,0,0.2,1)]"
+                  className="flex w-[calc(200%+2rem)] gap-8 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
                   style={{ transform: kind === 'card' ? 'translateX(calc(-50% - 1rem))' : 'translateX(0)' }}
                 >
                   <div className="flex w-[calc(50%-1rem)] min-w-0 flex-col" inert={kind !== 'subscription'}>
@@ -132,8 +132,9 @@ function glideWithKeyboard(el: HTMLDivElement | null) {
     last = now
     for (const a of el.getAnimations()) if (a.id === 'keyboard-glide') a.cancel()
     if (Math.abs(from) < 2) return
-    // Yeni yerine oturmuş paneli eski yerinden başlatıp kaydırır. iPhone klavyesine yakın eğri: hızlı başlar, yumuşak durur.
-    const glide = el.animate([{ translate: `0 ${from}px` }, { translate: '0 0' }], { duration: 380, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' })
+    // Yeni yerine oturmuş paneli eski yerinden başlatıp kaydırır. Sakin: 0,7 sn, ani başlamadan uzun ve yumuşak durur
+    // (0,38 sn'lik iPhone eğrisi aceleci bulundu).
+    const glide = el.animate([{ translate: `0 ${from}px` }, { translate: '0 0' }], { duration: 700, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)' })
     glide.id = 'keyboard-glide'
   })
   observer.observe(el, { attributes: true, attributeFilter: ['style'] })
