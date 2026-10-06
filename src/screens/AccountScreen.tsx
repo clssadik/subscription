@@ -30,7 +30,6 @@ import { play, useSoundEnabled } from '@/lib/sound'
 import { clearCache, useStore } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
 import { type ThemePref, useTheme } from '@/lib/theme'
-import { transition } from '@/lib/transition'
 import { useUndoable } from '@/lib/undo'
 import { InstallGuide } from './account/InstallGuide'
 import { NotificationSettings } from './account/NotificationSettings'
@@ -40,30 +39,22 @@ import { SpendingSummary } from './account/SpendingSummary'
 // Hesap: iPhone Ayarlar gibi gruplu satırlar. Profil, bildirimler, harcama özeti ve ana ekrana ekle rehberi
 // kendi alt sayfalarında açılır (sağdan kayarak; geri sola).
 
-type Page = 'main' | 'profile' | 'notifications' | 'spending' | 'install'
+export type AccountPage = 'profile' | 'notifications' | 'spending' | 'install'
 
 const THEME_LABELS: Record<ThemePref, string> = { auto: 'Otomatik', light: 'Açık', dark: 'Koyu' }
 
-export function AccountScreen({ user }: { user: User }) {
-  const [page, setPage] = useState<Page>('main')
-
-  function go(next: Page) {
-    transition(next === 'main' ? 'pop' : 'push', () => {
-      setPage(next)
-      // Yeni sayfa en baştan başlasın
-      document.querySelector('[data-screen-active] [data-scroller]')?.scrollTo(0, 0)
-    })
-  }
-  const back = () => go('main')
-
-  if (page === 'profile') return <ProfileEditor user={user} onBack={back} />
-  if (page === 'notifications') return <NotificationSettings userId={user.id} onBack={back} />
-  if (page === 'spending') return <SpendingSummary onBack={back} />
-  if (page === 'install') return <InstallGuide onBack={back} />
-  return <AccountMain user={user} open={go} />
+/**
+ * Hesap'ın alt sayfaları. App.tsx bunları abonelik/kart detayı gibi açar: sağdan kayarak gelir, sağa çekince
+ * alttaki Hesap ekranı görünerek geri dönülür (src/lib/useSwipeBack.ts).
+ */
+export function AccountSubPage({ page, user, onBack }: { page: AccountPage; user: User; onBack: () => void }) {
+  if (page === 'profile') return <ProfileEditor user={user} onBack={onBack} />
+  if (page === 'notifications') return <NotificationSettings userId={user.id} onBack={onBack} />
+  if (page === 'spending') return <SpendingSummary onBack={onBack} />
+  return <InstallGuide onBack={onBack} />
 }
 
-function AccountMain({ user, open }: { user: User; open: (page: Page) => void }) {
+export function AccountScreen({ user, open }: { user: User; open: (page: AccountPage) => void }) {
   const { state, dispatch } = useStore()
   const undoable = useUndoable()
   const { settings } = useSettings(user.id)

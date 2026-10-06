@@ -15,7 +15,7 @@ import { transition, type Motion } from '@/lib/transition'
 import { scrollToTop } from '@/lib/useScrollMemory'
 import { useSwipeBack } from '@/lib/useSwipeBack'
 import { cn } from '@/lib/utils'
-import { AccountScreen } from '@/screens/AccountScreen'
+import { AccountScreen, AccountSubPage, type AccountPage } from '@/screens/AccountScreen'
 import { AuthFlow } from '@/screens/AuthScreens'
 import { CardDetail } from '@/screens/CardDetail'
 import { CardsScreen } from '@/screens/CardsScreen'
@@ -40,7 +40,8 @@ const TAB_ORDER: Tab[] = ['home', 'subscriptions', 'cards', 'history', 'account'
 // Liste sekmeleri: bir kez açılınca hep yerinde kalır, sekme değişince sadece görünen değişir.
 // iPhone, sonradan oluşturulan kayan listeyi ilk dokunuşa kadar tam tanımıyor (ilk kaydırma takılıyordu); kalıcı liste bu sorunu yaşamaz.
 // Kaydırma yeri de kendiliğinden korunur.
-const LIST_TABS: Tab[] = ['home', 'subscriptions', 'cards', 'history']
+// Hesap da kalıcı: alt sayfası (Profil, Bildirimler…) detay gibi üstünde açılır, sağa çekince altında görünür.
+const LIST_TABS: Tab[] = ['home', 'subscriptions', 'cards', 'history', 'account']
 const isListTab = (t: Tab) => LIST_TABS.includes(t)
 
 export default function App() {
@@ -82,17 +83,19 @@ function Main({ user }: { user: User }) {
   const [detailId, setDetailId] = useState<string | null>(null)
   // Kart detayı hangi sekmeden açıldıysa onun üstünde açılır; geri basınca o sekmeye dönülür
   const [cardId, setCardId] = useState<string | null>(null)
+  // Hesap'ın açık alt sayfası (Profil, Bildirimler…): detay sayfası gibi açılır
+  const [accountPage, setAccountPage] = useState<AccountPage | null>(null)
   const [sheet, setSheet] = useState<SheetTarget>(null)
 
   // Sayfa geçişi (iPhone'daki gibi): detay sağ kenardan gelir, eski sayfa biraz sola kayıp kararır; geri dönünce tersi (View Transitions).
   // Alt menüden sekme değişince yeni sayfa sekmenin yönünden kısa bir kaymayla gelir (Web Animations; sekmeler silinmediği için).
   // View Transitions olmayan tarayıcılarda detay geçişleri CSS animasyonuyla olur. Animasyonlar src/index.css'te.
-  const screen = `${tab}:${detailId ?? ''}:${cardId ?? ''}`
+  const screen = `${tab}:${detailId ?? ''}:${cardId ?? ''}:${accountPage ?? ''}`
   // null = geçişi View Transitions yaptı, CSS animasyonu gerekmez
   const [cssMotion, setCssMotion] = useState<Motion | null>(null)
   // Açılmış liste sekmeleri (hep yerinde kalır)
   const [visited, setVisited] = useState<Tab[]>([tab])
-  const listShown = ready && !detailId && !cardId && isListTab(tab)
+  const listShown = ready && !detailId && !cardId && !accountPage && isListTab(tab)
 
   function go(next: Motion, update: () => void) {
     if (next === 'tab-right' || next === 'tab-left') {
@@ -116,7 +119,7 @@ function Main({ user }: { user: User }) {
   // Detay sayfasında sağa çekerek geri dönüş (iPhone gibi): altta önceki sekme görünür. Bırakınca geri dönüş animasyonsuz yapılır,
   // çünkü sayfa zaten parmakla kaydırılıp kapatıldı (src/lib/useSwipeBack.ts).
   const detailPage = useRef<HTMLElement>(null)
-  const inDetail = ready && !!(detailId || cardId)
+  const inDetail = ready && !!(detailId || cardId || accountPage)
   useSwipeBack(detailPage, {
     enabled: inDetail,
     key: screen,
@@ -125,7 +128,8 @@ function Main({ user }: { user: User }) {
       flushSync(() => {
         setCssMotion(null)
         if (detailId) setDetailId(null)
-        else setCardId(null)
+        else if (cardId) setCardId(null)
+        else setAccountPage(null)
       }),
   })
 
@@ -154,6 +158,8 @@ function Main({ user }: { user: User }) {
               key={t}
               data-tab={t}
               data-screen-active={active || undefined}
+              // Hesap iPhone Ayarlar renklerinde (src/index.css)
+              data-settings={t === 'account' || undefined}
               inert={!active}
               aria-hidden={!active || undefined}
               className={cn(
@@ -166,6 +172,11 @@ function Main({ user }: { user: User }) {
               {t === 'subscriptions' && <SubscriptionsScreen nav={nav} />}
               {t === 'cards' && <CardsScreen nav={nav} onSelect={nav.openCard} />}
               {t === 'history' && <HistoryScreen nav={nav} />}
+              {t === 'account' && (
+                <ScrollPage>
+                  <AccountScreen user={user} open={(page) => go('push', () => setAccountPage(page))} />
+                </ScrollPage>
+              )}
             </main>
           )
         })}
@@ -175,7 +186,7 @@ function Main({ user }: { user: User }) {
           ref={detailPage}
           data-screen-active
           // Hesap ve alt sayfaları iPhone Ayarlar renklerinde (src/index.css)
-          data-settings={(ready && !detailId && !cardId && tab === 'account') || undefined}
+          data-settings={(ready && !!accountPage) || undefined}
           // Liste sekmeleri gibi sabit ve kendi kayan alanı var: sayfanın kendisi kaymaz (iPhone'da yukarıdan çekince yenileme olmaz, iki uçta esner)
           className={cn(
             cssMotion && `screen-${cssMotion}`,
@@ -192,7 +203,7 @@ function Main({ user }: { user: User }) {
             ) : cardId ? (
               <CardDetail id={cardId} nav={nav} onBack={() => go('pop', () => setCardId(null))} />
             ) : (
-              tab === 'account' && <AccountScreen user={user} />
+              accountPage && <AccountSubPage page={accountPage} user={user} onBack={() => go('pop', () => setAccountPage(null))} />
             )}
           </ScrollPage>
         </main>
@@ -209,7 +220,7 @@ function Main({ user }: { user: User }) {
         initial={initials(settings.name, user.email ?? '')}
         onTab={(t) => {
           // Açık sekmeye tekrar basınca en başa kay
-          if (t === tab && !detailId && !cardId) {
+          if (t === tab && !detailId && !cardId && !accountPage) {
             scrollToTop(t)
             document.querySelector('[data-screen-active] [data-scroller]')?.scrollTo({ top: 0, behavior: 'smooth' })
             return
@@ -220,6 +231,7 @@ function Main({ user }: { user: User }) {
             setVisited((v) => (v.includes(t) ? v : [...v, t]))
             setDetailId(null)
             setCardId(null)
+            setAccountPage(null)
           })
         }}
       />

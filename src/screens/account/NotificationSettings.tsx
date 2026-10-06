@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import { Logo } from '@/components/Logo'
 import { CheckList, Group, Row, Switch, SubPageHeader } from '@/components/SettingsList'
 import { haptic } from '@/lib/haptics'
-import { sendTestPush, usePush } from '@/lib/push'
+import { usePush } from '@/lib/push'
 import { REMINDER_DAYS, daysLabel, useSettings, type NotifySettings, type ReminderDay } from '@/lib/settings'
 import { useStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
@@ -38,7 +38,7 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
       <PushStatus />
 
       <Group>
-        <Row label="Hatırlatmalar" trailing={<Switch label="Hatırlatmalar" checked={n.enabled} onChange={(enabled) => updateNotify({ enabled })} />} />
+        <Row label="Bildirimler" trailing={<Switch label="Bildirimler" checked={n.enabled} onChange={(enabled) => updateNotify({ enabled })} />} />
       </Group>
 
       {/* Hatırlatmalar kapalıyken ayarlar soluk ve dokunulamaz */}
@@ -51,7 +51,7 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
           <CheckList multiple options={DAY_OPTIONS} value={n.cardDays} onChange={(cardDays) => updateNotify({ cardDays })} disabled={off} />
         </Group>
 
-        <Group title="Saat" footer="Bütün hatırlatmalar bu saatte gelir.">
+        <Group title="Saat" footer="Bütün bildirimler bu saatte gelir.">
           <Row
             label="Bildirim saati"
             value={n.time}
@@ -67,9 +67,9 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
           />
         </Group>
 
-        <Group title="Diğer" footer="Ödenmeyen ödeme ertesi sabah tekrar hatırlatılır.">
+        <Group title="Diğer" footer="Ödenmeyen ödeme için ertesi sabah tekrar bildirim gelir.">
           <Row label="Hesap kesilince haber ver" trailing={<Switch label="Hesap kesilince haber ver" checked={n.statement} onChange={(statement) => updateNotify({ statement })} />} />
-          <Row label="Gecikince tekrar hatırlat" trailing={<Switch label="Gecikince tekrar hatırlat" checked={n.overdue} onChange={(overdue) => updateNotify({ overdue })} />} />
+          <Row label="Gecikince tekrar bildir" trailing={<Switch label="Gecikince tekrar bildir" checked={n.overdue} onChange={(overdue) => updateNotify({ overdue })} />} />
         </Group>
 
         <Group title="Özet" footer={n.summary === 'weekly' ? 'Her pazartesi: o hafta kaç ödeme var, toplam ne kadar.' : n.summary === 'monthly' ? 'Her ayın 1’i: o ay kaç ödeme var, toplam ne kadar.' : undefined}>
@@ -95,7 +95,7 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
                     label={s.name}
                     value={own === undefined ? 'Genel ayar' : own === 'off' ? 'Kapalı' : DAY_LABELS[own]}
                     select={
-                      <select aria-label={`${s.name} hatırlatması`} value={value} onChange={(e) => setOverride(s.id, e.target.value)} className="absolute inset-0 opacity-0">
+                      <select aria-label={`${s.name} bildirimi`} value={value} onChange={(e) => setOverride(s.id, e.target.value)} className="absolute inset-0 opacity-0">
                         <option value="default">Genel ayar ({daysLabel(n.subscriptionDays).toLocaleLowerCase('tr')})</option>
                         {REMINDER_DAYS.map((d) => (
                           <option key={d} value={d}>{DAY_LABELS[d]}</option>
@@ -128,14 +128,6 @@ function PushStatus() {
     setBusy(false)
   }
 
-  async function test(all = false) {
-    setBusy(true)
-    const problem = await sendTestPush(all)
-    setBusy(false)
-    if (problem) toast.error(problem)
-    else toast(all ? 'Her türden bir bildirim gönderildi' : 'Deneme bildirimi gönderildi')
-  }
-
   // Dokunulabilir yazı satırı (iPhone'daki mavi işlem satırları gibi)
   const action = (label: string, onClick: () => void) => (
     <Row label={<span className={cn('text-[var(--ios-blue)]', busy && 'opacity-50')}>{label}</span>} trailing={<span />} onClick={busy ? undefined : onClick} />
@@ -145,8 +137,6 @@ function PushStatus() {
     return (
       <Group title="Bu telefon">
         <Row label="Bildirim izni" value="Açık" />
-        {action('Deneme bildirimi gönder', () => test())}
-        {action('Bütün bildirim türlerini dene', () => test(true))}
       </Group>
     )
   if (state === 'default')

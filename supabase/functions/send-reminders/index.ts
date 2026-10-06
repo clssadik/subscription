@@ -1,5 +1,5 @@
 // Monthwise hatırlatmaları (tutarsız; başlık ve metin tek satıra sığacak kadar kısa, ~38 harf): her 15 dakikada (pg_cron) çağrılır, saati gelmiş kullanıcılara yaklaşan ödemeleri Web Push ile gönderir.
-// Aynı hatırlatma notification_log sayesinde günde bir kez gider. Uygulamadaki "Dene" düğmesi { test: true } ile çağırır.
+// Aynı hatırlatma notification_log sayesinde günde bir kez gider.
 // Tarih kuralları uygulamadakiyle aynı (src/lib/dates.ts): yenilenmeler hep ilk tarihten sayılır, kart son ödemesi = kesim + 10 gün.
 //
 // Gizli değerler (Supabase → Edge Functions → Secrets): VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, CRON_SECRET.
@@ -144,7 +144,6 @@ function group<T extends { user_id: string }>(rows: T[] | null) {
 
 // ---------- Bildirim metinleri ----------
 // Tutar yok. Başlık ne olduğunu, metin ne zaman ve hangi karttan olduğunu söyler; ikisi de tek satıra sığar.
-// Hatırlatmalar ve "bütün türleri dene" aynı metinleri kullanır.
 
 const text = {
   /** "Netflix yarın yenileniyor" / "8 Ekim · Garanti BBVA •• 4821" (kart yoksa "8 Ekim Çarşamba") */
@@ -232,30 +231,6 @@ async function push(sub: PushRow, payload: Record<string, unknown>) {
   }
 }
 
-/** "Bütün türleri dene": her bildirim türünden bir örnek, kullanıcının kendi abonelik ve kartlarıyla (yoksa örnek adlarla) */
-async function samplesFor(userId: string) {
-  const [{ data: subs }, { data: cards }] = await Promise.all([
-    db.from('subscriptions').select('id, user_id, name, card_id, cycle, renewal_date').eq('user_id', userId).order('name'),
-    db.from('cards').select('id, user_id, bank_name, last4, kind, statement_day').eq('user_id', userId).order('bank_name'),
-  ])
-  const today = nowInIstanbul().today
-  const allCards = (cards ?? []) as CardRow[]
-  const card = allCards.find((c) => c.kind === 'credit') ?? allCards[0] ?? { id: '', user_id: userId, bank_name: 'Garanti BBVA', last4: '4821', kind: 'credit', statement_day: 7 }
-  const list = (subs ?? []) as SubRow[]
-  const sub = list.find((s) => s.card_id) ?? list[0] ?? { id: '', user_id: userId, name: 'Netflix', card_id: card.id, cycle: 'monthly', renewal_date: toKey(today) }
-  const subCard = allCards.find((c) => c.id === sub.card_id)
-  const other = list.find((s) => s.id !== sub.id && !s.card_id) ?? { ...sub, name: list[1]?.name ?? 'Spotify', card_id: null }
-  return [
-    text.subDue(sub, subCard, today + 1, 1),
-    text.subDue(other, undefined, today, 0),
-    text.subLate(sub, subCard),
-    text.statement(card, today + 10),
-    text.cardDue(card, today + 3, 3),
-    text.cardLate(card),
-    text.summary(true, [...(list.length ? list.map((s) => s.name).slice(0, 4) : ['Netflix', 'Spotify', 'YouTube']), card.bank_name]),
-  ]
-}
-
 async function runReminders() {
   const now = nowInIstanbul()
   const [{ data: pushRows }, { data: settings }, { data: subs }, { data: cards }, { data: payments }, { data: sentToday }] = await Promise.all([
@@ -297,23 +272,6 @@ async function runReminders() {
 }
 
 Deno.serve(async (req) => {
-  const body = await req.json().catch(() => ({}))
-
-  // Uygulamadaki "Dene": giriş yapmış kullanıcının kendi telefonlarına
-  if (body?.test) {
-    const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? ''
-    const { data } = await db.auth.getUser(token)
-    if (!data.user) return Response.json({ error: 'unauthorized' }, { status: 401 })
-    const { data: devices } = await db.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth').eq('user_id', data.user.id)
-    // Başlık bildirimin konusudur: iPhone altına her zaman "from Monthwise" ekliyor (başlık uygulama adı ya da boş olsa da;
-    // 2026-10-07 telefonda denendi), uygulama adını başlıkta tekrarlamak iki kez yazdırır.
-    const messages = body.test === 'all' ? await samplesFor(data.user.id) : [{ title: 'Deneme bildirimi', body: 'Hatırlatmalar bu telefona gelir.' }]
-    let sent = 0
-    for (const d of (devices ?? []) as PushRow[])
-      for (const [i, msg] of messages.entries()) if (await push(d, { ...msg, tag: `test-${i}`, url: '/' })) sent++
-    return Response.json({ sent })
-  }
-
   if (req.headers.get('x-cron-secret') !== Deno.env.get('CRON_SECRET')) return Response.json({ error: 'unauthorized' }, { status: 401 })
   return Response.json({ sent: await runReminders() })
 })

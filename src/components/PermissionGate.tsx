@@ -57,7 +57,7 @@ export function PermissionGate() {
       </div>
       <section className="rounded-t-[28px] bg-surface px-5 pt-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-ink">
         <h1 className="text-[19px] font-semibold">Bildirimler</h1>
-        <p className="mt-1.5 text-[15px] text-subtle">Yenilenmeden ve son ödemeden önce hatırlatma gönderilir.</p>
+        <p className="mt-1.5 text-[15px] text-subtle">Yenilenmeden ve son ödemeden önce bildirim gelir.</p>
         <button
           type="button"
           onClick={allow}
