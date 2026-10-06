@@ -69,24 +69,23 @@ await sharp(padded)
   .webp({ quality: 90, alphaQuality: 100 })
   .toFile('public/logo-ghost.webp')
 
-// İkon: siyah zemin, üstten yumuşak beyaz ışık; hayalet karenin ~%78'i.
-// Şeffaf kesimden yerleştirilir (kaynağın kendi siyahı ışığın üstünde kare gibi görünmesin)
+// İkon: yukarıdan aşağı koyu mordan siyaha geçen zemin; hayalet karenin ~%79'u.
+// Şeffaf kesimden yerleştirilir (kaynağın kendi siyahı mor zeminde kare gibi görünmesin)
 const S = 1024
-const light = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}">
-  <defs><radialGradient id="l" cx="50%" cy="0%" r="95%">
-    <stop offset="0" stop-color="#FFFFFF" stop-opacity=".5"/>
-    <stop offset=".45" stop-color="#FFFFFF" stop-opacity=".12"/>
-    <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
-  </radialGradient></defs>
-  <rect width="100%" height="100%" fill="#000"/><rect width="100%" height="100%" fill="url(#l)"/>
+const bg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}">
+  <defs><linearGradient id="l" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#2A1B5C"/>
+    <stop offset="1" stop-color="#05040C"/>
+  </linearGradient></defs>
+  <rect width="100%" height="100%" fill="url(#l)"/>
 </svg>`)
-const ghostSide = Math.round(S * 0.78 * (side / (y1 - y0)))
+const ghostSide = Math.round(S * 0.79 * (side / (y1 - y0)))
 const ghost = await sharp(padded)
   .extract({ ...cut, left: cut.left + pad })
   .resize(ghostSide, ghostSide)
   .png()
   .toBuffer()
-await sharp(light)
+await sharp(bg)
   .composite([{ input: ghost, left: Math.round((S - ghostSide) / 2), top: Math.round((S - ghostSide) / 2) }])
   .png()
   .toFile('public/logo.png')
