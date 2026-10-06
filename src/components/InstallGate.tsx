@@ -1,5 +1,5 @@
 import { ArrowDownIcon } from 'lucide-react'
-import logoUrl from '@/assets/subly-logo.svg'
+import logoUrl from '@/assets/subly-logo.png'
 import { isAndroid } from '@/lib/install'
 import { InstallSteps } from '@/screens/account/InstallGuide'
 

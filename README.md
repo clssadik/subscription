@@ -17,7 +17,7 @@ Without `.env.local`, the app runs with a local test account (`test@test.com`, c
 - `npm run dev` — dev server (http://localhost:5173)
 - `npm run build` — production build (`dist/`)
 - `npm run preview` — preview the build locally (service worker is active here)
-- `npm run generate-pwa-assets` — regenerate app icons from `public/favicon.svg`
+- `npm run generate-pwa-assets` — regenerate app icons from `public/logo.png`
 
 ## Structure
 

@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Subly: takvim yaprağı. Siyah zemin, kırmızı üst şerit, ödeme günü sarı nokta. -->
-  <rect width="512" height="512" fill="#141414"/>
-  <rect x="106" y="146" width="300" height="262" rx="52" fill="#F2F2F2"/>
-  <path d="M106 198a52 52 0 0 1 52-52h196a52 52 0 0 1 52 52v38H106z" fill="#D9381E"/>
-  <rect x="180" y="104" width="32" height="84" rx="16" fill="#F2F2F2"/>
-  <rect x="300" y="104" width="32" height="84" rx="16" fill="#F2F2F2"/>
-  <circle cx="320" cy="322" r="44" fill="#F4C21B"/>
-</svg>
