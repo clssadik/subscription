@@ -19,7 +19,9 @@ export default defineConfig({
         short_name: 'Monthwise',
         description: 'Abonelik ve kredi kartı ödemelerini takip et',
         lang: 'tr',
-        theme_color: '#141414',
+        // iPhone sayfa çizilene kadar ekranı bu renkle boyuyor olabilir: koyu gri (#141414) açılışta 2 karelik gri çakma yapıyordu
+        // (2026-10-07 ekran kaydında ölçüldü). Koyu temadaki açılış ekranıyla aynı siyah.
+        theme_color: '#000000',
         background_color: '#F1ECE2',
         display: 'standalone',
         start_url: '/',
