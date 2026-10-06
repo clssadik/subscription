@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { AddSheet, type SheetTarget } from '@/components/AddSheet'
 import { InstallGate } from '@/components/InstallGate'
+import { PermissionGate } from '@/components/PermissionGate'
 import { ScrollPage } from '@/components/ScrollPage'
 import { BottomNav, type Tab } from '@/components/BottomNav'
 import { Toaster } from '@/components/ui/sonner'
@@ -67,6 +68,8 @@ export default function App() {
           <Main user={user} />
         </StoreProvider>
       )}
+      {/* İlk girişte bir kez bildirim izni (sadece ana ekran uygulamasında, izin henüz sorulmadıysa) */}
+      {user && <PermissionGate />}
       <Toaster position="top-center" />
     </>
   )
