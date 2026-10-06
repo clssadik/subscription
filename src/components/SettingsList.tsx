@@ -9,10 +9,11 @@ import { cn } from '@/lib/utils'
 export function Group({ title, footer, children, className }: { title?: string; footer?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <section className={cn('mt-5', className)}>
-      {title && <h2 className="label mb-1.5 px-1 text-subtle">{title}</h2>}
+      {/* Başlık ve açıklama iPhone Ayarlar'daki gibi: sistem yazı tipi, 13pt, satır yazısıyla aynı hizada (src/index.css → .ios-text) */}
+      {title && <h2 className="ios-text mb-1.5 px-3.5 text-[13px] text-subtle uppercase">{title}</h2>}
       {/* Satır arası çizgiler iPhone'daki gibi yazının hizasından başlar (src/index.css → .settings-group) */}
       <div className="settings-group overflow-hidden rounded-[18px] bg-surface">{children}</div>
-      {footer && <p className="mt-1.5 px-1 text-[12px] leading-snug text-subtle">{footer}</p>}
+      {footer && <p className="ios-text mt-1.5 px-3.5 text-[13px] leading-snug text-subtle">{footer}</p>}
     </section>
   )
 }
