@@ -1,35 +1,66 @@
-import { ArrowDownIcon } from 'lucide-react'
-import logoUrl from '@/assets/subly-logo.png'
+import { EllipsisIcon, PlusSquareIcon, ShareIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { isAndroid } from '@/lib/install'
-import { InstallSteps } from '@/screens/account/InstallGuide'
 
 /**
  * Telefonda tarayıcıdan açılınca ilk gelen tam ekran rehber: Monthwise'ı ana ekrana eklemeyi anlatır.
+ * Açılış ekranının devamı gibi: siyah zeminde çiçek, adımlar alttaki panelde (Safari'nin Paylaş düğmesine yakın).
  * Ana ekrandan açılan uygulamada görünmez. "Safari'de devam et" bu oturum için geçer (src/lib/install.ts).
  */
 export function InstallGate({ onContinue }: { onContinue: () => void }) {
   const android = isAndroid()
   return (
-    <main className="app-screen mx-auto flex max-w-md flex-col overflow-y-auto overscroll-contain bg-page px-4 pt-[var(--top-gap)] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-      <img src={logoUrl} alt="" width={52} height={52} className="mt-4 rounded-[13px]" />
-      <h1 className="num num-bold mt-5 text-[30px] leading-[1.15]">Monthwise'ı ana ekranına ekle</h1>
-      <p className="mt-2 text-[15px] leading-relaxed text-subtle">
-        Uygulama gibi tam ekran açılır, adres çubuğu görünmez. Girişin hatırlanır, bildirimler ancak böyle gelebilir.
-      </p>
+    <main className="app-screen mx-auto flex max-w-md flex-col bg-black text-[#F2F2F2]">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3.5 pt-[var(--top-gap)]">
+        <img src="/logo-flower.webp" alt="" width={180} height={180} className="size-[180px] shrink-0" />
+        <span className="font-label text-[26px] leading-none font-semibold tracking-[-0.01em]">Monthwise</span>
+      </div>
 
-      <InstallSteps className="mt-6" />
-
-      <button type="button" onClick={onContinue} className="mt-6 min-h-11 self-center px-4 text-sm text-subtle underline underline-offset-4">
-        Şimdilik {android ? 'tarayıcıda' : "Safari'de"} devam et
-      </button>
-
-      {/* Safari'nin alt çubuğunu gösteren ok (Android'de menü üstte olduğu için yok) */}
-      {!android && (
-        <div aria-hidden className="mt-auto flex flex-col items-center pt-4 text-subtle">
-          <span className="text-[12px]">Paylaş düğmesi aşağıda</span>
-          <ArrowDownIcon className="install-nudge mt-1 size-6" strokeWidth={2} />
-        </div>
-      )}
+      <section className="rounded-t-[28px] bg-surface px-5 pt-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-ink">
+        <h1 className="text-[19px] font-semibold">Ana ekranına ekle</h1>
+        {android ? (
+          <ol className="mt-3 grid gap-1">
+            <Step n={1} icon={<EllipsisIcon className="size-5 rotate-90" />}>
+              Sağ üstteki menü
+            </Step>
+            <Step n={2} icon={<PlusSquareIcon className="size-5" />}>
+              Ana ekrana ekle
+            </Step>
+            <Step n={3} icon={<span className="font-medium text-bh-blue">Ekle</span>}>
+              Ekle ile onayla
+            </Step>
+          </ol>
+        ) : (
+          <ol className="mt-3 grid gap-1">
+            <Step n={1} icon={<ShareIcon className="size-5 text-bh-blue" />}>
+              Alttaki Paylaş <span className="text-subtle">(yoksa önce •••)</span>
+            </Step>
+            <Step n={2} icon={<PlusSquareIcon className="size-5" />}>
+              Ana Ekrana Ekle
+            </Step>
+            <Step n={3} icon={<span className="font-medium text-bh-blue">Ekle</span>}>
+              Sağ üstte Ekle
+            </Step>
+          </ol>
+        )}
+        <button
+          type="button"
+          onClick={onContinue}
+          className="mt-2 min-h-11 w-full text-sm text-subtle underline underline-offset-4"
+        >
+          Şimdilik {android ? 'tarayıcıda' : "Safari'de"} devam et
+        </button>
+      </section>
     </main>
+  )
+}
+
+function Step({ n, icon, children }: { n: number; icon: ReactNode; children: ReactNode }) {
+  return (
+    <li className="flex min-h-10 items-center gap-3.5 text-[15px]">
+      <span className="num num-bold w-3 shrink-0">{n}</span>
+      <span className="min-w-0 flex-1">{children}</span>
+      <span className="flex shrink-0 items-center">{icon}</span>
+    </li>
   )
 }
