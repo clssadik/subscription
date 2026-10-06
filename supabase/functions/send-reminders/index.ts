@@ -262,9 +262,15 @@ Deno.serve(async (req) => {
     const { data } = await db.auth.getUser(token)
     if (!data.user) return Response.json({ error: 'unauthorized' }, { status: 401 })
     const { data: devices } = await db.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth').eq('user_id', data.user.id)
+    // GEÇİCİ DENEME: iPhone başlık uygulama adıyla aynıyken ya da boşken "from Monthwise" satırını gösteriyor mu?
+    // İki bildirim gider; sonuca göre bildirim düzeni seçilip bu eski hâline (tek deneme bildirimi) döner.
+    const variants = [
+      { title: 'Monthwise', body: 'A · Başlık uygulama adı', tag: 'test-a' },
+      { title: '', body: 'B · Başlık boş', tag: 'test-b' },
+    ]
     let sent = 0
     for (const d of (devices ?? []) as PushRow[])
-      if (await push(d, { title: 'Deneme bildirimi', body: 'Hatırlatmalar bu telefona gelir.', tag: 'test', url: '/' })) sent++
+      for (const v of variants) if (await push(d, { ...v, url: '/' })) sent++
     return Response.json({ sent })
   }
 
