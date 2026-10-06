@@ -1,4 +1,4 @@
-// Monthwise hatırlatmaları (metinler tek satıra sığacak kadar kısa, ~38 harf): her 15 dakikada (pg_cron) çağrılır, saati gelmiş kullanıcılara yaklaşan ödemeleri Web Push ile gönderir.
+// Monthwise hatırlatmaları (tutarsız; başlık ve metin tek satıra sığacak kadar kısa, ~38 harf): her 15 dakikada (pg_cron) çağrılır, saati gelmiş kullanıcılara yaklaşan ödemeleri Web Push ile gönderir.
 // Aynı hatırlatma notification_log sayesinde günde bir kez gider. Uygulamadaki "Dene" düğmesi { test: true } ile çağırır.
 // Tarih kuralları uygulamadakiyle aynı (src/lib/dates.ts): yenilenmeler hep ilk tarihten sayılır, kart son ödemesi = kesim + 10 gün.
 //
@@ -99,14 +99,17 @@ function nowInIstanbul() {
 
 const dateLabel = (day: Day) =>
   new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(day * DAY))
-const money = (amount: number, currency: string) =>
-  new Intl.NumberFormat('tr-TR', { style: 'currency', currency }).format(amount)
+/** "17 Ekim Cuma" */
+const dayLabel = (day: Day) =>
+  new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', weekday: 'long', timeZone: 'UTC' }).format(new Date(day * DAY))
+/** Kart kısaca: "Garanti BBVA •• 4821" */
+const cardLabel = (card: CardRow) => `${card.bank_name} •• ${card.last4}`
 const when = (diff: number) => (diff === 0 ? 'bugün' : diff === 1 ? 'yarın' : diff === 7 ? '1 hafta sonra' : `${diff} gün sonra`)
 const cap = (s: string) => s[0].toLocaleUpperCase('tr') + s.slice(1)
 
 // ---------- Veri ----------
 
-type SubRow = { id: string; user_id: string; name: string; amount: number; currency: string; cycle: 'monthly' | 'yearly'; renewal_date: string }
+type SubRow = { id: string; user_id: string; name: string; card_id: string | null; cycle: 'monthly' | 'yearly'; renewal_date: string }
 type CardRow = { id: string; user_id: string; bank_name: string; last4: string; kind: 'credit' | 'debit'; statement_day: number | null }
 type Notify = {
   enabled: boolean
@@ -145,57 +148,73 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Set
   const isPaid = (ref: string, day: Day) => paid.has(`${ref}|${toKey(day)}`)
   const out: Message[] = []
 
+  // Metinlerde tutar yok. Başlık ne olduğunu, metin ne zaman ve hangi karttan olduğunu söyler; ikisi de tek satıra sığar.
+  const cardOf = new Map(cards.map((c) => [c.id, c]))
   for (const sub of subs) {
     const own = notify.perSubscription[sub.id]
     const days = own === 'off' ? [] : own !== undefined ? [own] : notify.subscriptionDays
+    const card = sub.card_id ? cardOf.get(sub.card_id) : undefined
     for (const date of renewalsBetween(sub, today - 1, today + 7)) {
       const diff = date - today
       if (isPaid(sub.id, date)) continue
+      // "Netflix yarın yenileniyor" / "8 Ekim Çarşamba · Garanti BBVA •• 4821"
       if (diff >= 0 && days.includes(diff))
-        out.push({ key: `sub:${sub.id}:${toKey(date)}:${diff}`, title: sub.name, body: `${cap(when(diff))} yenileniyor · ${money(sub.amount, sub.currency)}` })
+        out.push({
+          key: `sub:${sub.id}:${toKey(date)}:${diff}`,
+          title: `${sub.name} ${when(diff)} yenileniyor`,
+          body: card ? `${dateLabel(date)} · ${cardLabel(card)}` : dayLabel(date),
+        })
       if (diff === -1 && notify.overdue && own !== 'off')
-        out.push({ key: `sub-late:${sub.id}:${toKey(date)}`, title: sub.name, body: `Dünkü ödeme işaretlenmedi · ${money(sub.amount, sub.currency)}` })
+        out.push({
+          key: `sub-late:${sub.id}:${toKey(date)}`,
+          title: `${sub.name} ödemesi işaretlenmedi`,
+          body: card ? `Dün yenilendi · ${cardLabel(card)}` : 'Dün yenilendi',
+        })
     }
   }
 
   for (const card of cards) {
     if (card.kind !== 'credit' || card.statement_day == null) continue
-    const title = `${card.bank_name} •• ${card.last4}`
     for (const { statement, due } of cardCyclesBetween(card, today - 1, today + 40)) {
       const diff = due - today
+      // "Garanti BBVA ekstresi kesildi" / "•• 4821 · son ödeme 17 Ekim Cuma"
       if (notify.statement && statement === today)
-        out.push({ key: `stmt:${card.id}:${toKey(statement)}`, title, body: `Ekstre kesildi · son ödeme ${dateLabel(due)}` })
+        out.push({ key: `stmt:${card.id}:${toKey(statement)}`, title: `${card.bank_name} ekstresi kesildi`, body: `•• ${card.last4} · son ödeme ${dayLabel(due)}` })
       if (isPaid(card.id, due)) continue
       if (diff >= 0 && notify.cardDays.includes(diff))
-        out.push({ key: `card:${card.id}:${toKey(due)}:${diff}`, title, body: `Son ödeme ${when(diff)} · ${dateLabel(due)}` })
+        out.push({ key: `card:${card.id}:${toKey(due)}:${diff}`, title: `${card.bank_name} son ödemesi ${when(diff)}`, body: `•• ${card.last4} · ${dayLabel(due)}` })
       if (diff === -1 && notify.overdue)
-        out.push({ key: `card-late:${card.id}:${toKey(due)}`, title, body: 'Son ödeme dündü · işaretlenmedi' })
+        out.push({ key: `card-late:${card.id}:${toKey(due)}`, title: `${card.bank_name} son ödemesi geçti`, body: `•• ${card.last4} · ödendi işaretlenmedi` })
     }
   }
 
-  // Özet: pazartesi o haftanın, ayın 1'inde o ayın ödemeleri
+  // Özet: pazartesi o haftanın, ayın 1'inde o ayın ödemeleri. "Bu hafta 4 ödeme" / "Netflix, Spotify, Garanti BBVA +1"
   const weekly = notify.summary === 'weekly' && now.weekday === 1
   const monthly = notify.summary === 'monthly' && now.dayOfMonth === 1
   if (weekly || monthly) {
     const { y, m } = parts(today)
     const end = weekly ? today + 6 : dayOf(y, m, daysInMonth(y, m))
-    const totals = new Map<string, number>()
-    let count = 0
+    const due: { day: Day; name: string }[] = []
     for (const sub of subs)
-      for (const date of renewalsBetween(sub, today, end))
-        if (!isPaid(sub.id, date)) {
-          count++
-          totals.set(sub.currency, (totals.get(sub.currency) ?? 0) + Number(sub.amount))
-        }
-    let cardCount = 0
+      for (const date of renewalsBetween(sub, today, end)) if (!isPaid(sub.id, date)) due.push({ day: date, name: sub.name })
     for (const card of cards)
       if (card.kind === 'credit' && card.statement_day != null)
-        cardCount += cardCyclesBetween(card, today, end).filter((c) => !isPaid(card.id, c.due)).length
-    if (count + cardCount > 0) {
-      const sums = [...totals].map(([c, a]) => money(a, c)).join(' + ')
-      // Tek satıra sığsın: "3 abonelik, 1 kart · ₺501,99" ya da sadece "2 kart ödemesi"
-      const body = count ? `${count} abonelik${cardCount ? `, ${cardCount} kart` : ''} · ${sums}` : `${cardCount} kart ödemesi`
-      out.push({ key: `summary:${weekly ? 'w' : 'm'}`, title: weekly ? 'Bu hafta' : 'Bu ay', body })
+        for (const c of cardCyclesBetween(card, today, end)) if (!isPaid(card.id, c.due)) due.push({ day: c.due, name: card.bank_name })
+    if (due.length > 0) {
+      due.sort((a, b) => a.day - b.day)
+      // Tek satıra sığdığı kadar ad, kalanı "+2"
+      const names: string[] = []
+      for (const d of due) {
+        const next = [...names, d.name].join(', ')
+        if (names.length && next.length > 30) break
+        names.push(d.name)
+      }
+      const rest = due.length - names.length
+      out.push({
+        key: `summary:${weekly ? 'w' : 'm'}`,
+        title: `${weekly ? 'Bu hafta' : 'Bu ay'} ${due.length} ödeme`,
+        body: names.join(', ') + (rest > 0 ? ` +${rest}` : ''),
+      })
     }
   }
   return out
@@ -219,7 +238,7 @@ async function runReminders() {
   const [{ data: pushRows }, { data: settings }, { data: subs }, { data: cards }, { data: payments }, { data: sentToday }] = await Promise.all([
     db.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth'),
     db.from('user_settings').select('user_id, notify'),
-    db.from('subscriptions').select('id, user_id, name, amount, currency, cycle, renewal_date'),
+    db.from('subscriptions').select('id, user_id, name, card_id, cycle, renewal_date'),
     db.from('cards').select('id, user_id, bank_name, last4, kind, statement_day'),
     db.from('payments').select('user_id, ref_id, due_date').gte('due_date', toKey(now.today - 60)),
     db.from('notification_log').select('user_id, key').eq('sent_on', toKey(now.today)),
