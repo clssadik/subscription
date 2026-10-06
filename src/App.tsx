@@ -171,6 +171,8 @@ function Main({ user }: { user: User }) {
           key={ready ? screen : 'loading'}
           ref={detailPage}
           data-screen-active
+          // Hesap ve alt sayfaları iPhone Ayarlar renklerinde (src/index.css)
+          data-settings={(ready && !detailId && !cardId && tab === 'account') || undefined}
           // Liste sekmeleri gibi sabit ve kendi kayan alanı var: sayfanın kendisi kaymaz (iPhone'da yukarıdan çekince yenileme olmaz, iki uçta esner)
           className={cn(
             cssMotion && `screen-${cssMotion}`,

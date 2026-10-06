@@ -138,7 +138,7 @@ function PushStatus() {
 
   // Dokunulabilir yazı satırı (iPhone'daki mavi işlem satırları gibi)
   const action = (label: string, onClick: () => void) => (
-    <Row label={<span className={cn('text-bh-blue dark:text-[#6E9BFF]', busy && 'opacity-50')}>{label}</span>} trailing={<span />} onClick={busy ? undefined : onClick} />
+    <Row label={<span className={cn('text-[var(--ios-blue)]', busy && 'opacity-50')}>{label}</span>} trailing={<span />} onClick={busy ? undefined : onClick} />
   )
 
   if (state === 'on')

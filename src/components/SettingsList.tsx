@@ -50,7 +50,7 @@ export function Row({
   const body = (
     <>
       {icon}
-      <span className={cn('min-w-0 flex-1 truncate', danger && 'text-bh-red')}>{label}</span>
+      <span className={cn('min-w-0 flex-1 truncate', danger && 'text-[var(--ios-red)]')}>{label}</span>
       {value != null && <span className="shrink-0 text-[15px] text-subtle">{value}</span>}
       {trailing}
       {(onClick || select) && !trailing && <ChevronRightIcon className="size-4 shrink-0 text-subtle/70" />}
@@ -91,7 +91,7 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
       }}
       className={cn(
         'relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors duration-200',
-        checked ? 'bg-bh-green' : 'bg-line',
+        checked ? 'bg-[var(--ios-green)]' : 'bg-line',
       )}
     >
       <span
@@ -138,7 +138,7 @@ export function CheckList<T extends string | number>({
         className="flex min-h-[48px] w-full items-center gap-3 px-3.5 text-left text-[15px] active:bg-line/60"
       >
         <span className="min-w-0 flex-1 truncate">{o.label}</span>
-        {on && <CheckIcon className="size-[18px] shrink-0 text-bh-blue dark:text-[#6E9BFF]" strokeWidth={2.4} />}
+        {on && <CheckIcon className="size-[18px] shrink-0 text-[var(--ios-blue)]" strokeWidth={2.4} />}
       </button>
     )
   })
