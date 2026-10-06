@@ -124,8 +124,9 @@ const KEYBOARD_EASE = 'cubic-bezier(0.32, 0.72, 0, 1)'
  * Panel klavyeyle birlikte hareket etsin. Safari klavyeyi açılırken geç (hareket başladıktan sonra), kapanırken daha da geç
  * (bittikten sonra) bildiriyor; vaul paneli ancak o zaman yeni yerine koyuyor (boy ve alt boşluk). Panel bu yüzden hep
  * klavyenin arkasından geliyordu (2026-10-07 ekran kaydında görüldü).
- * 1. Öncü hareket: alana dokunulunca (klavye açılacak) ya da alandan çıkılınca (kapanacak) panel beklemeden, klavyeyle aynı
- *    hızda tahmini yerine kaymaya başlar. Tahmin, bir önceki açılışta ölçülen klavye boyundan (src/lib/keyboard.ts).
+ * 1. Öncü hareket: alana dokunulunca (klavye açılacak) panel beklemeden, klavyeyle aynı hızda tahmini yerine kaymaya başlar.
+ *    Tahmin, bir önceki açılışta ölçülen klavye boyundan (src/lib/keyboard.ts). Alandan çıkılınca (kapanacak) panel hemen
+ *    klavyesiz yerine konur (aşağıdaki onFocusOut).
  * 2. vaul yeni yeri koyunca panel o anda göründüğü yerden kesintisiz devam ederek yerine oturur.
  * Kayma "translate" ile: formu her karede yeniden yerleştirmez (boyu canlandırmak takılıyordu), vaul'un transform'una karışmaz.
  * Panel aşağı inerken altta kalan boşluğu vaul'un panelin altındaki uzantısı (::after) kapatır.
@@ -163,16 +164,21 @@ function glideWithKeyboard(el: HTMLDivElement | null) {
 
   let size = `${el.style.height}|${el.style.bottom}`
   let last = reach()
-  // Klavye açılmadan önceki üst kenar (kapanırken öncü hareketin hedefi)
-  let restingReach = last
+  // Klavye açılmadan önceki boy
+  let restingHeight = el.offsetHeight
+  // Klavye kapanırken: panel tam boyuyla iner, vaul kapanma sırasında onu yeniden kısaltamaz
+  let closing = 0
   const observer = new MutationObserver(() => {
+    if (closing && (el.style.bottom !== '0px' || el.style.height !== `${restingHeight}px`)) {
+      el.style.bottom = '0px'
+      el.style.height = `${restingHeight}px`
+    }
     const next = `${el.style.height}|${el.style.bottom}`
     if (next === size) return
     size = next
     const now = reach()
     const moved = now - last
     last = now
-    if (!keyboardOpen()) restingReach = now
     // Yeni yerine oturan panel, o an göründüğü yerden (öncü hareket ne kadar yol aldıysa) devam eder
     glideTo(moved + currentShift(), 0)
   })
@@ -181,24 +187,39 @@ function glideWithKeyboard(el: HTMLDivElement | null) {
   // yeri koyduğunda kayma yanlış yerden başlayıp panel zıplıyordu
   const sizes = new ResizeObserver(() => {
     last = reach()
-    if (!keyboardOpen()) restingReach = last
+    if (!keyboardOpen() && !closing) restingHeight = el.offsetHeight
   })
   sizes.observe(el)
 
   // Öncü hareket: klavye açılacak
   const onFocusIn = (e: FocusEvent) => {
+    if (opensKeyboard(e.target)) endClosing()
     if (!opensKeyboard(e.target) || keyboardOpen()) return
     const k = keyboardHeight()
     if (!k) return
-    restingReach = reach()
+    restingHeight = el.offsetHeight
     // vaul paneli klavyenin üstüne koyar, üstte biraz pay bırakarak kısaltır: en fazla o kadar yukarı çıkar
     const room = Math.max(0, el.getBoundingClientRect().top - currentShift() - 26)
     glideTo(currentShift(), -Math.min(k, room), 'forwards')
   }
-  // Öncü hareket: klavye kapanacak (başka bir yazı alanına geçilmiyorsa)
+  // Klavye kapanacak (tik, dışarı dokunma; başka bir yazı alanına geçilmiyorsa): panel hemen tam boyuna döner ve olduğu yerden
+  // klavyeyle birlikte iner. Kısa boyda inip sonunda birden uzayınca "Kart" ve "Kaydet" sonradan beliriyordu (ekran kaydında görüldü).
+  // vaul'un kapanma sırasındaki ara boyutları yok sayılır; klavye tamamen inince (ya da en geç 1 sn sonra) kendisine bırakılır.
+  const endClosing = () => {
+    window.clearTimeout(closing)
+    closing = 0
+    vv?.removeEventListener('resize', onClosed)
+  }
+  const onClosed = () => {
+    if (!keyboardOpen()) endClosing()
+  }
   const onFocusOut = (e: FocusEvent) => {
     if (!opensKeyboard(e.target) || opensKeyboard(e.relatedTarget) || !keyboardOpen()) return
-    glideTo(currentShift(), reach() - restingReach, 'forwards')
+    endClosing()
+    closing = window.setTimeout(endClosing, 1000)
+    vv?.addEventListener('resize', onClosed)
+    el.style.bottom = '0px'
+    el.style.height = `${restingHeight}px`
   }
   // Panel kapanıp DOM'dan çıkınca gözlemciler ve dinleyiciler onunla birlikte gider
   el.addEventListener('focusin', onFocusIn)
