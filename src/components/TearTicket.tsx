@@ -235,7 +235,12 @@ export function TearTicket({
           const my = e.clientY - s.y
           if (!s.dir && (Math.abs(mx) > 8 || Math.abs(my) > 8)) {
             s.dir = Math.abs(mx) > Math.abs(my) ? 'h' : 'v'
-            if (s.dir === 'h') e.currentTarget.setPointerCapture(e.pointerId)
+            if (s.dir === 'h')
+              try {
+                e.currentTarget.setPointerCapture(e.pointerId)
+              } catch {
+                // parmak zaten kalkmışsa yakalanamaz; hareket yine izlenir
+              }
           }
           if (s.dir !== 'h') return
           const next = Math.min(width, Math.max(0, mx))
