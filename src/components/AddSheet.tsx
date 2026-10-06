@@ -77,7 +77,8 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
   return (
     <Drawer open={!!target} onOpenChange={(o) => !o && close()}>
       <DrawerContent className="max-h-[94svh] rounded-t-[30px] border-0 bg-page data-[vaul-drawer-direction=bottom]:max-h-[94svh]">
-        <div className="mx-auto w-full max-w-md overflow-y-auto px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        {/* Kayan alan: min-h-0 ile panel kısalınca (klavye açılınca) o da kısalır ve içerik aşağı yukarı kaydırılabilir */}
+        <div className="mx-auto min-h-0 w-full max-w-md overflow-y-auto overscroll-contain px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <DrawerTitle className="num pt-3 pb-1 text-center text-lg font-medium">
             {editing ? (kind === 'card' ? 'Kartı düzenle' : 'Aboneliği düzenle') : 'Yeni ekle'}
           </DrawerTitle>

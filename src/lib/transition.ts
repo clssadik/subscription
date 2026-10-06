@@ -55,6 +55,11 @@ export function guardDocumentScroll() {
       // iPhone'daki gibi: geçiş sürerken dokununca animasyon kesilir, sayfa hemen son hâline gelir ve parmak onu kaydırır
       running?.skipTransition()
       const t = e.target
+      // Alttan açılan panel (ekleme/düzenleme) kendi kaydırmasını yönetir; klavye açıkken sayfa kaymış olsa da dokunulmaz
+      if (t instanceof Element && t.closest('[data-vaul-drawer]')) {
+        drag = null
+        return
+      }
       const risky = performance.now() < busyUntil || t === document.documentElement || t === document.body || window.scrollY !== 0
       // Liste ilk harekette seçilir: dokunuş anında açık sayfa değişebiliyor (ör. sağa çekip kapanan sayfa hemen bitirilir)
       drag = risky ? { y: e.touches[0].clientY, t: e.timeStamp, v: 0, list: null } : null
