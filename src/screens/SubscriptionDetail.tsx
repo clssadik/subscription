@@ -55,8 +55,8 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
   return (
     <>
       {/* Üst kısım (başlık satırı ve fiş): sağa çekmek koçanı keser, sayfanın sağa çekerek geri dönüşü burada çalışmaz.
-          Koçan ince bir şerit; parmak biraz üstünden başlayınca geri dönülüyordu. Aşağıdan sağa çekince geri dönülür. */}
-      <div data-no-swipe-back>
+          "band": bu yükseklikte ekranın kenarları da dahil (koçanı kesmeye ekranın sol kenarından başlanıyordu). Aşağıdan sağa çekince geri dönülür. */}
+      <div data-no-swipe-back="band">
         <div className="mb-3 flex items-center justify-between">
           <RoundButton label="Geri" onClick={nav.back}><ChevronLeftIcon className="size-5" /></RoundButton>
           <span className="text-[17px] font-semibold">Abonelik</span>

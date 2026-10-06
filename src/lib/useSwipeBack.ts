@@ -63,6 +63,11 @@ export function useSwipeBack(
     const down = (e: PointerEvent) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return
       if ((e.target as Element).closest('[data-no-swipe-back], input, textarea, select')) return
+      // data-no-swipe-back="band": o yükseklikte ekranın tüm genişliği kapalı (kenardaki boşluktan başlayan parmak da)
+      for (const band of el.querySelectorAll<HTMLElement>('[data-no-swipe-back="band"]')) {
+        const r = band.getBoundingClientRect()
+        if (e.clientY >= r.top && e.clientY <= r.bottom) return
+      }
       start = { x: e.clientX, y: e.clientY, id: e.pointerId }
       active = false
     }
