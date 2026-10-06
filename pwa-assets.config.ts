@@ -1,6 +1,6 @@
 import { defineConfig, minimal2023Preset } from '@vite-pwa/assets-generator/config'
 
-// İkonlar public/logo.png'den üretilir (siyah zeminde hayalet; scripts/app-logo.mjs üretir).
+// İkonlar public/logo.png'den üretilir (siyah zeminde üstten beyaz ışıklı hayalet; scripts/app-logo.mjs üretir).
 // Logonun kendi içinde boşluğu var: üretici ayrıca kenar boşluğu eklemesin, zemin de logonunki olsun (iPhone köşeleri kendisi yuvarlar).
 // Maskable ikonda Android şekli kırptığı için hayalet biraz küçültülür.
 export default defineConfig({

@@ -69,18 +69,25 @@ await sharp(padded)
   .webp({ quality: 90, alphaQuality: 100 })
   .toFile('public/logo-ghost.webp')
 
-// İkon: hayalet karenin ~%76'sı, siyah zemin
-const iconSide = Math.round((y1 - y0) / 0.76)
-const ix = Math.round(cx - iconSide / 2)
-const iy = Math.round(cy - iconSide / 2)
-const ipad = Math.max(0, -ix, -iy, ix + iconSide - W, iy + iconSide - H)
-const framed = await sharp(data, { raw: { width: W, height: H, channels: 3 } })
-  .extend({ top: ipad, bottom: ipad, left: ipad, right: ipad, background: '#000000' })
+// İkon: siyah zemin, üstten yumuşak beyaz ışık; hayalet karenin ~%78'i.
+// Şeffaf kesimden yerleştirilir (kaynağın kendi siyahı ışığın üstünde kare gibi görünmesin)
+const S = 1024
+const light = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}">
+  <defs><radialGradient id="l" cx="50%" cy="0%" r="95%">
+    <stop offset="0" stop-color="#FFFFFF" stop-opacity=".5"/>
+    <stop offset=".45" stop-color="#FFFFFF" stop-opacity=".12"/>
+    <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+  </radialGradient></defs>
+  <rect width="100%" height="100%" fill="#000"/><rect width="100%" height="100%" fill="url(#l)"/>
+</svg>`)
+const ghostSide = Math.round(S * 0.78 * (side / (y1 - y0)))
+const ghost = await sharp(padded)
+  .extract({ ...cut, left: cut.left + pad })
+  .resize(ghostSide, ghostSide)
   .png()
   .toBuffer()
-await sharp(framed)
-  .extract({ left: ix + ipad, top: iy + ipad, width: iconSide, height: iconSide })
-  .resize(1024, 1024)
+await sharp(light)
+  .composite([{ input: ghost, left: Math.round((S - ghostSide) / 2), top: Math.round((S - ghostSide) / 2) }])
   .png()
   .toFile('public/logo.png')
 
