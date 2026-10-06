@@ -142,13 +142,41 @@ function group<T extends { user_id: string }>(rows: T[] | null) {
   return map
 }
 
+// ---------- Bildirim metinleri ----------
+// Tutar yok. Başlık ne olduğunu, metin ne zaman ve hangi karttan olduğunu söyler; ikisi de tek satıra sığar.
+// Hatırlatmalar ve "bütün türleri dene" aynı metinleri kullanır.
+
+const text = {
+  /** "Netflix yarın yenileniyor" / "8 Ekim · Garanti BBVA •• 4821" (kart yoksa "8 Ekim Çarşamba") */
+  subDue: (sub: SubRow, card: CardRow | undefined, date: Day, diff: number) => ({
+    title: `${sub.name} ${when(diff)} yenileniyor`,
+    body: card ? `${dateLabel(date)} · ${cardLabel(card)}` : dayLabel(date),
+  }),
+  subLate: (sub: SubRow, card: CardRow | undefined) => ({
+    title: `${sub.name} ödemesi işaretlenmedi`,
+    body: card ? `Dün yenilendi · ${cardLabel(card)}` : 'Dün yenilendi',
+  }),
+  statement: (card: CardRow, due: Day) => ({ title: `${card.bank_name} ekstresi kesildi`, body: `•• ${card.last4} · son ödeme ${dayLabel(due)}` }),
+  cardDue: (card: CardRow, due: Day, diff: number) => ({ title: `${card.bank_name} son ödemesi ${when(diff)}`, body: `•• ${card.last4} · ${dayLabel(due)}` }),
+  cardLate: (card: CardRow) => ({ title: `${card.bank_name} son ödemesi geçti`, body: `•• ${card.last4} · ödendi işaretlenmedi` }),
+  /** "Bu hafta 4 ödeme" / "Netflix, Spotify, Garanti BBVA +1" (sığdığı kadar ad, kalanı sayı) */
+  summary: (weekly: boolean, names: string[]) => {
+    const shown: string[] = []
+    for (const name of names) {
+      if (shown.length && [...shown, name].join(', ').length > 30) break
+      shown.push(name)
+    }
+    const rest = names.length - shown.length
+    return { title: `${weekly ? 'Bu hafta' : 'Bu ay'} ${names.length} ödeme`, body: shown.join(', ') + (rest > 0 ? ` +${rest}` : '') }
+  },
+}
+
 /** Bir kullanıcının bugün gönderilecek hatırlatmaları */
 function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Set<string>, now: ReturnType<typeof nowInIstanbul>): Message[] {
   const { today } = now
   const isPaid = (ref: string, day: Day) => paid.has(`${ref}|${toKey(day)}`)
   const out: Message[] = []
 
-  // Metinlerde tutar yok. Başlık ne olduğunu, metin ne zaman ve hangi karttan olduğunu söyler; ikisi de tek satıra sığar.
   const cardOf = new Map(cards.map((c) => [c.id, c]))
   for (const sub of subs) {
     const own = notify.perSubscription[sub.id]
@@ -157,19 +185,8 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Set
     for (const date of renewalsBetween(sub, today - 1, today + 7)) {
       const diff = date - today
       if (isPaid(sub.id, date)) continue
-      // "Netflix yarın yenileniyor" / "8 Ekim Çarşamba · Garanti BBVA •• 4821"
-      if (diff >= 0 && days.includes(diff))
-        out.push({
-          key: `sub:${sub.id}:${toKey(date)}:${diff}`,
-          title: `${sub.name} ${when(diff)} yenileniyor`,
-          body: card ? `${dateLabel(date)} · ${cardLabel(card)}` : dayLabel(date),
-        })
-      if (diff === -1 && notify.overdue && own !== 'off')
-        out.push({
-          key: `sub-late:${sub.id}:${toKey(date)}`,
-          title: `${sub.name} ödemesi işaretlenmedi`,
-          body: card ? `Dün yenilendi · ${cardLabel(card)}` : 'Dün yenilendi',
-        })
+      if (diff >= 0 && days.includes(diff)) out.push({ key: `sub:${sub.id}:${toKey(date)}:${diff}`, ...text.subDue(sub, card, date, diff) })
+      if (diff === -1 && notify.overdue && own !== 'off') out.push({ key: `sub-late:${sub.id}:${toKey(date)}`, ...text.subLate(sub, card) })
     }
   }
 
@@ -177,18 +194,14 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Set
     if (card.kind !== 'credit' || card.statement_day == null) continue
     for (const { statement, due } of cardCyclesBetween(card, today - 1, today + 40)) {
       const diff = due - today
-      // "Garanti BBVA ekstresi kesildi" / "•• 4821 · son ödeme 17 Ekim Cuma"
-      if (notify.statement && statement === today)
-        out.push({ key: `stmt:${card.id}:${toKey(statement)}`, title: `${card.bank_name} ekstresi kesildi`, body: `•• ${card.last4} · son ödeme ${dayLabel(due)}` })
+      if (notify.statement && statement === today) out.push({ key: `stmt:${card.id}:${toKey(statement)}`, ...text.statement(card, due) })
       if (isPaid(card.id, due)) continue
-      if (diff >= 0 && notify.cardDays.includes(diff))
-        out.push({ key: `card:${card.id}:${toKey(due)}:${diff}`, title: `${card.bank_name} son ödemesi ${when(diff)}`, body: `•• ${card.last4} · ${dayLabel(due)}` })
-      if (diff === -1 && notify.overdue)
-        out.push({ key: `card-late:${card.id}:${toKey(due)}`, title: `${card.bank_name} son ödemesi geçti`, body: `•• ${card.last4} · ödendi işaretlenmedi` })
+      if (diff >= 0 && notify.cardDays.includes(diff)) out.push({ key: `card:${card.id}:${toKey(due)}:${diff}`, ...text.cardDue(card, due, diff) })
+      if (diff === -1 && notify.overdue) out.push({ key: `card-late:${card.id}:${toKey(due)}`, ...text.cardLate(card) })
     }
   }
 
-  // Özet: pazartesi o haftanın, ayın 1'inde o ayın ödemeleri. "Bu hafta 4 ödeme" / "Netflix, Spotify, Garanti BBVA +1"
+  // Özet: pazartesi o haftanın, ayın 1'inde o ayın ödemeleri (tarih sırasıyla)
   const weekly = notify.summary === 'weekly' && now.weekday === 1
   const monthly = notify.summary === 'monthly' && now.dayOfMonth === 1
   if (weekly || monthly) {
@@ -200,22 +213,8 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Set
     for (const card of cards)
       if (card.kind === 'credit' && card.statement_day != null)
         for (const c of cardCyclesBetween(card, today, end)) if (!isPaid(card.id, c.due)) due.push({ day: c.due, name: card.bank_name })
-    if (due.length > 0) {
-      due.sort((a, b) => a.day - b.day)
-      // Tek satıra sığdığı kadar ad, kalanı "+2"
-      const names: string[] = []
-      for (const d of due) {
-        const next = [...names, d.name].join(', ')
-        if (names.length && next.length > 30) break
-        names.push(d.name)
-      }
-      const rest = due.length - names.length
-      out.push({
-        key: `summary:${weekly ? 'w' : 'm'}`,
-        title: `${weekly ? 'Bu hafta' : 'Bu ay'} ${due.length} ödeme`,
-        body: names.join(', ') + (rest > 0 ? ` +${rest}` : ''),
-      })
-    }
+    if (due.length > 0)
+      out.push({ key: `summary:${weekly ? 'w' : 'm'}`, ...text.summary(weekly, due.sort((a, b) => a.day - b.day).map((d) => d.name)) })
   }
   return out
 }
@@ -231,6 +230,30 @@ async function push(sub: PushRow, payload: Record<string, unknown>) {
     else console.error('push failed', status, (e as Error).message)
     return false
   }
+}
+
+/** "Bütün türleri dene": her bildirim türünden bir örnek, kullanıcının kendi abonelik ve kartlarıyla (yoksa örnek adlarla) */
+async function samplesFor(userId: string) {
+  const [{ data: subs }, { data: cards }] = await Promise.all([
+    db.from('subscriptions').select('id, user_id, name, card_id, cycle, renewal_date').eq('user_id', userId).order('name'),
+    db.from('cards').select('id, user_id, bank_name, last4, kind, statement_day').eq('user_id', userId).order('bank_name'),
+  ])
+  const today = nowInIstanbul().today
+  const allCards = (cards ?? []) as CardRow[]
+  const card = allCards.find((c) => c.kind === 'credit') ?? allCards[0] ?? { id: '', user_id: userId, bank_name: 'Garanti BBVA', last4: '4821', kind: 'credit', statement_day: 7 }
+  const list = (subs ?? []) as SubRow[]
+  const sub = list.find((s) => s.card_id) ?? list[0] ?? { id: '', user_id: userId, name: 'Netflix', card_id: card.id, cycle: 'monthly', renewal_date: toKey(today) }
+  const subCard = allCards.find((c) => c.id === sub.card_id)
+  const other = list.find((s) => s.id !== sub.id && !s.card_id) ?? { ...sub, name: list[1]?.name ?? 'Spotify', card_id: null }
+  return [
+    text.subDue(sub, subCard, today + 1, 1),
+    text.subDue(other, undefined, today, 0),
+    text.subLate(sub, subCard),
+    text.statement(card, today + 10),
+    text.cardDue(card, today + 3, 3),
+    text.cardLate(card),
+    text.summary(true, [...(list.length ? list.map((s) => s.name).slice(0, 4) : ['Netflix', 'Spotify', 'YouTube']), card.bank_name]),
+  ]
 }
 
 async function runReminders() {
@@ -284,9 +307,10 @@ Deno.serve(async (req) => {
     const { data: devices } = await db.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth').eq('user_id', data.user.id)
     // Başlık bildirimin konusudur: iPhone altına her zaman "from Monthwise" ekliyor (başlık uygulama adı ya da boş olsa da;
     // 2026-10-07 telefonda denendi), uygulama adını başlıkta tekrarlamak iki kez yazdırır.
+    const messages = body.test === 'all' ? await samplesFor(data.user.id) : [{ title: 'Deneme bildirimi', body: 'Hatırlatmalar bu telefona gelir.' }]
     let sent = 0
     for (const d of (devices ?? []) as PushRow[])
-      if (await push(d, { title: 'Deneme bildirimi', body: 'Hatırlatmalar bu telefona gelir.', tag: 'test', url: '/' })) sent++
+      for (const [i, msg] of messages.entries()) if (await push(d, { ...msg, tag: `test-${i}`, url: '/' })) sent++
     return Response.json({ sent })
   }
 

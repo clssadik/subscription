@@ -128,12 +128,12 @@ function PushStatus() {
     setBusy(false)
   }
 
-  async function test() {
+  async function test(all = false) {
     setBusy(true)
-    const problem = await sendTestPush()
+    const problem = await sendTestPush(all)
     setBusy(false)
     if (problem) toast.error(problem)
-    else toast('Deneme bildirimi gönderildi')
+    else toast(all ? 'Her türden bir bildirim gönderildi' : 'Deneme bildirimi gönderildi')
   }
 
   // Dokunulabilir yazı satırı (iPhone'daki mavi işlem satırları gibi)
@@ -145,7 +145,8 @@ function PushStatus() {
     return (
       <Group title="Bu telefon">
         <Row label="Bildirim izni" value="Açık" />
-        {action('Deneme bildirimi gönder', test)}
+        {action('Deneme bildirimi gönder', () => test())}
+        {action('Bütün bildirim türlerini dene', () => test(true))}
       </Group>
     )
   if (state === 'default')
