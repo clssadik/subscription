@@ -12,6 +12,22 @@
       ],
       "port": 5173,
       "autoPort": true
+    },
+    {
+      "name": "dev-demo",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "VITE_SUPABASE_URL=",
+        "VITE_SUPABASE_ANON_KEY=",
+        "npm",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5180"
+      ],
+      "port": 5180,
+      "autoPort": true
     }
   ]
 }

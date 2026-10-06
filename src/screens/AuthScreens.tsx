@@ -32,14 +32,40 @@ function seenWelcome() {
   }
 }
 
+// Kodu okumak için Mail'e geçilince iPhone ana ekran uygulamasını çoğu zaman yeniden başlatıyor.
+// Kod ekranı ve e-posta saklanır ki geri dönünce baştan başlamasın. Kodun süresi kadar (1 saat) geçerli.
+const PENDING = 'subly:pending-code'
+const PENDING_FOR = 60 * 60 * 1000
+
+type Pending = { email: string; mode: 'signup' | 'login'; at: number }
+
+function readPending(): Pending | null {
+  try {
+    const p = JSON.parse(localStorage.getItem(PENDING) ?? 'null') as Pending | null
+    return p && typeof p.email === 'string' && Date.now() - p.at < PENDING_FOR ? p : null
+  } catch {
+    return null
+  }
+}
+
+function savePending(p: Pending | null) {
+  try {
+    if (p) localStorage.setItem(PENDING, JSON.stringify(p))
+    else localStorage.removeItem(PENDING)
+  } catch {
+    // depolama kapalıysa yeniden açılışta e-posta ekranından başlanır
+  }
+}
+
 const field = 'min-h-12 w-full rounded-2xl bg-surface px-4 text-base outline-none placeholder:text-subtle/70 focus:ring-2 focus:ring-bh-yellow'
 const primary = 'pressable flex min-h-12 w-full items-center justify-center rounded-2xl bg-bh-yellow font-label text-base font-semibold text-[#141414] disabled:opacity-60'
 
 export function AuthFlow() {
-  const [step, setStep] = useState<Step>(() => (seenWelcome() ? 'login' : 'welcome'))
+  const [pending] = useState(readPending)
+  const [step, setStep] = useState<Step>(() => (pending ? 'code' : seenWelcome() ? 'login' : 'welcome'))
   // Kod ekranından geri dönülecek form
-  const [mode, setMode] = useState<'signup' | 'login'>('signup')
-  const [email, setEmail] = useState('')
+  const [mode, setMode] = useState<'signup' | 'login'>(pending?.mode ?? 'signup')
+  const [email, setEmail] = useState(pending?.email ?? '')
   const [legal, setLegal] = useState<LegalPage | null>(null)
 
   function leaveWelcome(next: 'signup' | 'login') {
@@ -64,12 +90,14 @@ export function AuthFlow() {
           onSent={(address) => {
             setEmail(address)
             setMode(step)
+            savePending({ email: address, mode: step, at: Date.now() })
             transition('push', () => setStep('code'))
           }}
           onLegal={setLegal}
         />
       )}
       {step === 'code' && <CodeStep mode={mode} email={email} onBack={() => {
+            savePending(null)
             holdKeyboard('email')
             transition('pop', () => setStep(mode))
           }} />}
@@ -268,6 +296,7 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
       setBusy(false)
       if (error) return fail(friendly(error.message))
     }
+    savePending(null)
     haptic()
     setDone(true)
     document.querySelector<HTMLInputElement>('input[autocomplete="one-time-code"]')?.blur()

@@ -7,6 +7,6 @@ const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 export const isConfigured = !!url && !!key
 
 // Bu anahtar herkese açık olabilir: veriyi koruyan, veritabanındaki satır kuralları (RLS).
-export const supabase = createClient(url ?? 'http://localhost', key ?? 'missing', {
+export const supabase = createClient(url || 'http://localhost', key || 'missing', {
   auth: { persistSession: true, autoRefreshToken: true },
 })
