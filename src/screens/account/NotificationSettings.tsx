@@ -1,9 +1,7 @@
-import { BellOffIcon, BellRingIcon, CheckIcon, SendIcon, SmartphoneIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Segmented } from '@/components/FormBits'
 import { Logo } from '@/components/Logo'
-import { Chips, Group, Row, Switch, SubPageHeader } from '@/components/SettingsList'
+import { CheckList, Group, Row, Switch, SubPageHeader } from '@/components/SettingsList'
 import { haptic } from '@/lib/haptics'
 import { sendTestPush, usePush } from '@/lib/push'
 import { REMINDER_DAYS, daysLabel, useSettings, type NotifySettings, type ReminderDay } from '@/lib/settings'
@@ -12,6 +10,11 @@ import { cn } from '@/lib/utils'
 
 const DAY_LABELS: Record<ReminderDay, string> = { 0: 'Ödeme günü', 1: '1 gün önce', 3: '3 gün önce', 7: '1 hafta önce' }
 const DAY_OPTIONS = REMINDER_DAYS.map((d) => ({ value: d, label: DAY_LABELS[d] }))
+const SUMMARY_OPTIONS: { value: NotifySettings['summary']; label: string }[] = [
+  { value: 'off', label: 'Kapalı' },
+  { value: 'weekly', label: 'Haftalık' },
+  { value: 'monthly', label: 'Aylık' },
+]
 
 /** Bildirim ayarları ve bu telefonun bildirim izni. Gönderen: supabase/functions/send-reminders (her 15 dakikada). */
 export function NotificationSettings({ userId, onBack }: { userId: string; onBack: () => void }) {
@@ -32,21 +35,20 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
     <>
       <SubPageHeader title="Bildirimler" onBack={onBack} />
 
-      <PushCard />
+      <PushStatus />
 
-      <Group>
+      <Group footer="Kapalıyken hiçbir hatırlatma gönderilmez.">
         <Row label="Hatırlatmalar" trailing={<Switch label="Hatırlatmalar" checked={n.enabled} onChange={(enabled) => updateNotify({ enabled })} />} />
       </Group>
 
       {/* Hatırlatmalar kapalıyken ayarlar soluk ve dokunulamaz */}
       <div className={cn('transition-opacity', off && 'pointer-events-none opacity-40')} aria-disabled={off}>
-        <Group title="Abonelik yenilenmesi" footer={`Her abonelik için: ${daysLabel(n.subscriptionDays).toLocaleLowerCase('tr')}. Birden fazla seçebilirsin.`}>
-          <Chips options={DAY_OPTIONS} value={n.subscriptionDays} onChange={(subscriptionDays) => updateNotify({ subscriptionDays })} disabled={off} />
+        <Group title="Abonelik yenilenmesi" footer="Birden fazla seçebilirsin.">
+          <CheckList multiple options={DAY_OPTIONS} value={n.subscriptionDays} onChange={(subscriptionDays) => updateNotify({ subscriptionDays })} disabled={off} />
         </Group>
 
-        <Group title="Kart son ödemesi">
-          <Chips options={DAY_OPTIONS} value={n.cardDays} onChange={(cardDays) => updateNotify({ cardDays })} disabled={off} />
-          <Row label="Hesap kesilince haber ver" trailing={<Switch label="Hesap kesilince haber ver" checked={n.statement} onChange={(statement) => updateNotify({ statement })} />} />
+        <Group title="Kart son ödemesi" footer="Birden fazla seçebilirsin.">
+          <CheckList multiple options={DAY_OPTIONS} value={n.cardDays} onChange={(cardDays) => updateNotify({ cardDays })} disabled={off} />
         </Group>
 
         <Group title="Saat" footer="Bütün hatırlatmalar bu saatte gelir.">
@@ -65,25 +67,18 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
           />
         </Group>
 
-        <Group title="Ödenmeyenler" footer="Son gün geçtiği hâlde ödendi işaretlenmemiş ödemeyi ertesi sabah tekrar hatırlatır.">
+        <Group title="Diğer" footer="Son gün geçtiği hâlde ödendi işaretlenmemiş ödeme ertesi sabah tekrar hatırlatılır.">
+          <Row label="Hesap kesilince haber ver" trailing={<Switch label="Hesap kesilince haber ver" checked={n.statement} onChange={(statement) => updateNotify({ statement })} />} />
           <Row label="Gecikince tekrar hatırlat" trailing={<Switch label="Gecikince tekrar hatırlat" checked={n.overdue} onChange={(overdue) => updateNotify({ overdue })} />} />
         </Group>
 
         <Group title="Özet" footer={n.summary === 'weekly' ? 'Her pazartesi: o hafta kaç ödeme var, toplam ne kadar.' : n.summary === 'monthly' ? 'Her ayın 1’i: o ay kaç ödeme var, toplam ne kadar.' : 'Toplu özet gönderilmez.'}>
-          <div className="p-1.5">
-            <Segmented
-              value={n.summary}
-              onChange={(summary: NotifySettings['summary']) => {
-                haptic()
-                updateNotify({ summary })
-              }}
-              options={[
-                { value: 'off', label: 'Kapalı' },
-                { value: 'weekly', label: 'Haftalık' },
-                { value: 'monthly', label: 'Aylık' },
-              ]}
-            />
-          </div>
+          <CheckList
+            options={SUMMARY_OPTIONS}
+            value={[n.summary]}
+            onChange={([summary]) => updateNotify({ summary })}
+            disabled={off}
+          />
         </Group>
 
         {state.subscriptions.length > 0 && (
@@ -119,10 +114,10 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
 }
 
 /** Bu telefonun bildirim durumu: izin iste, açık olduğunu göster ya da neden olmadığını anlat */
-function PushCard() {
+function PushStatus() {
   const { state, enable } = usePush()
   const [busy, setBusy] = useState(false)
-  if (!state) return <div className="skeleton mt-3 h-[76px] rounded-[18px]" />
+  if (!state) return <div className="skeleton mt-5 h-[52px] rounded-[18px]" />
 
   async function allow() {
     setBusy(true)
@@ -142,45 +137,34 @@ function PushCard() {
     else toast('Deneme bildirimi gönderildi')
   }
 
-  const box = 'mt-3 flex items-center gap-3 rounded-[18px] bg-surface p-3.5'
-  const icon = 'flex size-9 shrink-0 items-center justify-center rounded-full'
-  const button = 'pressable shrink-0 rounded-full bg-ink px-3.5 py-2 text-[13px] font-medium text-page disabled:opacity-50'
+  // Dokunulabilir yazı satırı (iPhone'daki mavi işlem satırları gibi)
+  const action = (label: string, onClick: () => void) => (
+    <Row label={<span className={cn('text-bh-blue dark:text-[#6E9BFF]', busy && 'opacity-50')}>{label}</span>} trailing={<span />} onClick={busy ? undefined : onClick} />
+  )
 
   if (state === 'on')
     return (
-      <div className={box}>
-        <span className={cn(icon, 'bg-bh-green/15 text-bh-green')}><CheckIcon className="size-5" strokeWidth={2.4} /></span>
-        <p className="min-w-0 flex-1 text-sm"><b className="font-medium">Bu telefon bildirim alıyor.</b><br /><span className="text-subtle">Ayarlara göre seçtiğin saatte gelir.</span></p>
-        <button type="button" onClick={test} disabled={busy} className={cn(button, 'flex items-center gap-1.5 bg-page text-ink')}>
-          <SendIcon className="size-3.5" /> Dene
-        </button>
-      </div>
+      <Group title="Bu telefon" footer="Hatırlatmalar ayarlarına göre seçtiğin saatte gelir.">
+        <Row label="Bildirim izni" value="Açık" />
+        {action('Deneme bildirimi gönder', test)}
+      </Group>
     )
   if (state === 'default')
     return (
-      <div className={box}>
-        <span className={cn(icon, 'bg-page')}><BellRingIcon className="size-5" /></span>
-        <p className="min-w-0 flex-1 text-sm"><b className="font-medium">Bildirimleri aç</b><br /><span className="text-subtle">Ödeme yaklaşınca bu telefona haber verelim.</span></p>
-        <button type="button" onClick={allow} disabled={busy} className={button}>İzin ver</button>
-      </div>
+      <Group title="Bu telefon" footer="İzin verirsen ödeme yaklaşınca bu telefona haber verilir.">
+        <Row label="Bildirim izni" value="Verilmedi" />
+        {action('Bildirimlere izin ver', allow)}
+      </Group>
     )
-  if (state === 'install')
-    return (
-      <div className={box}>
-        <span className={cn(icon, 'bg-page')}><SmartphoneIcon className="size-5" /></span>
-        <p className="min-w-0 flex-1 text-sm"><b className="font-medium">Önce ana ekrana ekle</b><br /><span className="text-subtle">iPhone bildirimleri sadece ana ekrandaki Monthwise'a gönderir.</span></p>
-      </div>
-    )
+  const footer =
+    state === 'install'
+      ? "iPhone bildirimleri sadece ana ekrandaki Monthwise'a gönderir. Önce ana ekrana ekle."
+      : state === 'denied'
+        ? "Ayarlar → Bildirimler → Monthwise'dan açabilirsin."
+        : 'Bu tarayıcı bildirim desteklemiyor. Ayarların yine de kaydediliyor.'
   return (
-    <div className={box}>
-      <span className={cn(icon, 'bg-page')}><BellOffIcon className="size-5" /></span>
-      <p className="min-w-0 flex-1 text-sm">
-        {state === 'denied' ? (
-          <><b className="font-medium">Bildirimler kapalı</b><br /><span className="text-subtle">Ayarlar → Bildirimler → Monthwise'dan açabilirsin.</span></>
-        ) : (
-          <><b className="font-medium">Bu tarayıcı bildirim desteklemiyor</b><br /><span className="text-subtle">Ayarların yine de kaydediliyor.</span></>
-        )}
-      </p>
-    </div>
+    <Group title="Bu telefon" footer={footer}>
+      <Row label="Bildirim izni" value={state === 'unsupported' ? 'Desteklenmiyor' : 'Kapalı'} />
+    </Group>
   )
 }

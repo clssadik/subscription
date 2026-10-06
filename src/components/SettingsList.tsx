@@ -1,10 +1,10 @@
-import { ChevronLeftIcon, ChevronRightIcon, type LucideIcon } from 'lucide-react'
+import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { RoundButton } from '@/components/ScreenHeader'
 import { haptic } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
 
-// Hesap ve alt sayfalarındaki iPhone Ayarlar tarzı parçalar: başlıklı beyaz grup, satır, anahtar (switch), seçim çipleri.
+// Hesap ve alt sayfalarındaki iPhone Ayarlar tarzı parçalar: başlıklı beyaz grup, satır, anahtar (switch), tikli seçim listesi.
 
 export function Group({ title, footer, children, className }: { title?: string; footer?: ReactNode; children: ReactNode; className?: string }) {
   return (
@@ -100,43 +100,44 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
   )
 }
 
-/** Birden fazla seçilebilen çipler (ör. 1 gün önce + 3 gün önce) */
-export function Chips<T extends string | number>({
+/**
+ * iPhone Ayarlar'daki gibi tikli seçim satırları (bir grubun içine konur). multiple: birden fazla seçilebilir
+ * (ör. 1 gün önce + 3 gün önce), değilse dokunulan tek seçenek seçili olur.
+ */
+export function CheckList<T extends string | number>({
   options,
   value,
   onChange,
+  multiple,
   disabled,
 }: {
   options: { value: T; label: string }[]
   value: T[]
   onChange: (v: T[]) => void
+  multiple?: boolean
   disabled?: boolean
 }) {
-  return (
-    <div className="flex flex-wrap gap-1.5 px-3.5 py-3">
-      {options.map((o) => {
-        const on = value.includes(o.value)
-        return (
-          <button
-            key={o.value}
-            type="button"
-            aria-pressed={on}
-            disabled={disabled}
-            onClick={() => {
-              haptic()
-              onChange(on ? value.filter((v) => v !== o.value) : [...value, o.value])
-            }}
-            className={cn(
-              'pressable min-h-9 rounded-full px-3.5 text-sm transition-colors',
-              on ? 'bg-bh-yellow font-medium text-[#141414]' : 'bg-page text-subtle',
-            )}
-          >
-            {o.label}
-          </button>
-        )
-      })}
-    </div>
-  )
+  return options.map((o) => {
+    const on = value.includes(o.value)
+    return (
+      <button
+        key={o.value}
+        type="button"
+        role={multiple ? 'checkbox' : 'radio'}
+        aria-checked={on}
+        disabled={disabled}
+        onClick={() => {
+          haptic()
+          if (!multiple) onChange([o.value])
+          else onChange(on ? value.filter((v) => v !== o.value) : [...value, o.value])
+        }}
+        className="flex min-h-[48px] w-full items-center gap-3 px-3.5 text-left text-[15px] active:bg-line/60"
+      >
+        <span className="min-w-0 flex-1 truncate">{o.label}</span>
+        {on && <CheckIcon className="size-[18px] shrink-0 text-bh-blue dark:text-[#6E9BFF]" strokeWidth={2.4} />}
+      </button>
+    )
+  })
 }
 
 /** Alt sayfanın başlığı: solda geri, ortada küçük başlık */
