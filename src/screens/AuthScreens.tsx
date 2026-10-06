@@ -79,28 +79,36 @@ export function AuthFlow() {
   }
 
   return (
-    <main className="app-screen mx-auto flex max-w-md flex-col overflow-y-auto overscroll-contain px-4 pt-[var(--top-gap)] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-      {step === 'welcome' && <Welcome onStart={() => leaveWelcome('signup')} onLogin={() => leaveWelcome('login')} />}
-      {(step === 'signup' || step === 'login') && (
-        <EmailStep
-          mode={step}
-          email={email}
-          onEmail={setEmail}
-          onSwitch={() => transition('fade', () => setStep(step === 'signup' ? 'login' : 'signup'))}
-          onSent={(address) => {
-            setEmail(address)
-            setMode(step)
-            savePending({ email: address, mode: step, at: Date.now() })
-            transition('push', () => setStep('code'))
-          }}
-          onLegal={setLegal}
-        />
-      )}
-      {step === 'code' && <CodeStep mode={mode} email={email} onBack={() => {
-            savePending(null)
-            holdKeyboard('email')
-            transition('pop', () => setStep(mode))
-          }} />}
+    // Sayfanın kendisi kaymaz; içerik kendi kayan alanında (ScrollPage gibi): kısa sayfa da iki uçta esner, yukarıdan çekince yenilenmez
+    <main data-screen-active className="app-screen mx-auto flex max-w-md flex-col">
+      <div
+        data-scroller
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-[var(--top-gap)] pb-[max(1.25rem,env(safe-area-inset-bottom))] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <div className="flex min-h-[calc(100%+1px)] flex-col">
+          {step === 'welcome' && <Welcome onStart={() => leaveWelcome('signup')} onLogin={() => leaveWelcome('login')} />}
+          {(step === 'signup' || step === 'login') && (
+            <EmailStep
+              mode={step}
+              email={email}
+              onEmail={setEmail}
+              onSwitch={() => transition('fade', () => setStep(step === 'signup' ? 'login' : 'signup'))}
+              onSent={(address) => {
+                setEmail(address)
+                setMode(step)
+                savePending({ email: address, mode: step, at: Date.now() })
+                transition('push', () => setStep('code'))
+              }}
+              onLegal={setLegal}
+            />
+          )}
+          {step === 'code' && <CodeStep mode={mode} email={email} onBack={() => {
+                savePending(null)
+                holdKeyboard('email')
+                transition('pop', () => setStep(mode))
+              }} />}
+        </div>
+      </div>
       <LegalSheet page={legal} onClose={() => setLegal(null)} />
     </main>
   )
