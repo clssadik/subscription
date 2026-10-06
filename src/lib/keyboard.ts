@@ -35,8 +35,8 @@ const KEYBOARD_KEY = 'keyboard-height'
 export function keepPageInPlace() {
   const vv = window.visualViewport
   if (!vv) return
-  // Sadece [data-keep-page] içindeki alanlar (giriş ekranları). Ekleme paneli (alttan açılan çekmece) klavyeye göre kendini
-  // taşıyor; bu düzeltme orada da çalışınca ikisi çakışıp ekran bozuluyordu.
+  // Sadece [data-keep-page] içindeki alanlar: giriş ekranları ve ekleme paneli. Ekleme panelinde vaul'un kendi benzer hilesi
+  // kapalı (AddSheet → disablePreventScroll={false}); ikisi birlikte çalışınca çakışıp ekran bozuluyordu.
   const isField = (el: unknown): el is HTMLInputElement | HTMLTextAreaElement =>
     (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) && el !== proxy && !!el.closest('[data-keep-page]')
   const keyboardOpen = () => vv.height < window.innerHeight - 50
