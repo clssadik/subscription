@@ -28,6 +28,22 @@
       ],
       "port": 5180,
       "autoPort": true
+    },
+    {
+      "name": "dev-demo-lan",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "VITE_SUPABASE_URL=",
+        "VITE_SUPABASE_ANON_KEY=",
+        "npm",
+        "run",
+        "dev",
+        "--",
+        "--host",
+        "--port",
+        "5181"
+      ],
+      "port": 5181
     }
   ]
 }

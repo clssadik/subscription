@@ -66,19 +66,31 @@ export function keepPageInPlace() {
     'focusin',
     (e) => {
       const el = e.target
-      if (!isField(el) || !fitsAboveKeyboard(el)) return
+      // Alttan açılan panelde her zaman: panel (vaul) klavyeye göre kendini taşıyor, iPhone sayfayı hiç kaydırmamalı.
+      // Kaydırırsa panel o kaymaya göre yerleşiyor, kayma sonra geri alınınca panel klavyenin arkasında kalıyordu (telefonda ölçüldü).
+      const inDrawer = isField(el) && !!el.closest('[data-vaul-drawer]')
+      if (!isField(el) || (!inDrawer && !fitsAboveKeyboard(el))) return
       if (!keyboardOpen() && performance.now() - lastTouch > 1000) return
       const before = el.style.transform
       el.style.transform = 'translateY(-200vh)'
       let done = false
+      // restore'dan önce tanımlı olmalı: panelde restore hemen (iki kare sonra) çağrılıyor
+      const onResize = () => requestAnimationFrame(() => requestAnimationFrame(restore))
       const restore = () => {
         if (done) return
         done = true
         vv.removeEventListener('resize', onResize)
         el.style.transform = before
       }
+      // Panelde iki kare yeter (vaul'un da yaptığı gibi): alan uzun süre görünmez kalınca göz kırpıyordu. Panelin içi
+      // klavye açılıp panel kısalınca kaydırılır.
+      if (inDrawer) {
+        requestAnimationFrame(() => requestAnimationFrame(restore))
+        // Panel klavyeyle birlikte ~0,5 sn kayarak yerleşiyor (src/index.css); yerleştikten sonra ölçülür
+        if (!keyboardOpen()) vv.addEventListener('resize', () => window.setTimeout(() => revealInDrawer(el), 550), { once: true })
+        return
+      }
       // Klavye zaten açıksa kısa bir an yeter; değilse klavye açılıp iPhone kaydırma kararını verene kadar beklenir
-      const onResize = () => requestAnimationFrame(() => requestAnimationFrame(restore))
       if (keyboardOpen()) window.setTimeout(restore, 120)
       else {
         vv.addEventListener('resize', onResize)
@@ -102,10 +114,22 @@ export function keepPageInPlace() {
     }
     if (window.scrollY === 0 && vv.offsetTop === 0) return
     const el = document.activeElement
-    if (!isField(el)) return
+    // Panelde sayfa geri çekilmez: panel o anki kaymaya göre yerleşmiş olur
+    if (!isField(el) || el.closest('[data-vaul-drawer]')) return
     // Sayfalar sabit konumlu (.app-screen): alanın yeri kaydırmadan bağımsız, görünen alanın boyuyla karşılaştırılır
     if (el.getBoundingClientRect().bottom + 8 <= vv.height) window.scrollTo(0, 0)
   }
   vv.addEventListener('resize', fix)
   vv.addEventListener('scroll', fix)
+
+  /** Alan panelin görünen kısmının dışındaysa sadece panelin kayan alanını kaydırır (sayfayı değil) */
+  function revealInDrawer(el: HTMLElement) {
+    const scroller = el.closest<HTMLElement>('.overflow-y-auto')
+    if (!scroller) return
+    const box = scroller.getBoundingClientRect()
+    const field = el.getBoundingClientRect()
+    const bottom = Math.min(box.bottom, vv!.height) - 12
+    if (field.bottom > bottom) scroller.scrollTop += field.bottom - bottom
+    else if (field.top < box.top + 12) scroller.scrollTop -= box.top + 12 - field.top
+  }
 }
