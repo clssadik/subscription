@@ -53,7 +53,7 @@ export function PermissionGate() {
   return (
     <div className="app-screen z-40 mx-auto flex max-w-md flex-col bg-black text-[#F2F2F2]">
       <div className="flex min-h-0 flex-1 items-center justify-center pt-[var(--top-gap)]">
-        <img src={LOGO_URL} alt="" width={140} height={140} className="size-[140px]" />
+        <img src={LOGO_URL} alt="" width={200} height={200} className="size-[200px]" />
       </div>
       <section className="rounded-t-[28px] bg-surface px-5 pt-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-ink">
         <h1 className="text-[19px] font-semibold">Bildirimler</h1>
