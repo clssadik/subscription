@@ -117,7 +117,6 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
 function PushStatus() {
   const { state, enable } = usePush()
   const [busy, setBusy] = useState(false)
-  if (!state) return <div className="skeleton mt-5 h-[52px] rounded-[18px]" />
 
   async function allow() {
     setBusy(true)

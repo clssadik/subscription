@@ -34,6 +34,19 @@ async function save(sub: PushSubscription) {
   if (error) throw new Error(error.message)
 }
 
+// Son bilinen durum: sayfa tekrar açılınca beklemeden doğru hâli çizilir (yoksa önce boş kutu, sonra içerik gelip sayfa kayıyordu)
+let last: PushState | null = null
+
+/** Beklemeden bilinebilen durum. İzin verilmişse aboneliğin hâlâ durduğu varsayılır; current() bir an sonra doğrular. */
+function quick(): PushState {
+  if (last) return last
+  if (isIOS() && !isInstalled()) return 'install'
+  if (!supported() || !isConfigured) return 'unsupported'
+  if (Notification.permission === 'denied') return 'denied'
+  if (Notification.permission === 'default') return 'default'
+  return 'on'
+}
+
 async function current(): Promise<PushState> {
   if (isIOS() && !isInstalled()) return 'install'
   if (!supported() || !isConfigured) return 'unsupported'
@@ -42,14 +55,18 @@ async function current(): Promise<PushState> {
   const reg = await navigator.serviceWorker.ready
   const sub = await reg.pushManager.getSubscription()
   if (!sub) return 'default'
-  // Adres her açılışta yeniden kaydedilir: telefon adresi değiştirebiliyor, hesap değişmiş olabilir
-  await save(sub).catch(() => {})
+  // Adres her açılışta yeniden kaydedilir (telefon adresi değiştirebiliyor, hesap değişmiş olabilir); sonucu beklenmez
+  save(sub).catch(() => {})
   return 'on'
 }
 
 /** Bu telefonun bildirim durumu; enable izin ister ve kaydeder (dokunuşun içinde çağrılmalı) */
 export function usePush() {
-  const [state, setState] = useState<PushState | null>(null)
+  const [state, setRaw] = useState<PushState>(quick)
+  const setState = useCallback((s: PushState) => {
+    last = s
+    setRaw(s)
+  }, [])
 
   useEffect(() => {
     let alive = true
