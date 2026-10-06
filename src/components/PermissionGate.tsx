@@ -25,7 +25,7 @@ const markAsked = () => {
 /**
  * İlk girişte bildirim izni. iPhone izni sadece ana ekrandan açılan uygulamada ve bir dokunuşun içinde sorabiliyor;
  * bu yüzden kendiliğinden değil, "İzin ver" düğmesiyle istenir. İzin zaten verilmiş, reddedilmiş ya da
- * desteklenmiyorsa (ör. Safari'de) hiç görünmez. Açılış ekranının devamı gibi: siyah zeminde hayalet, altta panel.
+ * desteklenmiyorsa (ör. Safari'de) hiç görünmez. Açılış ekranının devamı gibi: siyah zeminde logo, altta panel.
  */
 export function PermissionGate() {
   const { state, enable } = usePush()

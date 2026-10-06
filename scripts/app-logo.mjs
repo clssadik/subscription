@@ -1,7 +1,7 @@
-// Uygulama logosu (hayalet) kaynak görselden iki dosya üretir:
+// Uygulama logosu kaynak görselden iki dosya üretir:
 // - public/logo.png: ana ekran ikonlarının kaynağı (siyah zemin, kare). Sonra: npm run generate-pwa-assets
-// - public/logo-ghost.webp: uygulama içi ve açılış ekranı için arka planı şeffaf hayalet
-// Çalıştır: node scripts/app-logo.mjs <kaynak.png>  (kaynak: tam siyah zeminde hayalet)
+// - public/logo-mark.webp: uygulama içi ve açılış ekranı için arka planı şeffaf logo
+// Çalıştır: node scripts/app-logo.mjs <kaynak.png>  (kaynak: siyah zeminde logo)
 import sharp from 'sharp'
 
 const src = process.argv[2]
@@ -11,7 +11,7 @@ const { data, info } = await sharp(src).removeAlpha().raw().toBuffer({ resolveWi
 const { width: W, height: H } = info
 const bright = (p) => Math.max(data[p * 3], data[p * 3 + 1], data[p * 3 + 2])
 
-// Hayaletin sınırları
+// Logonun sınırları
 let x0 = W, y0 = H, x1 = 0, y1 = 0
 for (let y = 0; y < H; y++)
   for (let x = 0; x < W; x++)
@@ -19,7 +19,7 @@ for (let y = 0; y < H; y++)
 const cx = (x0 + x1) / 2
 const cy = (y0 + y1) / 2
 
-// Dış zemin: kenarlardan başlayıp koyu piksellerde yayılan doldurma (gözler içeride kaldığı için opak kalır)
+// Dış zemin: kenarlardan başlayıp koyu piksellerde yayılan doldurma (içerideki koyu yerler opak kalır)
 const T = 48
 const outside = new Uint8Array(W * H)
 const stack = []
@@ -57,24 +57,26 @@ const cut = {
   width: side,
   height: side,
 }
-const pad = Math.max(0, -cut.left)
+const pad = Math.max(0, -cut.left, -cut.top, cut.left + side - W, cut.top + side - H)
 // sharp tek zincirde önce kırpıp sonra genişletir: genişletilmiş hâli ayrı üretilir
 const padded = await sharp(rgba, { raw: { width: W, height: H, channels: 4 } })
-  .extend({ left: pad, right: pad, background: { r: 0, g: 0, b: 0, alpha: 0 } })
+  .extend({ top: pad, bottom: pad, left: pad, right: pad, background: { r: 0, g: 0, b: 0, alpha: 0 } })
   .png()
   .toBuffer()
 await sharp(padded)
-  .extract({ ...cut, left: cut.left + pad })
+  .extract({ ...cut, left: cut.left + pad, top: cut.top + pad })
   .resize(512, 512)
   .webp({ quality: 90, alphaQuality: 100 })
-  .toFile('public/logo-ghost.webp')
+  .toFile('public/logo-mark.webp')
 
-// İkon: hayalet karenin ~%76'sı, siyah zemin
-const iconSide = Math.round((y1 - y0) / 0.76)
+// İkon: logo karenin ~%80'i, siyah zemin
+const iconSide = Math.round(Math.max(x1 - x0, y1 - y0) / 0.8)
 const ix = Math.round(cx - iconSide / 2)
 const iy = Math.round(cy - iconSide / 2)
 const ipad = Math.max(0, -ix, -iy, ix + iconSide - W, iy + iconSide - H)
-const framed = await sharp(data, { raw: { width: W, height: H, channels: 3 } })
+// Şeffaf kesim siyaha oturtulur: kaynağın tam siyah olmayan zemini eklenen siyah kenarla kare gibi seçiliyordu
+const framed = await sharp(rgba, { raw: { width: W, height: H, channels: 4 } })
+  .flatten({ background: '#000000' })
   .extend({ top: ipad, bottom: ipad, left: ipad, right: ipad, background: '#000000' })
   .png()
   .toBuffer()
@@ -84,4 +86,4 @@ await sharp(framed)
   .png()
   .toFile('public/logo.png')
 
-console.log('public/logo.png ve public/logo-ghost.webp yazıldı')
+console.log('public/logo.png ve public/logo-mark.webp yazıldı')
