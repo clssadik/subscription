@@ -1,4 +1,4 @@
-// Monthwise hatırlatmaları: her 15 dakikada (pg_cron) çağrılır, saati gelmiş kullanıcılara yaklaşan ödemeleri Web Push ile gönderir.
+// Monthwise hatırlatmaları (metinler tek satıra sığacak kadar kısa, ~38 harf): her 15 dakikada (pg_cron) çağrılır, saati gelmiş kullanıcılara yaklaşan ödemeleri Web Push ile gönderir.
 // Aynı hatırlatma notification_log sayesinde günde bir kez gider. Uygulamadaki "Dene" düğmesi { test: true } ile çağırır.
 // Tarih kuralları uygulamadakiyle aynı (src/lib/dates.ts): yenilenmeler hep ilk tarihten sayılır, kart son ödemesi = kesim + 10 gün.
 //
@@ -154,7 +154,7 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Set
       if (diff >= 0 && days.includes(diff))
         out.push({ key: `sub:${sub.id}:${toKey(date)}:${diff}`, title: sub.name, body: `${cap(when(diff))} yenileniyor · ${money(sub.amount, sub.currency)}` })
       if (diff === -1 && notify.overdue && own !== 'off')
-        out.push({ key: `sub-late:${sub.id}:${toKey(date)}`, title: sub.name, body: `Dün yenilendi, ödendi işaretlenmedi · ${money(sub.amount, sub.currency)}` })
+        out.push({ key: `sub-late:${sub.id}:${toKey(date)}`, title: sub.name, body: `Dünkü ödeme işaretlenmedi · ${money(sub.amount, sub.currency)}` })
     }
   }
 
@@ -169,7 +169,7 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Set
       if (diff >= 0 && notify.cardDays.includes(diff))
         out.push({ key: `card:${card.id}:${toKey(due)}:${diff}`, title, body: `Son ödeme ${when(diff)} · ${dateLabel(due)}` })
       if (diff === -1 && notify.overdue)
-        out.push({ key: `card-late:${card.id}:${toKey(due)}`, title, body: 'Son ödeme dündü, ödendi işaretlenmedi' })
+        out.push({ key: `card-late:${card.id}:${toKey(due)}`, title, body: 'Son ödeme dündü · işaretlenmedi' })
     }
   }
 
@@ -193,8 +193,9 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Set
         cardCount += cardCyclesBetween(card, today, end).filter((c) => !isPaid(card.id, c.due)).length
     if (count + cardCount > 0) {
       const sums = [...totals].map(([c, a]) => money(a, c)).join(' + ')
-      const parts2 = [count ? `${count} abonelik · ${sums}` : '', cardCount ? `${cardCount} kart ödemesi` : ''].filter(Boolean)
-      out.push({ key: `summary:${weekly ? 'w' : 'm'}`, title: weekly ? 'Bu hafta' : 'Bu ay', body: parts2.join(' · ') })
+      // Tek satıra sığsın: "3 abonelik, 1 kart · ₺501,99" ya da sadece "2 kart ödemesi"
+      const body = count ? `${count} abonelik${cardCount ? `, ${cardCount} kart` : ''} · ${sums}` : `${cardCount} kart ödemesi`
+      out.push({ key: `summary:${weekly ? 'w' : 'm'}`, title: weekly ? 'Bu hafta' : 'Bu ay', body })
     }
   }
   return out
