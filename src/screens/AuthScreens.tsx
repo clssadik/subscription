@@ -92,7 +92,8 @@ export function AuthFlow() {
               mode={step}
               email={email}
               onEmail={setEmail}
-              onSwitch={() => transition('fade', () => setStep(step === 'signup' ? 'login' : 'signup'))}
+              // Klavye kendiliğinden açılmaz (açıksa kapanır); kullanıcı alana dokununca açılır
+              onSwitch={() => transition('push', () => setStep(step === 'signup' ? 'login' : 'signup'))}
               onSent={(address) => {
                 setEmail(address)
                 setMode(step)
