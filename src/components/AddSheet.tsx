@@ -111,34 +111,98 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
   )
 }
 
+/** Klavye açan alan mı (tarih ve seçim listeleri klavye açmaz) */
+const opensKeyboard = (el: EventTarget | null) =>
+  el instanceof HTMLTextAreaElement ||
+  (el instanceof HTMLInputElement && !['date', 'time', 'checkbox', 'radio', 'button', 'submit', 'file', 'range', 'color'].includes(el.type))
+
+// iPhone klavyesinin hareketine yakın: hızlı başlar, yumuşak durur
+const KEYBOARD_MS = 380
+const KEYBOARD_EASE = 'cubic-bezier(0.32, 0.72, 0, 1)'
+
 /**
- * Klavye açılınca/kapanınca vaul paneli tek seferde yeni yerine koyuyor (boy ve alt boşluk). Boyu her karede
- * değiştirerek kaydırmak formu her karede yeniden yerleştirdiği için takılıyordu. Bunun yerine panel yeni yerine anında
- * oturur, eski yerinden yeni yerine "translate" ile kayar: sadece ekran kartı çalışır, akıcıdır.
- * translate, vaul'un kendi transform'una (sürükleme, açılış) karışmaz.
+ * Panel klavyeyle birlikte hareket etsin. Safari klavyeyi açılırken geç (hareket başladıktan sonra), kapanırken daha da geç
+ * (bittikten sonra) bildiriyor; vaul paneli ancak o zaman yeni yerine koyuyor (boy ve alt boşluk). Panel bu yüzden hep
+ * klavyenin arkasından geliyordu (2026-10-07 ekran kaydında görüldü).
+ * 1. Öncü hareket: alana dokunulunca (klavye açılacak) ya da alandan çıkılınca (kapanacak) panel beklemeden, klavyeyle aynı
+ *    hızda tahmini yerine kaymaya başlar. Tahmin, bir önceki açılışta ölçülen klavye boyundan (src/lib/keyboard.ts).
+ * 2. vaul yeni yeri koyunca panel o anda göründüğü yerden kesintisiz devam ederek yerine oturur.
+ * Kayma "translate" ile: formu her karede yeniden yerleştirmez (boyu canlandırmak takılıyordu), vaul'un transform'una karışmaz.
+ * Panel aşağı inerken altta kalan boşluğu vaul'un panelin altındaki uzantısı (::after) kapatır.
  */
+// vaul ref'i her çizimde yeniden bağlıyor ve eski bağlantının temizliğini çağırmıyor: her panel bir kez kurulur,
+// yoksa birikip aynı değişikliğe birden çok kayma başlatıyor ve panel zıplıyordu
+const gliding = new WeakSet<Element>()
+
 function glideWithKeyboard(el: HTMLDivElement | null) {
-  if (!el) return
+  if (!el || gliding.has(el)) return
+  gliding.add(el)
+  const vv = window.visualViewport
   // Panelin üst kenarının yeri, dönüşümlerden (açılış, sürükleme) bağımsız: alt boşluk + boy
   const reach = () => (parseFloat(el.style.bottom) || 0) + el.offsetHeight
+  const keyboardOpen = () => !!vv && vv.height < window.innerHeight - 50
+  const keyboardHeight = () => {
+    try {
+      return Number(localStorage.getItem('keyboard-height')) || 0
+    } catch {
+      return 0
+    }
+  }
+  // Öncü hareketten sonra klavye gelmezse (ör. harici klavye) panel tahmini yerinde kalmasın: geri döner
+  let fallback = 0
+  // Şu an ekranda göründüğü kaydırma (süren kaymanın o anki yeri)
+  const currentShift = () => parseFloat(getComputedStyle(el).translate.split(' ')[1] ?? '0') || 0
+  const glideTo = (fromY: number, toY: number, fill: FillMode = 'none') => {
+    window.clearTimeout(fallback)
+    if (fill === 'forwards') fallback = window.setTimeout(() => glideTo(currentShift(), 0), 900)
+    for (const a of el.getAnimations()) if (a.id === 'keyboard-glide') a.cancel()
+    if (Math.abs(fromY - toY) < 2 && toY === 0) return
+    const glide = el.animate([{ translate: `0 ${fromY}px` }, { translate: `0 ${toY}px` }], { duration: KEYBOARD_MS, easing: KEYBOARD_EASE, fill })
+    glide.id = 'keyboard-glide'
+  }
+
   let size = `${el.style.height}|${el.style.bottom}`
   let last = reach()
+  // Klavye açılmadan önceki üst kenar (kapanırken öncü hareketin hedefi)
+  let restingReach = last
   const observer = new MutationObserver(() => {
     const next = `${el.style.height}|${el.style.bottom}`
     if (next === size) return
     size = next
     const now = reach()
-    const from = now - last
+    const moved = now - last
     last = now
-    for (const a of el.getAnimations()) if (a.id === 'keyboard-glide') a.cancel()
-    if (Math.abs(from) < 2) return
-    // Yeni yerine oturmuş paneli eski yerinden başlatıp kaydırır. Sakin: 0,7 sn, ani başlamadan uzun ve yumuşak durur
-    // (0,38 sn'lik iPhone eğrisi aceleci bulundu).
-    const glide = el.animate([{ translate: `0 ${from}px` }, { translate: '0 0' }], { duration: 700, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)' })
-    glide.id = 'keyboard-glide'
+    if (!keyboardOpen()) restingReach = now
+    // Yeni yerine oturan panel, o an göründüğü yerden (öncü hareket ne kadar yol aldıysa) devam eder
+    glideTo(moved + currentShift(), 0)
   })
   observer.observe(el, { attributes: true, attributeFilter: ['style'] })
-  return () => observer.disconnect()
+  // Panelin boyu içerikle de değişir (form yerleşince, "Yeni kart ekle" açılınca): son yer hep güncel kalsın, yoksa vaul yeni
+  // yeri koyduğunda kayma yanlış yerden başlayıp panel zıplıyordu
+  const sizes = new ResizeObserver(() => {
+    last = reach()
+    if (!keyboardOpen()) restingReach = last
+  })
+  sizes.observe(el)
+
+  // Öncü hareket: klavye açılacak
+  const onFocusIn = (e: FocusEvent) => {
+    if (!opensKeyboard(e.target) || keyboardOpen()) return
+    const k = keyboardHeight()
+    if (!k) return
+    restingReach = reach()
+    // vaul paneli klavyenin üstüne koyar, üstte biraz pay bırakarak kısaltır: en fazla o kadar yukarı çıkar
+    const room = Math.max(0, el.getBoundingClientRect().top - currentShift() - 26)
+    glideTo(currentShift(), -Math.min(k, room), 'forwards')
+  }
+  // Öncü hareket: klavye kapanacak (başka bir yazı alanına geçilmiyorsa)
+  const onFocusOut = (e: FocusEvent) => {
+    if (!opensKeyboard(e.target) || opensKeyboard(e.relatedTarget) || !keyboardOpen()) return
+    glideTo(currentShift(), reach() - restingReach, 'forwards')
+  }
+  // Panel kapanıp DOM'dan çıkınca gözlemciler ve dinleyiciler onunla birlikte gider
+  el.addEventListener('focusin', onFocusIn)
+  el.addEventListener('focusout', onFocusOut)
 }
 
 function KindButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
