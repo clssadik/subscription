@@ -285,6 +285,15 @@ html[data-motion='fade']::view-transition-new(root) { animation-name: vt-fade-in
 }
 .tear-hint { display: inline-block; animation: tear-hint 1.8s ease-in-out infinite; }
 /* Ana ekrana ekleme rehberinde Safari'nin alt çubuğunu gösteren ok: yavaşça aşağı iner, geri gelir */
+/* iPhone Ayarlar tarzı grup (SettingsList → Group): satır arası ince çizgi soldan içeriden başlar.
+   Satır --sep ile girinti verir (simgeli satırda yazının hizası), yoksa 14px. Çizgi arka plan resmi: dokununca koyulaşan zemini bozmaz. */
+.settings-group > * + * {
+  background-image: linear-gradient(var(--line), var(--line));
+  background-repeat: no-repeat;
+  background-size: calc(100% - var(--sep, 14px)) 1px;
+  background-position: right top;
+}
+
 /* Kod kutularında yazılacak yerin imleci (giriş kodu ekranı): iPhone'daki gibi yanıp söner */
 @keyframes code-caret {
   0%, 45% { opacity: 1; }

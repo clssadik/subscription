@@ -1,5 +1,5 @@
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, type LucideIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { RoundButton } from '@/components/ScreenHeader'
 import { haptic } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
@@ -10,7 +10,8 @@ export function Group({ title, footer, children, className }: { title?: string; 
   return (
     <section className={cn('mt-5', className)}>
       {title && <h2 className="label mb-1.5 px-1 text-subtle">{title}</h2>}
-      <div className="divide-y divide-line overflow-hidden rounded-[18px] bg-surface">{children}</div>
+      {/* Satır arası çizgiler iPhone'daki gibi yazının hizasından başlar (src/index.css → .settings-group) */}
+      <div className="settings-group overflow-hidden rounded-[18px] bg-surface">{children}</div>
       {footer && <p className="mt-1.5 px-1 text-[12px] leading-snug text-subtle">{footer}</p>}
     </section>
   )
@@ -56,12 +57,15 @@ export function Row({
     </>
   )
   const cls = 'relative flex min-h-[52px] w-full items-center gap-3 px-3.5 text-left text-[15px] active:bg-line/60'
-  if (select) return <label className={cls}>{body}{select}</label>
+  // Simgeli satırda üstteki çizgi simgeden sonra, yazının hizasından başlar (14 + 30 + 12 px)
+  const sep = icon ? ({ '--sep': '56px' } as CSSProperties) : undefined
+  if (select) return <label className={cls} style={sep}>{body}{select}</label>
   if (onClick)
     return (
       <button
         type="button"
         className={cls}
+        style={sep}
         onClick={() => {
           haptic()
           onClick()
@@ -70,7 +74,7 @@ export function Row({
         {body}
       </button>
     )
-  return <div className={cls}>{body}</div>
+  return <div className={cls} style={sep}>{body}</div>
 }
 
 /** iPhone tarzı açma/kapama anahtarı */

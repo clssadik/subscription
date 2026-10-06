@@ -1,9 +1,9 @@
 import type { User } from '@supabase/supabase-js'
 import {
   BellIcon,
+  ChevronRightIcon,
   FileTextIcon,
   FlaskConicalIcon,
-  LogOutIcon,
   MoonIcon,
   ShieldIcon,
   SmartphoneIcon,
@@ -95,27 +95,30 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
     <>
       <ScreenHeader title="Hesap" />
 
-      {/* Profil: dokununca ad düzenlenir */}
-      <button
-        type="button"
-        onClick={() => {
-          haptic()
-          open('profile')
-        }}
-        className="pressable flex w-full items-center gap-3 rounded-[22px] bg-surface p-3.5 text-left"
-      >
-        <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-ink font-label text-xl font-medium text-page">
-          {initials(settings.name, email)}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className={settings.name ? 'block truncate text-lg font-medium' : 'block text-lg text-subtle'}>
-            {settings.name || 'Ad ekle'}
+      {/* Profil: iPhone Ayarlar'daki Apple Hesabı satırı gibi; dokununca ad düzenlenir */}
+      <Group>
+        <button
+          type="button"
+          onClick={() => {
+            haptic()
+            open('profile')
+          }}
+          className="flex w-full items-center gap-3 px-3.5 py-3 text-left active:bg-line/60"
+        >
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[#A4A4AA] font-label text-xl font-medium text-white dark:bg-[#636366]">
+            {initials(settings.name, email)}
           </span>
-          <span className="block truncate text-sm text-subtle">{email}</span>
-        </span>
-      </button>
+          <span className="min-w-0 flex-1">
+            <span className={settings.name ? 'block truncate text-lg font-medium' : 'block text-lg text-subtle'}>
+              {settings.name || 'Ad ekle'}
+            </span>
+            <span className="block truncate text-sm text-subtle">{email}</span>
+          </span>
+          <ChevronRightIcon className="size-4 shrink-0 text-subtle/70" />
+        </button>
+      </Group>
 
-      {/* Bütün bildirim ayarları (hatırlatmalar, zamanlama, özet) kendi sayfasında */}
+      {/* iPhone Ayarlar gibi başlıksız küçük gruplar */}
       <Group>
         <Row
           icon={<RowIcon Icon={BellIcon} className="bg-bh-red text-white" />}
@@ -123,9 +126,23 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
           value={notify.enabled ? 'Açık' : 'Kapalı'}
           onClick={() => open('notifications')}
         />
+        <Row
+          icon={<RowIcon Icon={Volume2Icon} className="bg-[#E5446D] text-white" />}
+          label="Sesler"
+          trailing={
+            <Switch
+              label="Sesler"
+              checked={sound}
+              onChange={(on) => {
+                setSound(on)
+                if (on) play('paid')
+              }}
+            />
+          }
+        />
       </Group>
 
-      <Group title="Görünüm">
+      <Group>
         <Row
           icon={<RowIcon Icon={pref === 'dark' ? MoonIcon : pref === 'light' ? SunIcon : SmartphoneIcon} className="bg-[#F28C28] text-white" />}
           label="Tema"
@@ -147,34 +164,23 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
           }
         />
         <Row
-          icon={<RowIcon Icon={Volume2Icon} className="bg-[#E5446D] text-white" />}
-          label="Sesler"
-          trailing={
-            <Switch
-              label="Sesler"
-              checked={sound}
-              onChange={(on) => {
-                setSound(on)
-                if (on) play('paid')
-              }}
-            />
-          }
+          icon={<RowIcon Icon={SquarePlusIcon} className="bg-[#5856D6] text-white" />}
+          label="Ana ekrana ekle"
+          value={isInstalled() ? 'Eklendi' : undefined}
+          onClick={() => open('install')}
         />
       </Group>
 
-      <Group title="Diğer">
+      <Group>
         <Row
           icon={<RowIcon Icon={WalletIcon} className="bg-bh-green text-white" />}
           label="Harcama özeti"
           value={state.subscriptions.length ? `${formatMoney(monthly)}/ay` : undefined}
           onClick={() => open('spending')}
         />
-        <Row
-          icon={<RowIcon Icon={SquarePlusIcon} className="bg-[#5856D6] text-white" />}
-          label="Ana ekrana ekle"
-          value={isInstalled() ? 'Eklendi' : undefined}
-          onClick={() => open('install')}
-        />
+      </Group>
+
+      <Group>
         <Row icon={<RowIcon Icon={FileTextIcon} className="bg-[#8E8E93] text-white" />} label="Kullanım şartları" onClick={() => setLegal('terms')} />
         <Row icon={<RowIcon Icon={ShieldIcon} className="bg-bh-blue text-white" />} label="Gizlilik" onClick={() => setLegal('privacy')} />
       </Group>
@@ -193,8 +199,8 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
       )}
 
       <Group>
-        <button type="button" onClick={signOut} className="flex min-h-[52px] w-full items-center justify-center gap-2 text-[15px] font-medium text-bh-red active:bg-line/60">
-          <LogOutIcon className="size-[18px]" /> Çıkış yap
+        <button type="button" onClick={signOut} className="flex min-h-[52px] w-full items-center justify-center text-[15px] text-bh-red active:bg-line/60">
+          Çıkış yap
         </button>
       </Group>
 
