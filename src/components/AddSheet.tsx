@@ -87,7 +87,13 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
           <DrawerDescription className="sr-only">Abonelik ya da kart bilgileri</DrawerDescription>
 
           {!editing && (
-            <div className="mt-3 flex gap-2">
+            // Seçili zemin tek parça: seçim değişince iPhone'daki seçiciler gibi öteki düğmenin altına kayar
+            <div className="relative mt-3 flex gap-2 rounded-[18px] bg-line/50 p-1 dark:bg-surface">
+              <span
+                aria-hidden
+                className={cn('absolute top-1 bottom-1 left-1 w-[calc(50%-0.5rem)] rounded-[14px] transition-transform duration-[450ms] ease-[cubic-bezier(0.32,0.72,0,1)]', raised)}
+                style={{ transform: kind === 'card' ? 'translateX(calc(100% + 0.5rem))' : 'translateX(0)' }}
+              />
               <KindButton active={kind === 'subscription'} onClick={() => pick('subscription')}>
                 <RepeatIcon className="size-5" /> Abonelik
               </KindButton>
@@ -155,9 +161,8 @@ function KindButton({ active, onClick, children }: { active: boolean; onClick: (
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'pressable flex h-16 flex-1 flex-col items-center justify-center gap-0.5 font-label text-sm transition-colors duration-300',
-        'rounded-[14px]',
-        active ? cn(raised, 'font-medium') : 'bg-line/50 text-subtle dark:bg-surface',
+        'pressable relative flex h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-[14px] font-label text-sm transition-colors duration-300',
+        active ? 'font-medium text-ink' : 'text-subtle',
       )}
     >
       {children}
