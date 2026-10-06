@@ -21,16 +21,38 @@ export function holdKeyboard(inputMode: 'email' | 'numeric' | 'text' = 'text') {
 
 /**
  * Klavye açılınca iPhone, odaklanan alan klavyenin üstünde zaten görünse bile bütün sayfayı yukarı kaydırıyor
- * (giriş ekranında logo ve başlık ekranın dışına çıkıyordu). Alan sayfa yerindeyken de görünüyorsa sayfa geri yerine konur.
- * Alan gerçekten klavyenin altında kalıyorsa iPhone'un kaydırmasına dokunulmaz.
+ * (giriş ekranında logo ve başlık ekranın dışına çıkıyordu). Sayfanın hiç kımıldamaması için:
+ * 1. Odaklanma anında alan bir an çok yukarı taşınır: iPhone kaydırma yerini hesaplarken alanı sayfanın en üstünde sanır,
+ *    sayfa zaten en üstte olduğu için hiç kaydırmaz. Alan hemen yerine döner.
+ * 2. Yine de kayarsa ve alan sayfa yerindeyken görünüyorsa sayfa geri yerine konur.
+ * Alan klavyenin altında kalacaksa (ekranın alt yarısı) iPhone'un kaydırmasına dokunulmaz, yoksa yazılan görünmez.
  */
 export function keepPageInPlace() {
   const vv = window.visualViewport
   if (!vv) return
+  const isField = (el: unknown): el is HTMLInputElement | HTMLTextAreaElement =>
+    (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) && el !== proxy
+  // Klavyenin kapladığı boy; ilk açılışta bilinmez, telefon ekranının yarısı sayılır
+  let keyboard = 0
+  const visibleHeight = () => window.innerHeight - (keyboard || window.innerHeight * 0.5)
+
+  document.addEventListener(
+    'focusin',
+    (e) => {
+      const el = e.target
+      if (!isField(el) || el.getBoundingClientRect().bottom + 16 > visibleHeight()) return
+      const before = el.style.transform
+      el.style.transform = 'translateY(-200vh)'
+      window.setTimeout(() => (el.style.transform = before), 120)
+    },
+    true,
+  )
+
   const fix = () => {
+    if (isField(document.activeElement) && vv.height < window.innerHeight) keyboard = window.innerHeight - vv.height
     if (window.scrollY === 0 && vv.offsetTop === 0) return
     const el = document.activeElement
-    if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) || el === proxy) return
+    if (!isField(el)) return
     // Sayfalar sabit konumlu (.app-screen): alanın yeri kaydırmadan bağımsız, görünen alanın boyuyla karşılaştırılır
     if (el.getBoundingClientRect().bottom + 16 <= vv.height) window.scrollTo(0, 0)
   }
