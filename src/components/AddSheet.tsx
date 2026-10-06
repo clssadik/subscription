@@ -1,6 +1,6 @@
 import { format } from 'date-fns'
 import { CreditCardIcon, RepeatIcon } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { haptic } from '@/lib/haptics'
 import { play } from '@/lib/sound'
@@ -28,14 +28,11 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
   const [shown, setShown] = useState(target)
   // Her açılışta artar: form temiz başlasın (kapanınca silinmediği için eski yazılar kalmasın)
   const [opened, setOpened] = useState(0)
-  // Panel açıkken tür elle değiştirildi mi (sadece o zaman kayma animasyonu oynar)
-  const [switched, setSwitched] = useState(false)
   // Panel her açıldığında türü hedefe göre sıfırla
   if (target !== lastTarget) {
     setLastTarget(target)
     if (target) {
       setKind(target.kind)
-      setSwitched(false)
       setShown(target)
       setOpened((n) => n + 1)
     }
@@ -44,28 +41,7 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
   function pick(next: 'subscription' | 'card') {
     if (next === kind) return
     haptic()
-    setSwitched(true)
     setKind(next)
-  }
-
-  // Panel boyu Abonelik ↔ Kart (ya da kredi ↔ banka kartı) değişince zıplamasın: iki formun ilk açıldığı hâllerinden
-  // uzun olanı en az boy olur, kısa formda Kaydet alta yaslanır. "Yeni kart ekle" gibi ek alanlar yine büyütür.
-  // Ölçüm form ekrana takıldığı an yapılır (panel içeriği açılıştan biraz sonra oluşuyor).
-  const tallest = useRef<{ opened: number; sizes: Partial<Record<'subscription' | 'card', number>> }>({ opened: -1, sizes: {} })
-  function measure(form: HTMLDivElement | null) {
-    const el = form?.parentElement
-    if (!el) return
-    if (editing) {
-      el.style.minHeight = ''
-      return
-    }
-    if (tallest.current.opened !== opened) tallest.current = { opened, sizes: {} }
-    const sizes = tallest.current.sizes
-    if (sizes[kind] == null) {
-      el.style.minHeight = ''
-      sizes[kind] = el.offsetHeight
-    }
-    el.style.minHeight = `${Math.max(...Object.values(sizes))}px`
   }
 
   // Kapanırken klavyeyi önce indir: klavye panel kayarken kapanınca sayfa sarsılıyor
@@ -91,7 +67,7 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
             <div className="relative mt-3 flex gap-2 rounded-[18px] bg-line/50 p-1 dark:bg-surface">
               <span
                 aria-hidden
-                className={cn('absolute top-1 bottom-1 left-1 w-[calc(50%-0.5rem)] rounded-[14px] transition-transform duration-[450ms] ease-[cubic-bezier(0.32,0.72,0,1)]', raised)}
+                className={cn('absolute top-1 bottom-1 left-1 w-[calc(50%-0.5rem)] rounded-[14px] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]', raised)}
                 style={{ transform: kind === 'card' ? 'translateX(calc(100% + 0.5rem))' : 'translateX(0)' }}
               />
               <KindButton active={kind === 'subscription'} onClick={() => pick('subscription')}>
@@ -103,22 +79,32 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
             </div>
           )}
 
-          {/* Abonelik ↔ Kart değişince form yandan kayarak gelir: Kart sağda, Abonelik solda (düğmelerin sırası gibi).
-              İlk açılışta kaymaz; panel zaten aşağıdan geliyor. */}
-          <div className="flex flex-col">
-          <div
-            key={kind}
-            ref={measure}
-            className={cn('flex flex-1 flex-col', switched && 'animate-in fade-in duration-300 ease-out', switched && (kind === 'card' ? 'slide-in-from-right-8' : 'slide-in-from-left-8'))}
-          >
-            {shown && kind === 'subscription' && (
-              <SubscriptionFields key={`${shown.id ?? 'new-sub'}-${opened}`} id={shown.kind === 'subscription' ? shown.id : undefined} preset={shown} onDone={close} />
-            )}
-            {shown && kind === 'card' && (
-              <CardFields key={`${shown.id ?? 'new-card'}-${opened}`} id={shown.kind === 'card' ? shown.id : undefined} preset={shown} onDone={close} />
-            )}
-          </div>
-          </div>
+          {/* Abonelik ↔ Kart: iki form yan yana durur, seçiciyle aynı anda ve aynı eğriyle birlikte kayar (iPhone'daki sayfa
+              geçişi gibi; eski form bir yandan çıkarken yenisi öbür yandan girer). Panel boyu ikisinden uzun olanınki: zıplamaz.
+              Düzenlemede sadece o kaydın formu. Görünmeyen form dokunulamaz (inert). */}
+          {shown && editing ? (
+            shown.kind === 'card' ? (
+              <CardFields key={`${shown.id}-${opened}`} id={shown.id} preset={shown} onDone={close} />
+            ) : (
+              <SubscriptionFields key={`${shown.id}-${opened}`} id={shown.id} preset={shown} onDone={close} />
+            )
+          ) : (
+            shown && (
+              <div className="-mx-4 overflow-x-clip px-4">
+                <div
+                  className="flex w-[calc(200%+2rem)] gap-8 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+                  style={{ transform: kind === 'card' ? 'translateX(calc(-50% - 1rem))' : 'translateX(0)' }}
+                >
+                  <div className="flex w-[calc(50%-1rem)] min-w-0 flex-col" inert={kind !== 'subscription'}>
+                    <SubscriptionFields key={`new-sub-${opened}`} preset={shown} onDone={close} />
+                  </div>
+                  <div className="flex w-[calc(50%-1rem)] min-w-0 flex-col" inert={kind !== 'card'}>
+                    <CardFields key={`new-card-${opened}`} preset={shown} onDone={close} />
+                  </div>
+                </div>
+              </div>
+            )
+          )}
         </div>
       </DrawerContent>
     </Drawer>
