@@ -1,4 +1,4 @@
-# Subly (eski adı: Abonelik Takip)
+# Monthwise (eski adları: Subly, Abonelik Takip)
 
 Kişisel abonelik ve kredi kartı takip PWA'sı (iPhone'a "Ana Ekrana Ekle" ile kurulur).
 Vite + React + TypeScript + Tailwind v4 + shadcn/ui. Kullanıcı yeni başlıyor: adımları sade Türkçeyle açıkla.

@@ -16,13 +16,13 @@ export function InstallGuide({ onBack }: { onBack: () => void }) {
           <span className="flex size-12 items-center justify-center rounded-full bg-bh-green/15 text-bh-green">
             <CheckIcon className="size-6" strokeWidth={2.4} />
           </span>
-          <p className="mt-3 font-medium">Subly ana ekranında</p>
+          <p className="mt-3 font-medium">Monthwise ana ekranında</p>
           <p className="mt-1 text-sm text-subtle">Uygulama gibi tam ekran açılıyor. Bir şey yapmana gerek yok.</p>
         </div>
       ) : (
         <>
           <p className="mt-3 px-1 text-[15px] text-subtle">
-            Subly'yi ana ekrana eklersen uygulama gibi tam ekran açılır, adres çubuğu görünmez.
+            Monthwise'ı ana ekrana eklersen uygulama gibi tam ekran açılır, adres çubuğu görünmez.
           </p>
           <InstallSteps className="mt-4" />
         </>
@@ -43,7 +43,7 @@ export function InstallSteps({ className }: { className?: string }) {
           <b className="font-medium">Ana ekrana ekle</b> ya da <b className="font-medium">Uygulamayı yükle</b>'ye bas.
         </Step>
         <Step n={3} icon={<span className="font-medium text-bh-blue">Ekle</span>}>
-          <b className="font-medium">Ekle</b> ile onayla. Subly simgesi ana ekranına gelir.
+          <b className="font-medium">Ekle</b> ile onayla. Monthwise simgesi ana ekranına gelir.
         </Step>
       </ol>
     )
@@ -56,7 +56,7 @@ export function InstallSteps({ className }: { className?: string }) {
         Listede <b className="font-medium">Ana Ekrana Ekle</b>'yi bul. Görünmüyorsa <b className="font-medium">Daha Fazla</b>'ya bas.
       </Step>
       <Step n={3} icon={<span className="font-medium text-bh-blue">Ekle</span>}>
-        Sağ üstteki <b className="font-medium">Ekle</b>'ye bas. Subly'yi bundan sonra ana ekrandaki simgesinden aç.
+        Sağ üstteki <b className="font-medium">Ekle</b>'ye bas. Monthwise'ı bundan sonra ana ekrandaki simgesinden aç.
       </Step>
     </ol>
   )

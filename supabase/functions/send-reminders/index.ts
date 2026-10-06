@@ -1,4 +1,4 @@
-// Subly hatırlatmaları: her 15 dakikada (pg_cron) çağrılır, saati gelmiş kullanıcılara yaklaşan ödemeleri Web Push ile gönderir.
+// Monthwise hatırlatmaları: her 15 dakikada (pg_cron) çağrılır, saati gelmiş kullanıcılara yaklaşan ödemeleri Web Push ile gönderir.
 // Aynı hatırlatma notification_log sayesinde günde bir kez gider. Uygulamadaki "Dene" düğmesi { test: true } ile çağırır.
 // Tarih kuralları uygulamadakiyle aynı (src/lib/dates.ts): yenilenmeler hep ilk tarihten sayılır, kart son ödemesi = kesim + 10 gün.
 //
@@ -264,7 +264,7 @@ Deno.serve(async (req) => {
     const { data: devices } = await db.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth').eq('user_id', data.user.id)
     let sent = 0
     for (const d of (devices ?? []) as PushRow[])
-      if (await push(d, { title: 'Subly', body: 'Bildirimler çalışıyor. Ödemeler yaklaşınca buradan haber vereceğiz.', tag: 'test', url: '/' })) sent++
+      if (await push(d, { title: 'Monthwise', body: 'Bildirimler çalışıyor. Ödemeler yaklaşınca buradan haber vereceğiz.', tag: 'test', url: '/' })) sent++
     return Response.json({ sent })
   }
 

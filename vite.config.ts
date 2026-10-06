@@ -11,12 +11,12 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['logo.png', 'favicon.ico', 'apple-touch-icon-180x180.png', 'push-handler.js'],
+      includeAssets: ['logo-flower.webp', 'favicon.ico', 'apple-touch-icon-180x180.png', 'push-handler.js'],
       // Bildirimleri gösteren kod (public/push-handler.js) servis çalışanına eklenir
       workbox: { importScripts: ['push-handler.js'] },
       manifest: {
-        name: 'Subly',
-        short_name: 'Subly',
+        name: 'Monthwise',
+        short_name: 'Monthwise',
         description: 'Abonelik ve kredi kartı ödemelerini takip et',
         lang: 'tr',
         theme_color: '#141414',

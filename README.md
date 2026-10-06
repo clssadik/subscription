@@ -1,4 +1,4 @@
-# Subly
+# Monthwise
 
 Personal PWA for tracking subscriptions and credit card payments.
 Vite + React + TypeScript + Tailwind + shadcn/ui + vite-plugin-pwa.

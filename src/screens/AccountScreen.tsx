@@ -212,7 +212,7 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
         </button>
       </Group>
 
-      <p className="mt-6 text-center text-[12px] text-subtle">Subly</p>
+      <p className="mt-6 text-center text-[12px] text-subtle">Monthwise</p>
       <LegalSheet page={legal} onClose={() => setLegal(null)} />
     </>
   )

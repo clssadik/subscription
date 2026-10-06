@@ -168,7 +168,7 @@ function PushCard() {
     return (
       <div className={box}>
         <span className={cn(icon, 'bg-page')}><SmartphoneIcon className="size-5" /></span>
-        <p className="min-w-0 flex-1 text-sm"><b className="font-medium">Önce ana ekrana ekle</b><br /><span className="text-subtle">iPhone bildirimleri sadece ana ekrandaki Subly'ye gönderir.</span></p>
+        <p className="min-w-0 flex-1 text-sm"><b className="font-medium">Önce ana ekrana ekle</b><br /><span className="text-subtle">iPhone bildirimleri sadece ana ekrandaki Monthwise'a gönderir.</span></p>
       </div>
     )
   return (
@@ -176,7 +176,7 @@ function PushCard() {
       <span className={cn(icon, 'bg-page')}><BellOffIcon className="size-5" /></span>
       <p className="min-w-0 flex-1 text-sm">
         {state === 'denied' ? (
-          <><b className="font-medium">Bildirimler kapalı</b><br /><span className="text-subtle">Ayarlar → Bildirimler → Subly'den açabilirsin.</span></>
+          <><b className="font-medium">Bildirimler kapalı</b><br /><span className="text-subtle">Ayarlar → Bildirimler → Monthwise'dan açabilirsin.</span></>
         ) : (
           <><b className="font-medium">Bu tarayıcı bildirim desteklemiyor</b><br /><span className="text-subtle">Ayarların yine de kaydediliyor.</span></>
         )}

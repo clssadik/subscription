@@ -46,8 +46,8 @@
     <link rel="apple-touch-startup-image" href="/splash/light-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: light)" />
     <link rel="apple-touch-startup-image" href="/splash/dark-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" />
     <!-- startup-images:end -->
-    <meta name="apple-mobile-web-app-title" content="Subly" />
-    <title>Subly</title>
+    <meta name="apple-mobile-web-app-title" content="Monthwise" />
+    <title>Monthwise</title>
     <!-- Açılış ekranı: uygulama kodu yüklenmeden görünür, src/main.tsx hazır olunca soldurup kaldırır.
          Renkler burada: ana stil dosyası henüz yüklenmemiş olabilir. -->
     <style>
@@ -62,7 +62,7 @@
         transition: opacity 360ms ease, transform 360ms ease;
       }
       html.dark #splash { background: #000; color: #F2F2F2; }
-      #splash img { width: 84px; height: 84px; border-radius: 20px; animation: splash-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both, splash-breathe 1.6s 520ms ease-in-out infinite; }
+      #splash img { width: 140px; height: 140px; animation: splash-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both, splash-breathe 1.6s 520ms ease-in-out infinite; }
       #splash span { animation: splash-in 520ms 90ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
       #splash.hide { opacity: 0; transform: scale(1.04); pointer-events: none; }
       @keyframes splash-in { from { opacity: 0; transform: scale(0.82) translateY(6px); } }
@@ -71,7 +71,7 @@
     </style>
   </head>
   <body>
-    <div id="splash" aria-hidden="true"><img src="/logo.png" alt="" /><span>Subly</span></div>
+    <div id="splash" aria-hidden="true"><img src="/logo-flower.webp" alt="" /><span>Monthwise</span></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

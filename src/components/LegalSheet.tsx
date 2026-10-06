@@ -9,16 +9,16 @@ const PAGES: Record<LegalPage, { title: string; sections: { heading: string; bod
     title: 'Kullanım şartları',
     sections: [
       {
-        heading: 'Subly nedir?',
-        body: 'Subly, aboneliklerini ve kart ödemelerini tek yerde takip etmen için kişisel bir uygulamadır. Hangi aboneliğin ne zaman yenileneceğini, hangi karttan çekildiğini ve kartlarının son ödeme günlerini gösterir.',
+        heading: 'Monthwise nedir?',
+        body: 'Monthwise, aboneliklerini ve kart ödemelerini tek yerde takip etmen için kişisel bir uygulamadır. Hangi aboneliğin ne zaman yenileneceğini, hangi karttan çekildiğini ve kartlarının son ödeme günlerini gösterir.',
       },
       {
         heading: 'Ödeme yapmaz',
-        body: 'Subly bankana ya da kartına bağlanmaz, para çekmez, ödeme yapmaz. Sadece senin girdiğin bilgileri hatırlar ve hesaplar. Ödemelerini her zamanki gibi kendin yaparsın.',
+        body: 'Monthwise bankana ya da kartına bağlanmaz, para çekmez, ödeme yapmaz. Sadece senin girdiğin bilgileri hatırlar ve hesaplar. Ödemelerini her zamanki gibi kendin yaparsın.',
       },
       {
         heading: 'Bilgilerin doğruluğu',
-        body: 'Tarihler ve tutarlar senin girdiğin bilgilere göre hesaplanır. Önemli ödemelerde bankanın ya da servisin kendi bildirimlerini de kontrol et. Yanlış girilen bir bilgiden doğan gecikmelerden Subly sorumlu değildir.',
+        body: 'Tarihler ve tutarlar senin girdiğin bilgilere göre hesaplanır. Önemli ödemelerde bankanın ya da servisin kendi bildirimlerini de kontrol et. Yanlış girilen bir bilgiden doğan gecikmelerden Monthwise sorumlu değildir.',
       },
       {
         heading: 'Hesabın',
@@ -64,7 +64,7 @@ export function LegalSheet({ page, onClose }: { page: LegalPage | null; onClose:
       <DrawerContent className="max-h-[88svh] rounded-t-[30px] border-0 bg-page data-[vaul-drawer-direction=bottom]:max-h-[88svh]">
         <div className="mx-auto w-full max-w-md overflow-y-auto px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <DrawerTitle className="num num-bold pt-3 pb-1 text-center text-xl">{content?.title}</DrawerTitle>
-          <DrawerDescription className="sr-only">Subly hakkında kısa bilgi</DrawerDescription>
+          <DrawerDescription className="sr-only">Monthwise hakkında kısa bilgi</DrawerDescription>
           {content?.sections.map((s) => (
             <section key={s.heading} className="mt-5">
               <h2 className="label text-subtle">{s.heading}</h2>

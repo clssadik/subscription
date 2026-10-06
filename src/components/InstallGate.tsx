@@ -4,7 +4,7 @@ import { isAndroid } from '@/lib/install'
 import { InstallSteps } from '@/screens/account/InstallGuide'
 
 /**
- * Telefonda tarayıcıdan açılınca ilk gelen tam ekran rehber: Subly'yi ana ekrana eklemeyi anlatır.
+ * Telefonda tarayıcıdan açılınca ilk gelen tam ekran rehber: Monthwise'ı ana ekrana eklemeyi anlatır.
  * Ana ekrandan açılan uygulamada görünmez. "Safari'de devam et" bu oturum için geçer (src/lib/install.ts).
  */
 export function InstallGate({ onContinue }: { onContinue: () => void }) {
@@ -12,7 +12,7 @@ export function InstallGate({ onContinue }: { onContinue: () => void }) {
   return (
     <main className="app-screen mx-auto flex max-w-md flex-col overflow-y-auto overscroll-contain bg-page px-4 pt-[var(--top-gap)] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
       <img src={logoUrl} alt="" width={52} height={52} className="mt-4 rounded-[13px]" />
-      <h1 className="num num-bold mt-5 text-[30px] leading-[1.15]">Subly'yi ana ekranına ekle</h1>
+      <h1 className="num num-bold mt-5 text-[30px] leading-[1.15]">Monthwise'ı ana ekranına ekle</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-subtle">
         Uygulama gibi tam ekran açılır, adres çubuğu görünmez. Girişin hatırlanır, bildirimler ancak böyle gelebilir.
       </p>

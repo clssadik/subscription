@@ -7,7 +7,7 @@ self.addEventListener('push', (event) => {
     data = { body: event.data ? event.data.text() : '' }
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Subly', {
+    self.registration.showNotification(data.title || 'Monthwise', {
       body: data.body || '',
       tag: data.tag,
       icon: '/pwa-192x192.png',
