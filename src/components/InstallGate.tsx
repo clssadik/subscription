@@ -13,7 +13,7 @@ export function InstallGate({ onContinue }: { onContinue: () => void }) {
     <main className="app-screen mx-auto flex max-w-md flex-col bg-black text-[#F2F2F2]">
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3.5 pt-[var(--top-gap)]">
         <img src="/logo-flower.webp" alt="" width={180} height={180} className="size-[180px] shrink-0" />
-        <span className="font-label text-[26px] leading-none font-semibold tracking-[-0.01em]">Monthwise</span>
+        <span lang="en" className="font-label pl-[0.24em] text-[24px] leading-none font-extralight tracking-[0.24em] uppercase">Monthwise</span>
       </div>
 
       <section className="rounded-t-[28px] bg-surface px-5 pt-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-ink">
