@@ -18,3 +18,22 @@ export function holdKeyboard(inputMode: 'email' | 'numeric' | 'text' = 'text') {
   proxy.inputMode = inputMode
   proxy.focus({ preventScroll: true })
 }
+
+/**
+ * Klavye açılınca iPhone, odaklanan alan klavyenin üstünde zaten görünse bile bütün sayfayı yukarı kaydırıyor
+ * (giriş ekranında logo ve başlık ekranın dışına çıkıyordu). Alan sayfa yerindeyken de görünüyorsa sayfa geri yerine konur.
+ * Alan gerçekten klavyenin altında kalıyorsa iPhone'un kaydırmasına dokunulmaz.
+ */
+export function keepPageInPlace() {
+  const vv = window.visualViewport
+  if (!vv) return
+  const fix = () => {
+    if (window.scrollY === 0 && vv.offsetTop === 0) return
+    const el = document.activeElement
+    if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) || el === proxy) return
+    // Sayfalar sabit konumlu (.app-screen): alanın yeri kaydırmadan bağımsız, görünen alanın boyuyla karşılaştırılır
+    if (el.getBoundingClientRect().bottom + 16 <= vv.height) window.scrollTo(0, 0)
+  }
+  vv.addEventListener('resize', fix)
+  vv.addEventListener('scroll', fix)
+}

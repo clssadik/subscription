@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { keepPageInPlace } from '@/lib/keyboard'
 import { guardDocumentScroll } from '@/lib/transition'
 
 createRoot(document.getElementById('root')!).render(
@@ -29,6 +30,9 @@ window.addEventListener('pageshow', resetPage)
 
 // Sayfa geçişine denk gelen hareketler bütün belgeyi kaydırıp listeyi kilitlemesin (src/lib/transition.ts)
 guardDocumentScroll()
+
+// Klavye açılınca sayfa gereksiz yere yukarı kaymasın (src/lib/keyboard.ts)
+keepPageInPlace()
 
 // Kopyalama kapalı: yazı alanları dışında kopyalama, kesme ve sağ tık menüsü engellenir (görünüm: src/index.css)
 const inField = (t: EventTarget | null) => t instanceof HTMLElement && !!t.closest('input, textarea, [contenteditable="true"]')
