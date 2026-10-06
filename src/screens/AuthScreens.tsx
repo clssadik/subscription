@@ -80,7 +80,7 @@ export function AuthFlow() {
 
   return (
     // Sayfanın kendisi kaymaz; içerik kendi kayan alanında (ScrollPage gibi): kısa sayfa da iki uçta esner, yukarıdan çekince yenilenmez
-    <main data-screen-active className="app-screen mx-auto flex max-w-md flex-col">
+    <main data-screen-active data-keep-page className="app-screen mx-auto flex max-w-md flex-col">
       <div
         data-scroller
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-[var(--top-gap)] pb-[max(1.25rem,env(safe-area-inset-bottom))] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
