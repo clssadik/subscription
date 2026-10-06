@@ -74,7 +74,7 @@ export function AuthFlow() {
     } catch {
       // depolama kapalıysa karşılama bir dahaki açılışta yine çıkar
     }
-    holdKeyboard('email')
+    // E-posta sayfasında klavye kendiliğinden açılmaz; alana dokununca açılır
     transition('push', () => setStep(next))
   }
 
@@ -105,7 +105,6 @@ export function AuthFlow() {
           )}
           {step === 'code' && <CodeStep mode={mode} email={email} onBack={() => {
                 savePending(null)
-                holdKeyboard('email')
                 transition('pop', () => setStep(mode))
               }} />}
         </div>
@@ -236,7 +235,6 @@ function EmailStep({
           ref={input}
           id="email"
           type="email"
-          autoFocus
           inputMode="email"
           autoComplete="email"
           autoCapitalize="none"
