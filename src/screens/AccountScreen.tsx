@@ -121,13 +121,13 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
       {/* iPhone Ayarlar gibi başlıksız küçük gruplar */}
       <Group>
         <Row
-          icon={<RowIcon Icon={BellIcon} className="bg-[var(--ios-red)] text-white" />}
+          icon={<RowIcon Icon={BellIcon} className="bg-[var(--tile)] text-ink" />}
           label="Bildirimler"
           value={notify.enabled ? 'Açık' : 'Kapalı'}
           onClick={() => open('notifications')}
         />
         <Row
-          icon={<RowIcon Icon={Volume2Icon} className="bg-[var(--ios-pink)] text-white" />}
+          icon={<RowIcon Icon={Volume2Icon} className="bg-[var(--tile)] text-ink" />}
           label="Sesler"
           trailing={
             <Switch
@@ -144,7 +144,7 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
 
       <Group>
         <Row
-          icon={<RowIcon Icon={pref === 'dark' ? MoonIcon : pref === 'light' ? SunIcon : SmartphoneIcon} className="bg-[var(--ios-orange)] text-white" />}
+          icon={<RowIcon Icon={pref === 'dark' ? MoonIcon : pref === 'light' ? SunIcon : SmartphoneIcon} className="bg-[var(--tile)] text-ink" />}
           label="Tema"
           value={THEME_LABELS[pref]}
           select={
@@ -164,7 +164,7 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
           }
         />
         <Row
-          icon={<RowIcon Icon={SquarePlusIcon} className="bg-[var(--ios-indigo)] text-white" />}
+          icon={<RowIcon Icon={SquarePlusIcon} className="bg-[var(--tile)] text-ink" />}
           label="Ana ekrana ekle"
           value={isInstalled() ? 'Eklendi' : undefined}
           onClick={() => open('install')}
@@ -173,7 +173,7 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
 
       <Group>
         <Row
-          icon={<RowIcon Icon={WalletIcon} className="bg-[var(--ios-green)] text-white" />}
+          icon={<RowIcon Icon={WalletIcon} className="bg-[var(--tile)] text-ink" />}
           label="Harcama özeti"
           value={state.subscriptions.length ? `${formatMoney(monthly)}/ay` : undefined}
           onClick={() => open('spending')}
@@ -181,16 +181,16 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
       </Group>
 
       <Group>
-        <Row icon={<RowIcon Icon={FileTextIcon} className="bg-[var(--ios-gray)] text-white" />} label="Kullanım şartları" onClick={() => setLegal('terms')} />
-        <Row icon={<RowIcon Icon={ShieldIcon} className="bg-[var(--ios-blue)] text-white" />} label="Gizlilik" onClick={() => setLegal('privacy')} />
+        <Row icon={<RowIcon Icon={FileTextIcon} className="bg-[var(--tile)] text-ink" />} label="Kullanım şartları" onClick={() => setLegal('terms')} />
+        <Row icon={<RowIcon Icon={ShieldIcon} className="bg-[var(--tile)] text-ink" />} label="Gizlilik" onClick={() => setLegal('privacy')} />
       </Group>
 
       {/* Sadece test hesabında: hızlı deneme için örnek veri */}
       {demo && (
         <Group title="Test hesabı" footer="Veriler sadece bu cihazda saklanıyor.">
-          <Row icon={<RowIcon Icon={FlaskConicalIcon} className="bg-[var(--ios-blue)] text-white" />} label="Test verisi ekle" onClick={addTestData} />
+          <Row icon={<RowIcon Icon={FlaskConicalIcon} className="bg-[var(--tile)] text-ink" />} label="Test verisi ekle" onClick={addTestData} />
           <Row
-            icon={<RowIcon Icon={Trash2Icon} className="bg-[var(--ios-red)] text-white" />}
+            icon={<RowIcon Icon={Trash2Icon} className="bg-[var(--tile)] text-ink" />}
             label="Tüm verileri sil"
             danger
             onClick={() => undoable('Tüm veriler silindi', () => dispatch({ type: 'state/restore', state: { cards: [], subscriptions: [], payments: [], missingLogos: [] } }))}

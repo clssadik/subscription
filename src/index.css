@@ -295,9 +295,10 @@ html[data-motion='fade']::view-transition-new(root) { animation-name: vt-fade-in
   --ios-blue: #0A84FF; --ios-indigo: #5E5CE6; --ios-gray: #8E8E93;
 }
 /* Hesap ve alt sayfaları (App.tsx → data-settings): hücre, çizgi ve gri yazı iPhone Ayarlar'ın renklerinde.
+   Satır simgeleri renksiz: nötr gri kutu (--tile), simge yazı renginde.
    Sayfa zemini uygulamanınki kalır: açık temada saat çubuğu krem renkte sabit, zemin değişirse üstte şerit kalırdı. */
-main[data-settings] { --surface: #FFFFFF; --line: #D8D8DC; --subtle: #8A8A8E; }
-:root.dark main[data-settings] { --surface: #1C1C1E; --line: #38383A; --subtle: #98989F; }
+main[data-settings] { --surface: #FFFFFF; --line: #D8D8DC; --subtle: #8A8A8E; --tile: #EFEFF4; }
+:root.dark main[data-settings] { --surface: #1C1C1E; --line: #38383A; --subtle: #98989F; --tile: #2C2C2E; }
 
 /* iPhone Ayarlar tarzı grup (SettingsList → Group): satır arası ince çizgi soldan içeriden başlar.
    Satır --sep ile girinti verir (simgeli satırda yazının hizası), yoksa 14px. Çizgi arka plan resmi: dokununca koyulaşan zemini bozmaz. */
