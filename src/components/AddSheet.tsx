@@ -78,7 +78,7 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
     // disablePreventScroll={false}: vaul iPhone'da kayan alan uçtayken esnemeyi bilerek kapatıyor (usePreventScroll); bu onu kapatır.
     // Aynı şey vaul'un "odaklanınca sayfa kaymasın" hilesini de kapattığı için yerine bizimki çalışır (data-keep-page, src/lib/keyboard.ts).
     <Drawer open={!!target} onOpenChange={(o) => !o && close()} disablePreventScroll={false}>
-      <DrawerContent data-keep-page className="max-h-[94svh] rounded-t-[30px] border-0 bg-page data-[vaul-drawer-direction=bottom]:max-h-[94svh]">
+      <DrawerContent ref={glideWithKeyboard} data-keep-page className="max-h-[94svh] rounded-t-[30px] border-0 bg-page data-[vaul-drawer-direction=bottom]:max-h-[94svh]">
         {/* Kayan alan: min-h-0 ile panel kısalınca (klavye açılınca) o da kısalır ve içerik aşağı yukarı kaydırılabilir */}
         <div className="mx-auto min-h-0 w-full max-w-md overflow-y-auto overscroll-contain px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <DrawerTitle className="num pt-3 pb-1 text-center text-lg font-medium">
@@ -117,6 +117,35 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
       </DrawerContent>
     </Drawer>
   )
+}
+
+/**
+ * Klavye açılınca/kapanınca vaul paneli tek seferde yeni yerine koyuyor (boy ve alt boşluk). Boyu her karede
+ * değiştirerek kaydırmak formu her karede yeniden yerleştirdiği için takılıyordu. Bunun yerine panel yeni yerine anında
+ * oturur, eski yerinden yeni yerine "translate" ile kayar: sadece ekran kartı çalışır, akıcıdır.
+ * translate, vaul'un kendi transform'una (sürükleme, açılış) karışmaz.
+ */
+function glideWithKeyboard(el: HTMLDivElement | null) {
+  if (!el) return
+  // Panelin üst kenarının yeri, dönüşümlerden (açılış, sürükleme) bağımsız: alt boşluk + boy
+  const reach = () => (parseFloat(el.style.bottom) || 0) + el.offsetHeight
+  let size = `${el.style.height}|${el.style.bottom}`
+  let last = reach()
+  const observer = new MutationObserver(() => {
+    const next = `${el.style.height}|${el.style.bottom}`
+    if (next === size) return
+    size = next
+    const now = reach()
+    const from = now - last
+    last = now
+    for (const a of el.getAnimations()) if (a.id === 'keyboard-glide') a.cancel()
+    if (Math.abs(from) < 2) return
+    // Yeni yerine oturmuş paneli eski yerinden başlatıp kaydırır. iPhone klavyesine yakın eğri: hızlı başlar, yumuşak durur.
+    const glide = el.animate([{ translate: `0 ${from}px` }, { translate: '0 0' }], { duration: 380, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' })
+    glide.id = 'keyboard-glide'
+  })
+  observer.observe(el, { attributes: true, attributeFilter: ['style'] })
+  return () => observer.disconnect()
 }
 
 function KindButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
