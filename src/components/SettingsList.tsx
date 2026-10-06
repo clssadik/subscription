@@ -10,7 +10,7 @@ export function Group({ title, footer, children, className }: { title?: string; 
   return (
     <section className={cn('mt-5', className)}>
       {/* Başlık ve açıklama iPhone Ayarlar'daki gibi: sistem yazı tipi, 13pt, satır yazısıyla aynı hizada (src/index.css → .ios-text) */}
-      {title && <h2 className="ios-text mb-1.5 px-3.5 text-[13px] text-subtle uppercase">{title}</h2>}
+      {title && <h2 className="ios-text mb-1.5 px-3.5 text-[13px] text-subtle">{title}</h2>}
       {/* Satır arası çizgiler iPhone'daki gibi yazının hizasından başlar (src/index.css → .settings-group) */}
       <div className="settings-group overflow-hidden rounded-[18px] bg-surface">{children}</div>
       {footer && <p className="ios-text mt-1.5 px-3.5 text-[13px] leading-snug text-subtle">{footer}</p>}
