@@ -74,6 +74,8 @@
   </head>
   <body>
     <div id="splash" aria-hidden="true"><img src="/logo-flower.webp" alt="" /><span lang="en">Monthwise</span></div>
+    <!-- Açılış ekranının çizildiği an: src/main.tsx tam 1 sn sonra kaldırır -->
+    <script>window.splashAt = performance.now()</script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
