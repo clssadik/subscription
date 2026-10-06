@@ -54,39 +54,43 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
 
   return (
     <>
-      <div className="mb-3 flex items-center justify-between">
-        <RoundButton label="Geri" onClick={nav.back}><ChevronLeftIcon className="size-5" /></RoundButton>
-        <span className="label text-subtle">Abonelik</span>
-        <RoundButton label="Düzenle" onClick={() => nav.edit({ kind: 'subscription', id: sub.id })}><PencilIcon className="size-[18px]" /></RoundButton>
-      </div>
+      {/* Üst kısım (başlık satırı ve fiş): sağa çekmek koçanı keser, sayfanın sağa çekerek geri dönüşü burada çalışmaz.
+          Koçan ince bir şerit; parmak biraz üstünden başlayınca geri dönülüyordu. Aşağıdan sağa çekince geri dönülür. */}
+      <div data-no-swipe-back>
+        <div className="mb-3 flex items-center justify-between">
+          <RoundButton label="Geri" onClick={nav.back}><ChevronLeftIcon className="size-5" /></RoundButton>
+          <span className="label text-subtle">Abonelik</span>
+          <RoundButton label="Düzenle" onClick={() => nav.edit({ kind: 'subscription', id: sub.id })}><PencilIcon className="size-[18px]" /></RoundButton>
+        </div>
 
-      {/* Ödeme kartı (fiş): tutar en büyük şey. Bu dönemin ödemesi işaretlenebiliyorsa koçan sağa çekilip koparılır = ödendi. */}
-      <TearTicket
-        canTear={canMarkPaid(next)}
-        hint={daysUntil(next) <= 0 ? 'Kesip ödendi işaretle' : `${formatDate(next, 'd MMMM')} ödemesini kesip işaretle`}
-        onTear={markPaid}
-        restore={restored}
-        // Gelecek ayların ödemesi o ay gelmeden işaretlenemez: koçanda nedeni yazar (bu ay ödendiyse alttaki not yeter)
-        note={paidThisMonth(state.payments, sub.id) ? undefined : `${formatDate(next, 'd MMMM')} ödemesi o ay gelince kesilebilir`}
-        top={
-          <>
-            <span aria-hidden className="absolute -top-8 -right-8 size-28 rounded-full bg-bh-blue dark:bg-bh-yellow" />
-            <Logo serviceKey={sub.serviceKey} name={sub.name} size={44} className="relative" />
-            <h1 className="relative mt-3 truncate font-label text-lg font-medium">{sub.name}</h1>
-            <div className="relative leading-tight">
-              <Money amount={sub.amount} currency={sub.currency} size={46} />
+        {/* Ödeme kartı (fiş): tutar en büyük şey. Bu dönemin ödemesi işaretlenebiliyorsa koçan sağa çekilip koparılır = ödendi. */}
+        <TearTicket
+          canTear={canMarkPaid(next)}
+          hint={daysUntil(next) <= 0 ? 'Kesip ödendi işaretle' : `${formatDate(next, 'd MMMM')} ödemesini kesip işaretle`}
+          onTear={markPaid}
+          restore={restored}
+          // Gelecek ayların ödemesi o ay gelmeden işaretlenemez: koçanda nedeni yazar (bu ay ödendiyse alttaki not yeter)
+          note={paidThisMonth(state.payments, sub.id) ? undefined : `${formatDate(next, 'd MMMM')} ödemesi o ay gelince kesilebilir`}
+          top={
+            <>
+              <span aria-hidden className="absolute -top-8 -right-8 size-28 rounded-full bg-bh-blue dark:bg-bh-yellow" />
+              <Logo serviceKey={sub.serviceKey} name={sub.name} size={44} className="relative" />
+              <h1 className="relative mt-3 truncate font-label text-lg font-medium">{sub.name}</h1>
+              <div className="relative leading-tight">
+                <Money amount={sub.amount} currency={sub.currency} size={46} />
+              </div>
+            </>
+          }
+          stub={
+            <div className="flex justify-between gap-3 text-[11px] opacity-75">
+              <span className="truncate">{card ? `${card.bankName} •• ${card.last4}` : 'kart seçilmedi'}</span>
+              <span className="shrink-0">
+                {CYCLE_LABELS[sub.cycle]} · {sub.cycle === 'monthly' ? `her ayın ${dayOf(anchor.getDate())}` : `her yıl ${formatDate(anchor, 'd MMMM')}`}
+              </span>
             </div>
-          </>
-        }
-        stub={
-          <div className="flex justify-between gap-3 text-[11px] opacity-75">
-            <span className="truncate">{card ? `${card.bankName} •• ${card.last4}` : 'kart seçilmedi'}</span>
-            <span className="shrink-0">
-              {CYCLE_LABELS[sub.cycle]} · {sub.cycle === 'monthly' ? `her ayın ${dayOf(anchor.getDate())}` : `her yıl ${formatDate(anchor, 'd MMMM')}`}
-            </span>
-          </div>
-        }
-      />
+          }
+        />
+      </div>
 
       <div className="mt-2 grid grid-cols-2 gap-2">
         <div className="flex h-[92px] flex-col rounded-[22px] bg-bh-yellow p-3 text-[#141414]">
