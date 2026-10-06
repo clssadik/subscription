@@ -1,10 +1,10 @@
-import { FLOWER_URL, Wordmark } from '@/components/Brand'
+import { LOGO_URL, Wordmark } from '@/components/Brand'
 import { isAndroid } from '@/lib/install'
 import { InstallSteps } from '@/screens/account/InstallGuide'
 
 /**
  * Telefonda tarayıcıdan açılınca ilk gelen tam ekran rehber: Monthwise'ı ana ekrana eklemeyi anlatır.
- * Açılış ekranının devamı gibi: siyah zeminde çiçek, adımlar alttaki panelde (Safari'nin Paylaş düğmesine yakın).
+ * Açılış ekranının devamı gibi: siyah zeminde hayalet, adımlar alttaki panelde (Safari'nin Paylaş düğmesine yakın).
  * Ana ekrandan açılan uygulamada görünmez. "Safari'de devam et" bu oturum için geçer (src/lib/install.ts).
  */
 export function InstallGate({ onContinue }: { onContinue: () => void }) {
@@ -12,7 +12,7 @@ export function InstallGate({ onContinue }: { onContinue: () => void }) {
   return (
     <main className="app-screen mx-auto flex max-w-md flex-col bg-black text-[#F2F2F2]">
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3.5 pt-[var(--top-gap)]">
-        <img src={FLOWER_URL} alt="" width={180} height={180} className="size-[180px] shrink-0" />
+        <img src={LOGO_URL} alt="" width={180} height={180} className="size-[180px] shrink-0" />
         <Wordmark className="text-[24px]" />
       </div>
 

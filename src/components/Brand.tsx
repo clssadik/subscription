@@ -1,8 +1,8 @@
 import type { CSSProperties } from 'react'
 import { cn } from '@/lib/utils'
 
-/** Uygulama logosu: kutusuz mavi çiçek (açılış ekranıyla aynı dosya, public/logo-flower.webp) */
-export const FLOWER_URL = '/logo-flower.webp'
+/** Uygulama logosu: kutusuz hayalet (açılış ekranıyla aynı dosya, public/logo-ghost.webp; scripts/app-logo.mjs üretir) */
+export const LOGO_URL = '/logo-ghost.webp'
 
 /**
  * "MONTHWISE" yazısı: ince Outfit, hepsi büyük harf, aralıklı (açılış ekranıyla aynı, index.html #splash).
@@ -20,7 +20,7 @@ export function Wordmark({ className, style }: { className?: string; style?: CSS
 export function Brand({ size = 32, className }: { size?: number; className?: string }) {
   return (
     <div className={cn('flex items-center gap-2.5', className)}>
-      <img src={FLOWER_URL} alt="" width={size} height={size} className="shrink-0" />
+      <img src={LOGO_URL} alt="" width={size} height={size} className="shrink-0" />
       <Wordmark style={{ fontSize: Math.round(size * 0.56) }} />
     </div>
   )

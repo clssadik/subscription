@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { FLOWER_URL } from '@/components/Brand'
+import { LOGO_URL } from '@/components/Brand'
 import { haptic } from '@/lib/haptics'
 import { usePush } from '@/lib/push'
 import { transition } from '@/lib/transition'
@@ -25,7 +25,7 @@ const markAsked = () => {
 /**
  * İlk girişte bildirim izni. iPhone izni sadece ana ekrandan açılan uygulamada ve bir dokunuşun içinde sorabiliyor;
  * bu yüzden kendiliğinden değil, "İzin ver" düğmesiyle istenir. İzin zaten verilmiş, reddedilmiş ya da
- * desteklenmiyorsa (ör. Safari'de) hiç görünmez. Açılış ekranının devamı gibi: siyah zeminde çiçek, altta panel.
+ * desteklenmiyorsa (ör. Safari'de) hiç görünmez. Açılış ekranının devamı gibi: siyah zeminde hayalet, altta panel.
  */
 export function PermissionGate() {
   const { state, enable } = usePush()
@@ -53,7 +53,7 @@ export function PermissionGate() {
   return (
     <div className="app-screen z-40 mx-auto flex max-w-md flex-col bg-black text-[#F2F2F2]">
       <div className="flex min-h-0 flex-1 items-center justify-center pt-[var(--top-gap)]">
-        <img src={FLOWER_URL} alt="" width={140} height={140} className="size-[140px]" />
+        <img src={LOGO_URL} alt="" width={140} height={140} className="size-[140px]" />
       </div>
       <section className="rounded-t-[28px] bg-surface px-5 pt-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-ink">
         <h1 className="text-[19px] font-semibold">Bildirimler</h1>
