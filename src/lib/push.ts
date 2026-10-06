@@ -79,7 +79,7 @@ export function usePush() {
 /** Bu hesabın bütün telefonlarına deneme bildirimi gönderir. Hata varsa mesajını döner. */
 export async function sendTestPush() {
   const { data, error } = await supabase.functions.invoke('send-reminders', { body: { test: true } })
-  if (error) return 'Deneme gönderilemedi. Biraz sonra tekrar dene.'
+  if (error) return 'Deneme gönderilemedi. Biraz sonra tekrar deneyin.'
   if (!data?.sent) return 'Bu hesaba kayıtlı telefon bulunamadı.'
   return null
 }

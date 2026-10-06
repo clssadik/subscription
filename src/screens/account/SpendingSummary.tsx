@@ -34,7 +34,7 @@ export function SpendingSummary({ onBack }: { onBack: () => void }) {
       <SubPageHeader title="Harcama özeti" onBack={onBack} />
 
       {subs.length === 0 ? (
-        <p className="mt-10 text-center text-sm text-subtle">Abonelik ekleyince harcama özetin burada görünür.</p>
+        <p className="mt-10 text-center text-sm text-subtle">Henüz abonelik yok.</p>
       ) : (
         <>
           <section className="mt-3 rounded-[22px] bg-hero p-3.5 text-hero-fg">

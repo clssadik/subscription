@@ -12,18 +12,18 @@ export function ProfileEditor({ user, onBack }: { user: User; onBack: () => void
     <>
       <SubPageHeader title="Profil" onBack={onBack} />
       <div className="mt-4 flex flex-col items-center">
-        <span className="flex size-24 items-center justify-center rounded-full bg-bh-yellow font-label text-4xl font-medium text-[#141414]">
+        <span className="flex size-24 items-center justify-center rounded-full bg-ink font-label text-4xl font-medium text-page">
           {initials(settings.name, email)}
         </span>
       </div>
 
-      <Group title="Ad" footer="Sadece hesabında görünür.">
+      <Group title="Ad">
         <label className="flex min-h-[52px] items-center px-3.5">
           <input
             className={inputClass}
             value={settings.name}
             onChange={(e) => update({ name: e.target.value.slice(0, 40) })}
-            placeholder="Adın ve soyadın"
+            placeholder="Ad soyad"
             autoComplete="name"
             enterKeyHint="done"
             onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}

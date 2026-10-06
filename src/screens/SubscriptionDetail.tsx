@@ -101,7 +101,6 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
         <Stat
           label="Yıllık maliyet"
           value={formatMoney(sub.cycle === 'monthly' ? sub.amount * 12 : sub.amount, sub.currency)}
-          sub="bu fiyatla"
           shape={<span aria-hidden className="absolute right-0 bottom-0 size-[34px] rounded-tl-full bg-bh-red" />}
         />
       </div>
@@ -114,7 +113,7 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
         {history.length > 0 && <span className="num text-[11px]">{formatMoney(totalPaid, sub.currency)} · {history.length} ödeme</span>}
       </div>
       {history.length === 0 ? (
-        <p className="rounded-[18px] bg-surface px-3.5 py-3 text-sm text-subtle">Sıradaki ödeme {formatDate(next, 'd MMMM')}. Ödendi işaretleyince burada görünür.</p>
+        <p className="rounded-[18px] bg-surface px-3.5 py-3 text-sm text-subtle">Henüz ödeme yok.</p>
       ) : (
         <ul className="grid gap-1.5">
           {history.map((p) => (
@@ -131,13 +130,13 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
   )
 }
 
-function Stat({ label, value, sub, shape }: { label: string; value: string; sub: string; shape?: React.ReactNode }) {
+function Stat({ label, value, sub, shape }: { label: string; value: string; sub?: string; shape?: React.ReactNode }) {
   return (
     <div className="relative flex h-[92px] flex-col overflow-hidden rounded-[22px] bg-surface p-3">
       {shape}
       <span className="label relative text-subtle">{label}</span>
       <span className="num mt-auto text-lg">{value}</span>
-      <span className="text-[11px] text-subtle">{sub}</span>
+      {sub && <span className="text-[11px] text-subtle">{sub}</span>}
     </div>
   )
 }

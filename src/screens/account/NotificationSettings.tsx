@@ -37,17 +37,17 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
 
       <PushStatus />
 
-      <Group footer="Kapalıyken hiçbir hatırlatma gönderilmez.">
+      <Group>
         <Row label="Hatırlatmalar" trailing={<Switch label="Hatırlatmalar" checked={n.enabled} onChange={(enabled) => updateNotify({ enabled })} />} />
       </Group>
 
       {/* Hatırlatmalar kapalıyken ayarlar soluk ve dokunulamaz */}
       <div className={cn('transition-opacity', off && 'pointer-events-none opacity-40')} aria-disabled={off}>
-        <Group title="Abonelik yenilenmesi" footer="Birden fazla seçebilirsin.">
+        <Group title="Abonelik yenilenmesi">
           <CheckList multiple options={DAY_OPTIONS} value={n.subscriptionDays} onChange={(subscriptionDays) => updateNotify({ subscriptionDays })} disabled={off} />
         </Group>
 
-        <Group title="Kart son ödemesi" footer="Birden fazla seçebilirsin.">
+        <Group title="Kart son ödemesi">
           <CheckList multiple options={DAY_OPTIONS} value={n.cardDays} onChange={(cardDays) => updateNotify({ cardDays })} disabled={off} />
         </Group>
 
@@ -67,12 +67,12 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
           />
         </Group>
 
-        <Group title="Diğer" footer="Son gün geçtiği hâlde ödendi işaretlenmemiş ödeme ertesi sabah tekrar hatırlatılır.">
+        <Group title="Diğer" footer="Ödenmeyen ödeme ertesi sabah tekrar hatırlatılır.">
           <Row label="Hesap kesilince haber ver" trailing={<Switch label="Hesap kesilince haber ver" checked={n.statement} onChange={(statement) => updateNotify({ statement })} />} />
           <Row label="Gecikince tekrar hatırlat" trailing={<Switch label="Gecikince tekrar hatırlat" checked={n.overdue} onChange={(overdue) => updateNotify({ overdue })} />} />
         </Group>
 
-        <Group title="Özet" footer={n.summary === 'weekly' ? 'Her pazartesi: o hafta kaç ödeme var, toplam ne kadar.' : n.summary === 'monthly' ? 'Her ayın 1’i: o ay kaç ödeme var, toplam ne kadar.' : 'Toplu özet gönderilmez.'}>
+        <Group title="Özet" footer={n.summary === 'weekly' ? 'Her pazartesi: o hafta kaç ödeme var, toplam ne kadar.' : n.summary === 'monthly' ? 'Her ayın 1’i: o ay kaç ödeme var, toplam ne kadar.' : undefined}>
           <CheckList
             options={SUMMARY_OPTIONS}
             value={[n.summary]}
@@ -82,7 +82,7 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
         </Group>
 
         {state.subscriptions.length > 0 && (
-          <Group title="Abonelik bazında" footer="Bir aboneliğe dokunup kapatabilir ya da kendi süresini seçebilirsin.">
+          <Group title="Abonelik bazında">
             {[...state.subscriptions]
               .sort((a, b) => a.name.localeCompare(b.name, 'tr'))
               .map((s) => {
@@ -124,7 +124,7 @@ function PushStatus() {
     try {
       await enable()
     } catch {
-      toast.error('Bildirim izni kaydedilemedi. Tekrar dene.')
+      toast.error('Bildirim izni kaydedilemedi. Tekrar deneyin.')
     }
     setBusy(false)
   }
@@ -144,24 +144,24 @@ function PushStatus() {
 
   if (state === 'on')
     return (
-      <Group title="Bu telefon" footer="Hatırlatmalar ayarlarına göre seçtiğin saatte gelir.">
+      <Group title="Bu telefon">
         <Row label="Bildirim izni" value="Açık" />
         {action('Deneme bildirimi gönder', test)}
       </Group>
     )
   if (state === 'default')
     return (
-      <Group title="Bu telefon" footer="İzin verirsen ödeme yaklaşınca bu telefona haber verilir.">
+      <Group title="Bu telefon">
         <Row label="Bildirim izni" value="Verilmedi" />
         {action('Bildirimlere izin ver', allow)}
       </Group>
     )
   const footer =
     state === 'install'
-      ? "iPhone bildirimleri sadece ana ekrandaki Monthwise'a gönderir. Önce ana ekrana ekle."
+      ? 'Bildirimler için uygulama ana ekrana eklenmeli.'
       : state === 'denied'
-        ? "Ayarlar → Bildirimler → Monthwise'dan açabilirsin."
-        : 'Bu tarayıcı bildirim desteklemiyor. Ayarların yine de kaydediliyor.'
+        ? 'Ayarlar → Bildirimler → Monthwise'
+        : 'Bu tarayıcı bildirim desteklemiyor.'
   return (
     <Group title="Bu telefon" footer={footer}>
       <Row label="Bildirim izni" value={state === 'unsupported' ? 'Desteklenmiyor' : 'Kapalı'} />

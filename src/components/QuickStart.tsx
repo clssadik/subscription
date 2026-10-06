@@ -31,7 +31,7 @@ const BENTO: { key: string; cls: string; glyph: number; fg: string; name?: boole
 export function HomeQuickStart({ nav }: { nav: Nav }) {
   return (
     <>
-      <p className="label mb-2 px-1 text-subtle">İlk aboneliğini seç</p>
+      <p className="label mb-2 px-1 text-subtle">Abonelik ekle</p>
       <div className="grid auto-rows-[78px] grid-cols-4 gap-2">
         {BENTO.map((b) => {
           const s = getService(b.key)!

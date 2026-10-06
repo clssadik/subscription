@@ -109,14 +109,13 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
         }
       >
         {q && groups.size === 0 && <p className="mt-6 text-center text-sm text-subtle">“{search.query?.trim()}” için sonuç yok</p>}
-        {/* Henüz hiçbir şey ödendi işaretlenmemişse ne yapılacağını söyle */}
+        {/* Henüz hiçbir şey ödendi işaretlenmemişse */}
         {payments.length === 0 && (
           <div className="mt-4 flex flex-col items-center rounded-[22px] bg-surface px-6 py-8 text-center">
             <span className="flex size-12 items-center justify-center rounded-full bg-bh-green/15 text-bh-green">
               <CheckIcon className="size-6" strokeWidth={2.2} />
             </span>
             <p className="mt-3 font-medium">Henüz ödeme yok</p>
-            <p className="mt-1 text-sm text-subtle">Anasayfada bir ödemenin yanındaki yuvarlağa dokununca ödendi olarak burada görünür.</p>
           </div>
         )}
         {[...groups.entries()].map(([month, list]) => (

@@ -104,7 +104,7 @@ export function DaySelect({
         onChange={(e) => onChange(Number(e.target.value))}
         className={cn('w-full appearance-none bg-transparent pr-6 text-base outline-none', value ? 'text-ink' : 'text-subtle/60')}
       >
-        <option value="" disabled>Gün seç</option>
+        <option value="" disabled>Gün seçin</option>
         {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
           <option key={d} value={d}>Her ayın {dayOf(d)}</option>
         ))}

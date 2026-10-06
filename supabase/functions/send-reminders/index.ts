@@ -264,7 +264,7 @@ Deno.serve(async (req) => {
     const { data: devices } = await db.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth').eq('user_id', data.user.id)
     let sent = 0
     for (const d of (devices ?? []) as PushRow[])
-      if (await push(d, { title: 'Monthwise', body: 'Bildirimler çalışıyor. Ödemeler yaklaşınca buradan haber vereceğiz.', tag: 'test', url: '/' })) sent++
+      if (await push(d, { title: 'Monthwise', body: 'Bildirimler çalışıyor.', tag: 'test', url: '/' })) sent++
     return Response.json({ sent })
   }
 

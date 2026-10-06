@@ -153,7 +153,7 @@ export function StoreProvider({ userId, children }: { userId: string | null; chi
       .catch(() => {
         if (cancelled) return
         setReady(true)
-        toast.error('Veriler yüklenemedi. İnternet bağlantını kontrol et.')
+        toast.error('Veriler yüklenemedi. İnternet bağlantısını kontrol edin.')
       })
     return () => {
       cancelled = true
@@ -172,7 +172,7 @@ export function StoreProvider({ userId, children }: { userId: string | null; chi
     server.current = state
     queue.current = queue.current.then(() =>
       pushChanges(before, state).catch(() => {
-        toast.error('Değişiklik kaydedilemedi. İnternet bağlantını kontrol et.')
+        toast.error('Değişiklik kaydedilemedi. İnternet bağlantısını kontrol edin.')
         // Ekranı veritabanındaki gerçek durumla eşitle
         return loadAll().then((data) => {
           const fresh = migrate(data)
@@ -195,7 +195,7 @@ export function StoreProvider({ userId, children }: { userId: string | null; chi
       server.current = { ...fresh, missingLogos: data.missingLogos }
       dispatch({ type: 'state/load', state: fresh })
     } catch {
-      toast.error('Veriler yenilenemedi. İnternet bağlantını kontrol et.')
+      toast.error('Veriler yenilenemedi. İnternet bağlantısını kontrol edin.')
     }
   }
 

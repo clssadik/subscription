@@ -10,19 +10,19 @@ const PAGES: Record<LegalPage, { title: string; sections: { heading: string; bod
     sections: [
       {
         heading: 'Monthwise nedir?',
-        body: 'Monthwise, aboneliklerini ve kart ödemelerini tek yerde takip etmen için kişisel bir uygulamadır. Hangi aboneliğin ne zaman yenileneceğini, hangi karttan çekildiğini ve kartlarının son ödeme günlerini gösterir.',
+        body: 'Monthwise, abonelikleri ve kart ödemelerini tek yerde takip etmek için kişisel bir uygulamadır. Hangi aboneliğin ne zaman yenileneceğini, hangi karttan çekildiğini ve kartların son ödeme günlerini gösterir.',
       },
       {
         heading: 'Ödeme yapmaz',
-        body: 'Monthwise bankana ya da kartına bağlanmaz, para çekmez, ödeme yapmaz. Sadece senin girdiğin bilgileri hatırlar ve hesaplar. Ödemelerini her zamanki gibi kendin yaparsın.',
+        body: 'Monthwise bankaya ya da karta bağlanmaz, para çekmez, ödeme yapmaz. Yalnızca girilen bilgileri saklar ve hesaplar. Ödemeler her zamanki gibi banka üzerinden yapılır.',
       },
       {
         heading: 'Bilgilerin doğruluğu',
-        body: 'Tarihler ve tutarlar senin girdiğin bilgilere göre hesaplanır. Önemli ödemelerde bankanın ya da servisin kendi bildirimlerini de kontrol et. Yanlış girilen bir bilgiden doğan gecikmelerden Monthwise sorumlu değildir.',
+        body: 'Tarihler ve tutarlar girilen bilgilere göre hesaplanır. Önemli ödemelerde bankanın ya da servisin kendi bildirimleri de kontrol edilmelidir. Yanlış girilen bir bilgiden doğan gecikmelerden Monthwise sorumlu değildir.',
       },
       {
-        heading: 'Hesabın',
-        body: 'Şifre yok: e-postana gelen kodla girersin. E-postana başkasının erişmediğinden emin ol.',
+        heading: 'Hesap',
+        body: 'Şifre kullanılmaz; giriş e-postaya gelen kodla yapılır. Hesabın güvenliği e-posta hesabının güvenliğine bağlıdır.',
       },
     ],
   },
@@ -31,7 +31,7 @@ const PAGES: Record<LegalPage, { title: string; sections: { heading: string; bod
     sections: [
       {
         heading: 'Ne saklanır?',
-        body: 'E-posta adresin, eklediğin abonelikler (ad, tutar, yenilenme tarihi), kartların için sadece banka adı ve son 4 hane, hesap kesim günü ve "ödendi" işaretlerin.',
+        body: 'E-posta adresi, eklenen abonelikler (ad, tutar, yenilenme tarihi), kartlar için yalnızca banka adı ve son 4 hane, hesap kesim günü ve "ödendi" işaretleri.',
       },
       {
         heading: 'Ne saklanmaz?',
@@ -39,15 +39,15 @@ const PAGES: Record<LegalPage, { title: string; sections: { heading: string; bod
       },
       {
         heading: 'Nerede saklanır?',
-        body: 'Veriler hesabına bağlı olarak güvenli bir sunucuda tutulur; aynı e-postayla başka bir cihazdan girince orada da görünür. Telefonda da bir kopyası durur, böylece internet yokken de açılır.',
+        body: 'Veriler hesaba bağlı olarak güvenli bir sunucuda tutulur; aynı e-postayla başka bir cihazdan girildiğinde orada da görünür. Telefonda da bir kopyası durur, böylece uygulama internet yokken de açılır.',
       },
       {
         heading: 'Kimseyle paylaşılmaz',
-        body: 'Verilerin satılmaz, reklam için kullanılmaz, başka biriyle paylaşılmaz. Logosu olmayan bir servis eklediğinde, logosunu ekleyebilmek için o servisin adı not alınır.',
+        body: 'Veriler satılmaz, reklam için kullanılmaz, kimseyle paylaşılmaz. Logosu olmayan bir servis eklendiğinde, logonun eklenebilmesi için yalnızca servisin adı not alınır.',
       },
       {
         heading: 'Silme',
-        body: 'Çıkış yapınca bu telefondaki kopya silinir. Eklediğin bir aboneliği ya da kartı sildiğinde sunucudan da silinir.',
+        body: 'Çıkış yapıldığında telefondaki kopya silinir. Silinen bir abonelik ya da kart sunucudan da silinir.',
       },
     ],
   },

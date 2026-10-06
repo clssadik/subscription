@@ -128,7 +128,7 @@ function Welcome({ onStart, onLogin }: { onStart: () => void; onLogin: () => voi
         </h1>
         <div className="mt-6 flex items-center justify-between">
           <button onClick={onLogin} className="min-h-11 text-sm text-subtle underline-offset-4 hover:underline">
-            Hesabım var
+            Giriş yap
           </button>
           <button onClick={onStart} aria-label="Başla" className="pressable flex size-16 items-center justify-center rounded-full bg-bh-yellow text-[#141414]">
             <ArrowRightIcon className="size-7" strokeWidth={2.2} />
@@ -142,10 +142,10 @@ function Welcome({ onStart, onLogin }: { onStart: () => void; onLogin: () => voi
 /** Supabase hata mesajlarını Türkçeye çevirir */
 function friendly(message: string) {
   const m = message.toLowerCase()
-  if (m.includes('rate') || m.includes('seconds')) return 'Çok sık denedin. Biraz bekle.'
+  if (m.includes('rate') || m.includes('seconds')) return 'Çok fazla deneme. Biraz sonra tekrar deneyin.'
   if (m.includes('expired') || m.includes('invalid')) return 'Kod hatalı ya da süresi dolmuş.'
   if (m.includes('fetch') || m.includes('network')) return 'Bağlantı kurulamadı.'
-  return 'Bir şeyler ters gitti. Tekrar dene.'
+  return 'Bir hata oluştu. Tekrar deneyin.'
 }
 
 /** E-postaya kod gönderir. Hata varsa mesajını, yoksa null döner. Supabase yokken sadece test hesabı. */
@@ -178,7 +178,7 @@ function EmailStep({
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     const address = email.trim().toLowerCase()
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) return setError('Geçerli bir e-posta gir.')
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) return setError('Geçerli bir e-posta adresi girin.')
     // Kod ekranı sunucu cevabından sonra açılıyor; klavye şimdiden açılsın ki oradaki alan devralsın
     holdKeyboard('numeric')
     setBusy(true)
@@ -197,10 +197,8 @@ function EmailStep({
       <Brand size={40} className="mt-6 justify-center" />
 
       <div className="mt-10 text-center">
-        <h1 className="num num-bold text-[30px] leading-tight">{signup ? 'Hesap oluştur' : 'Tekrar hoş geldin'}</h1>
-        <p className="mt-2 text-sm text-subtle">
-          {signup ? 'E-postanı yaz, sana bir kod gönderelim. Şifre yok.' : 'E-postana bir giriş kodu gönderelim.'}
-        </p>
+        <h1 className="num num-bold text-[30px] leading-tight">{signup ? 'Hesap oluştur' : 'Giriş yap'}</h1>
+        <p className="mt-2 text-sm text-subtle">E-postaya bir giriş kodu gönderilir.</p>
       </div>
 
       {/* Google ve Apple ile giriş henüz yok (Supabase kurulunca) */}
@@ -247,8 +245,7 @@ function EmailStep({
         <button type="submit" disabled={busy} className={primary}>{busy ? 'Gönderiliyor…' : 'Devam'}</button>
       </form>
 
-      <p className="mt-5 text-center text-sm text-subtle">
-        {signup ? 'Hesabın var mı? ' : 'Hesabın yok mu? '}
+      <p className="mt-5 text-center text-sm">
         <button type="button" onClick={onSwitch} className="font-medium text-ink">
           {signup ? 'Giriş yap' : 'Hesap oluştur'}
         </button>
@@ -273,7 +270,7 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
 
   async function verify(value: string) {
     if (busy || done) return
-    if (value.length !== CODE_LENGTH) return setError('Kodun 6 hanesini de gir.')
+    if (value.length !== CODE_LENGTH) return setError('6 haneli kodu girin.')
     setError('')
     // Yanlış kodda kutular boşalır: yeniden yazmak için tek tek silmek gerekmesin
     const fail = (message: string) => {
@@ -314,9 +311,9 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
       </div>
 
       <div className="mt-8">
-        <h1 className="num num-bold text-[30px] leading-tight">Kodu gir</h1>
+        <h1 className="num num-bold text-[30px] leading-tight">Giriş kodu</h1>
         <p className="mt-2 text-sm text-subtle">
-          <span className="font-medium text-ink">{email}</span> adresine 6 haneli bir kod gönderdik.
+          6 haneli kod <span className="font-medium text-ink">{email}</span> adresine gönderildi.
         </p>
       </div>
 
@@ -372,9 +369,8 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
         </button>
       </form>
 
-      <p className="mt-5 text-center text-sm text-subtle">
-        Kod gelmedi mi?{' '}
-        <button type="button" onClick={resend} className="font-medium text-ink">Tekrar gönder</button>
+      <p className="mt-5 text-center text-sm">
+        <button type="button" onClick={resend} className="font-medium text-ink">Kodu tekrar gönder</button>
       </p>
     </>
   )

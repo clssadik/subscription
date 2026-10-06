@@ -81,7 +81,7 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
           <DrawerTitle className="num pt-3 pb-1 text-center text-lg font-medium">
             {editing ? (kind === 'card' ? 'Kartı düzenle' : 'Aboneliği düzenle') : 'Yeni ekle'}
           </DrawerTitle>
-          <DrawerDescription className="sr-only">Abonelik ya da kart bilgilerini gir.</DrawerDescription>
+          <DrawerDescription className="sr-only">Abonelik ya da kart bilgileri</DrawerDescription>
 
           {!editing && (
             <div className="mt-3 flex gap-2">
@@ -157,9 +157,9 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
   function submit(e: React.FormEvent) {
     e.preventDefault()
     const value = parseAmount(amount)
-    if (!name.trim()) return fail('Abonelik adını gir.')
-    if (!(value > 0)) return fail('Tutarı sayı olarak gir, örneğin 229,99.')
-    if (!renewalDate) return fail('Yenilenme tarihini seç.')
+    if (!name.trim()) return fail('Abonelik adı girin.')
+    if (!(value > 0)) return fail('Tutar sayı olmalı, ör. 229,99.')
+    if (!renewalDate) return fail('Yenilenme tarihi seçin.')
     let linkedCard = cardId || null
     if (newCard) {
       const problem = cardProblem(card)
@@ -261,9 +261,9 @@ const NEW_CARD = '__new'
 type NewCard = { bankName: string; last4: string; kind: CardKind; statementDay: number | null }
 
 function cardProblem(c: NewCard) {
-  if (!c.bankName.trim()) return 'Banka adını gir.'
+  if (!c.bankName.trim()) return 'Banka adı girin.'
   if (!/^\d{4}$/.test(c.last4)) return 'Son 4 hane tam 4 rakam olmalı.'
-  if (c.kind === 'credit' && !c.statementDay) return 'Hesap kesim gününü seç.'
+  if (c.kind === 'credit' && !c.statementDay) return 'Hesap kesim günü seçin.'
   return ''
 }
 

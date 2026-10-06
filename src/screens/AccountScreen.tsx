@@ -109,7 +109,7 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
         </span>
         <span className="min-w-0 flex-1">
           <span className={settings.name ? 'block truncate text-lg font-medium' : 'block text-lg text-subtle'}>
-            {settings.name || 'Adını ekle'}
+            {settings.name || 'Ad ekle'}
           </span>
           <span className="block truncate text-sm text-subtle">{email}</span>
         </span>
@@ -192,9 +192,7 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
         </Group>
       )}
 
-      <Group
-        footer={demo ? undefined : 'Verilerin hesabında saklanıyor. Aynı e-postayla başka bir cihazdan girdiğinde hepsi orada olur.'}
-      >
+      <Group>
         <button type="button" onClick={signOut} className="flex min-h-[52px] w-full items-center justify-center gap-2 text-[15px] font-medium text-bh-red active:bg-line/60">
           <LogOutIcon className="size-[18px]" /> Çıkış yap
         </button>

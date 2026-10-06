@@ -1,7 +1,6 @@
-import { EllipsisIcon, PlusSquareIcon, ShareIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
 import { FLOWER_URL, Wordmark } from '@/components/Brand'
 import { isAndroid } from '@/lib/install'
+import { InstallSteps } from '@/screens/account/InstallGuide'
 
 /**
  * Telefonda tarayıcıdan açılınca ilk gelen tam ekran rehber: Monthwise'ı ana ekrana eklemeyi anlatır.
@@ -18,50 +17,16 @@ export function InstallGate({ onContinue }: { onContinue: () => void }) {
       </div>
 
       <section className="rounded-t-[28px] bg-surface px-5 pt-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-ink">
-        <h1 className="text-[19px] font-semibold">Ana ekranına ekle</h1>
-        {android ? (
-          <ol className="mt-3 grid gap-1">
-            <Step n={1} icon={<EllipsisIcon className="size-5 rotate-90" />}>
-              Sağ üstteki menü
-            </Step>
-            <Step n={2} icon={<PlusSquareIcon className="size-5" />}>
-              Ana ekrana ekle
-            </Step>
-            <Step n={3} icon={<span className="font-medium text-bh-blue">Ekle</span>}>
-              Ekle ile onayla
-            </Step>
-          </ol>
-        ) : (
-          <ol className="mt-3 grid gap-1">
-            <Step n={1} icon={<ShareIcon className="size-5 text-bh-blue" />}>
-              Alttaki Paylaş <span className="text-subtle">(yoksa önce •••)</span>
-            </Step>
-            <Step n={2} icon={<PlusSquareIcon className="size-5" />}>
-              Ana Ekrana Ekle
-            </Step>
-            <Step n={3} icon={<span className="font-medium text-bh-blue">Ekle</span>}>
-              Sağ üstte Ekle
-            </Step>
-          </ol>
-        )}
+        <h1 className="text-[19px] font-semibold">Ana ekrana ekle</h1>
+        <InstallSteps className="mt-3" />
         <button
           type="button"
           onClick={onContinue}
           className="mt-2 min-h-11 w-full text-sm text-subtle underline underline-offset-4"
         >
-          Şimdilik {android ? 'tarayıcıda' : "Safari'de"} devam et
+          {android ? 'Tarayıcıda' : "Safari'de"} devam et
         </button>
       </section>
     </main>
-  )
-}
-
-function Step({ n, icon, children }: { n: number; icon: ReactNode; children: ReactNode }) {
-  return (
-    <li className="flex min-h-10 items-center gap-3.5 text-[15px]">
-      <span className="num num-bold w-3 shrink-0">{n}</span>
-      <span className="min-w-0 flex-1">{children}</span>
-      <span className="flex shrink-0 items-center">{icon}</span>
-    </li>
   )
 }
