@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { Wordmark } from '@/components/Brand'
 import { LegalSheet, type LegalPage } from '@/components/LegalSheet'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Group, Row, RowIcon, Switch } from '@/components/SettingsList'
@@ -212,7 +213,7 @@ function AccountMain({ user, open }: { user: User; open: (page: Page) => void })
         </button>
       </Group>
 
-      <p className="mt-6 text-center text-[12px] text-subtle">Monthwise</p>
+      <p className="mt-6 text-center text-[12px] text-subtle"><Wordmark /></p>
       <LegalSheet page={legal} onClose={() => setLegal(null)} />
     </>
   )

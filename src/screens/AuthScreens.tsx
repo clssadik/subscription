@@ -2,7 +2,7 @@ import { ArrowRightIcon, ChevronLeftIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { siApple, siGoogle } from 'simple-icons'
 import { toast } from 'sonner'
-import logoUrl from '@/assets/subly-logo.png'
+import { Brand } from '@/components/Brand'
 import { LegalSheet, type LegalPage } from '@/components/LegalSheet'
 import { LogoWall } from '@/components/LogoWall'
 import { NotificationStack } from '@/components/NotificationStack'
@@ -103,16 +103,6 @@ export function AuthFlow() {
           }} />}
       <LegalSheet page={legal} onClose={() => setLegal(null)} />
     </main>
-  )
-}
-
-/** Uygulamanın logosu ve adı */
-function Brand({ size = 32, className }: { size?: number; className?: string }) {
-  return (
-    <div className={cn('flex items-center gap-2', className)}>
-      <img src={logoUrl} alt="" width={size} height={size} style={{ borderRadius: Math.round(size * 0.24) }} />
-      <span className="font-label font-semibold" style={{ fontSize: Math.round(size * 0.62) }}>Monthwise</span>
-    </div>
   )
 }
 
