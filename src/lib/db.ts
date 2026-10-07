@@ -109,12 +109,13 @@ async function readAll(page: (from: number, to: number) => PromiseLike<Res<Row[]
 }
 
 /** Kullanıcının bütün verilerini veritabanından okur. */
-export async function loadAll(): Promise<State> {
+export async function loadAll(userId: string): Promise<State> {
+  const mine = (table: string) => supabase.from(table).select('*').eq('user_id', userId)
   const [cards, subs, payments, logos] = await Promise.all([
-    readAll((from, to) => supabase.from('cards').select('*').order('created_at').order('id').range(from, to)),
-    readAll((from, to) => supabase.from('subscriptions').select('*').order('created_at').order('id').range(from, to)),
-    readAll((from, to) => supabase.from('payments').select('*').order('due_date').order('id').range(from, to)),
-    readAll((from, to) => supabase.from('missing_logos').select('name, first_seen').order('name').range(from, to)),
+    readAll((from, to) => mine('cards').order('created_at').order('id').range(from, to)),
+    readAll((from, to) => mine('subscriptions').order('created_at').order('id').range(from, to)),
+    readAll((from, to) => mine('payments').order('due_date').order('id').range(from, to)),
+    readAll((from, to) => supabase.from('missing_logos').select('name, first_seen').eq('user_id', userId).order('name').range(from, to)),
   ])
   return {
     cards: cards.map(cardFromRow),
@@ -172,24 +173,28 @@ export function hasChanges(changes: StateChanges) {
   return Object.values(changes).some((l) => l.upserts.length > 0 || l.deletes.length > 0)
 }
 
-/** Önceki ve yeni durum arasındaki farkı veritabanına yazar. */
-export async function pushChanges(before: State, after: State) {
+/** Önceki ve yeni durum arasındaki farkı veritabanına yazar. Satırlar açıkça bu kullanıcıya yazılır
+ *  (oturum başka bir hesaba geçmişse yazma reddedilir, başkasının hesabına karışmaz). */
+export async function pushChanges(userId: string, before: State, after: State) {
   const d = diffState(before, after)
+  const mine = { user_id: userId }
 
   // Sıra önemli: abonelik bir karta, ödeme bir aboneliğe bağlı olabilir.
   // Önce silinenler (en bağımlıdan başlayarak), sonra eklenenler (en bağımsızdan başlayarak).
-  if (d.payments.deletes.length) check(await supabase.from('payments').delete().in('id', d.payments.deletes))
-  if (d.subscriptions.deletes.length) check(await supabase.from('subscriptions').delete().in('id', d.subscriptions.deletes))
-  if (d.cards.deletes.length) check(await supabase.from('cards').delete().in('id', d.cards.deletes))
-  if (d.missingLogos.deletes.length) check(await supabase.from('missing_logos').delete().in('name', d.missingLogos.deletes))
+  if (d.payments.deletes.length) check(await supabase.from('payments').delete().eq('user_id', userId).in('id', d.payments.deletes))
+  if (d.subscriptions.deletes.length) check(await supabase.from('subscriptions').delete().eq('user_id', userId).in('id', d.subscriptions.deletes))
+  if (d.cards.deletes.length) check(await supabase.from('cards').delete().eq('user_id', userId).in('id', d.cards.deletes))
+  if (d.missingLogos.deletes.length)
+    check(await supabase.from('missing_logos').delete().eq('user_id', userId).in('name', d.missingLogos.deletes))
 
-  if (d.cards.upserts.length) check(await supabase.from('cards').upsert(d.cards.upserts.map(cardToRow)))
-  if (d.subscriptions.upserts.length) check(await supabase.from('subscriptions').upsert(d.subscriptions.upserts.map(subToRow)))
-  if (d.payments.upserts.length) check(await supabase.from('payments').upsert(d.payments.upserts.map(paymentToRow)))
+  if (d.cards.upserts.length) check(await supabase.from('cards').upsert(d.cards.upserts.map((c) => ({ ...cardToRow(c), ...mine }))))
+  if (d.subscriptions.upserts.length)
+    check(await supabase.from('subscriptions').upsert(d.subscriptions.upserts.map((s) => ({ ...subToRow(s), ...mine }))))
+  if (d.payments.upserts.length) check(await supabase.from('payments').upsert(d.payments.upserts.map((p) => ({ ...paymentToRow(p), ...mine }))))
   if (d.missingLogos.upserts.length)
     check(
       await supabase
         .from('missing_logos')
-        .upsert(d.missingLogos.upserts.map((m) => ({ name: m.name, first_seen: m.firstSeen })), { onConflict: 'user_id,name', ignoreDuplicates: true }),
+        .upsert(d.missingLogos.upserts.map((m) => ({ name: m.name, first_seen: m.firstSeen, ...mine })), { onConflict: 'user_id,name', ignoreDuplicates: true }),
     )
 }

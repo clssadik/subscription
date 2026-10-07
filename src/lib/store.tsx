@@ -215,8 +215,12 @@ function persist(userId: string, current: State, confirmed: State) {
   if (writeCache(userId, current)) writeBase(userId, confirmed)
 }
 
+/** Açık eşitleme işleri (hesap başına). Çıkışta durdurulur ki yarım kalan bir okuma kopyayı geri yazmasın. */
+const liveSyncs = new Map<string, () => void>()
+
 // eslint-disable-next-line react/only-export-components
 export function clearCache(userId: string) {
+  liveSyncs.get(userId)?.()
   try {
     localStorage.removeItem(cacheKey(userId))
     localStorage.removeItem(baseKey(userId))
@@ -313,7 +317,7 @@ function createSync(opts: {
     if (!userId || stopped) return false
     let data: State
     try {
-      data = await loadAll()
+      data = await loadAll(userId)
     } catch {
       failed('Veriler yüklenemedi. İnternet bağlantısını kontrol edin.')
       opts.ready()
@@ -338,7 +342,7 @@ function createSync(opts: {
     if (!userId || stopped) return
     const target = latest
     try {
-      await pushChanges(base, target)
+      await pushChanges(userId, base, target)
     } catch (e) {
       if (e instanceof DbError && e.rejected) {
         // Sunucu değişikliği kabul etmedi: o yazma ekrandan çıkar, bu sırada yapılan yeni değişiklikler kalır
@@ -376,11 +380,14 @@ function createSync(opts: {
       }
       window.addEventListener('online', retry)
       document.addEventListener('visibilitychange', onVisible)
-      return () => {
+      function stop() {
         stopped = true
         window.removeEventListener('online', retry)
         document.removeEventListener('visibilitychange', onVisible)
+        if (userId && liveSyncs.get(userId) === stop) liveSyncs.delete(userId)
       }
+      if (userId) liveSyncs.set(userId, stop)
+      return stop
     },
   }
 }
