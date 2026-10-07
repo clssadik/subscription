@@ -263,10 +263,10 @@ export function daysLabel(days: ReminderDay[]) {
 /** Ad varsa ad-soyad baş harfleri ("Sadık Ak" → "SA"), yoksa e-postanın ilk harfi */
 export function initials(name: string, email: string) {
   const words = name.trim().split(/\s+/).filter(Boolean)
-  if (words.length === 0) return (email.trim()[0] ?? '?').toLocaleUpperCase('tr')
+  if (words.length === 0) return (Array.from(email.trim())[0] ?? '?').toLocaleUpperCase('tr')
   return words
     .slice(0, 2)
-    .map((w) => w[0])
+    .map((w) => Array.from(w)[0])
     .join('')
     .toLocaleUpperCase('tr')
 }
