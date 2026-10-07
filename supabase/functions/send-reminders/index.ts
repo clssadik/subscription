@@ -280,17 +280,22 @@ async function runReminders() {
 
   let total = 0
   for (const [userId, devices] of phones) {
-    const notify = notifyBy.get(userId) ?? DEFAULT_NOTIFY
-    if (!notify.enabled) continue
-    const [h, m] = notify.time.split(':').map(Number)
-    if (now.minutes < h * 60 + m) continue
-    const messages = messagesFor(notify, subsBy.get(userId) ?? [], cardsBy.get(userId) ?? [], paidBy.get(userId) ?? new Map<string, Day[]>(), now)
-      .filter((msg) => !sent.has(`${userId}|${msg.key}`))
-    for (const msg of messages) {
-      // Önce kaydet: iki çağrı üst üste gelirse aynı bildirim iki kez gitmesin
-      const { error } = await db.from('notification_log').insert({ user_id: userId, key: msg.key, sent_on: toKey(now.today) })
-      if (error) continue
-      for (const device of devices) if (await push(device, { title: msg.title, body: msg.body, tag: msg.key, url: '/' })) total++
+    // Bir kullanıcının hatası (ör. bozuk bir kayıt) öteki kullanıcıların hatırlatmasını durdurmasın
+    try {
+      const notify = notifyBy.get(userId) ?? DEFAULT_NOTIFY
+      if (!notify.enabled) continue
+      const [h, m] = notify.time.split(':').map(Number)
+      if (now.minutes < h * 60 + m) continue
+      const messages = messagesFor(notify, subsBy.get(userId) ?? [], cardsBy.get(userId) ?? [], paidBy.get(userId) ?? new Map<string, Day[]>(), now)
+        .filter((msg) => !sent.has(`${userId}|${msg.key}`))
+      for (const msg of messages) {
+        // Önce kaydet: iki çağrı üst üste gelirse aynı bildirim iki kez gitmesin
+        const { error } = await db.from('notification_log').insert({ user_id: userId, key: msg.key, sent_on: toKey(now.today) })
+        if (error) continue
+        for (const device of devices) if (await push(device, { title: msg.title, body: msg.body, tag: msg.key, url: '/' })) total++
+      }
+    } catch (e) {
+      console.error('reminders failed for user', userId, (e as Error).message)
     }
   }
   return total
