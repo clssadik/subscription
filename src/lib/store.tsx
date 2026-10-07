@@ -43,9 +43,10 @@ function upsert<T extends { id: string }>(list: T[], item: T) {
 
 function noteMissingLogo(list: MissingLogo[], sub: Subscription): MissingLogo[] {
   if (hasLogo(sub.serviceKey)) return list
-  const n = normalize(sub.name)
+  const name = sub.name.trim()
+  const n = normalize(name)
   if (list.some((m) => normalize(m.name) === n)) return list
-  return [...list, { name: sub.name, firstSeen: format(new Date(), 'yyyy-MM-dd') }]
+  return [...list, { name, firstSeen: format(new Date(), 'yyyy-MM-dd') }]
 }
 
 /** Geri al: ids'teki silinmiş kayıtları yedekten geri koyar. Listede zaten olanlara ve aradaki diğer değişikliklere dokunmaz. */
@@ -149,7 +150,8 @@ function migrate(raw: Partial<State>): State {
   }))
   const subscriptions = (raw.subscriptions ?? []).map((s) => ({
     ...s,
-    serviceKey: s.serviceKey !== undefined ? s.serviceKey : (matchService(s.name)?.key ?? null),
+    // Veritabanında servisi olmayan satır null gelir (undefined değil); bu yüzden ?? ile adından yeniden eşleşir
+    serviceKey: s.serviceKey ?? matchService(s.name)?.key ?? null,
   }))
   // Logosu sonradan eklenmiş servislerin notunu kendiliğinden kapat
   const missingLogos = (raw.missingLogos ?? []).filter((m) => !hasLogo(matchService(m.name)?.key ?? null))
