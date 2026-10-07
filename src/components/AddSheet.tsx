@@ -548,13 +548,12 @@ function SuggestInput<T extends { key: string; name: string }>({
       />
       {focused && hints.length > 0 && (
         <ul
-          role="listbox"
           // Alttan açılan sayfa bu dokunuşu sürükleme sanmasın
           data-vaul-no-drag
           className="absolute top-[calc(100%+10px)] -left-2 z-30 w-[min(15rem,calc(100%+1rem))] overflow-hidden rounded-[14px] bg-surface py-1 shadow-[0_10px_30px_rgb(0_0_0/0.18),0_0_0_0.5px_rgb(0_0_0/0.08)] dark:bg-[#262626] dark:shadow-[0_10px_30px_rgb(0_0_0/0.6),0_0_0_0.5px_rgb(255_255_255/0.12)]"
         >
           {hints.map((i) => (
-            <li key={i.key} role="option" aria-selected={false}>
+            <li key={i.key}>
               <button
                 type="button"
                 // Alanın odağı kaybolmasın (yoksa liste dokunuş bitmeden kapanır). iPhone odağı dokunuştan sonra gelen
