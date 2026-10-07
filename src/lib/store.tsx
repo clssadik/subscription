@@ -1,9 +1,10 @@
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { createContext, useContext, useEffect, useReducer, useRef, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { bankColor } from './banks'
 import { loadAll, pushChanges } from './db'
 import { DEMO_ID } from './demo'
+import { findPayment, type PeriodKind } from './dates'
 import { hasLogo, matchService, normalize } from './services'
 import type { CreditCard, MissingLogo, Payment, Subscription } from './types'
 
@@ -26,7 +27,9 @@ type Action =
   | { type: 'card/delete'; id: string }
   | { type: 'subscription/save'; subscription: Subscription }
   | { type: 'subscription/delete'; id: string }
-  | { type: 'payment/toggle'; kind: Payment['kind']; refId: string; dueDate: string; amount?: number; currency?: Payment['currency'] }
+  /** paid verilirse yalnız o yöne değiştirir (true: işaretler, false: kaldırır); verilmezse aç-kapa yapar */
+  | { type: 'payment/toggle'; kind: Payment['kind']; refId: string; dueDate: string; amount?: number; currency?: Payment['currency']; paid?: boolean }
+  | { type: 'payment/remove'; id: string }
   /** Geri al: ids'teki silinmiş kayıtları before'dan geri koyar, aradaki diğer değişikliklere dokunmaz */
   | { type: 'undo/restore'; before: State; ids: string[] }
   | { type: 'state/restore'; state: State }
@@ -106,8 +109,14 @@ function reducer(state: State, action: Action): State {
         subscriptions: state.subscriptions.filter((s) => s.id !== action.id),
       }
     case 'payment/toggle': {
-      const existing = state.payments.find((p) => p.refId === action.refId && p.dueDate === action.dueDate)
-      if (existing) return { ...state, payments: state.payments.filter((p) => p !== existing) }
+      // Dönem bazında aranır (lib/dates.ts): kesim ya da yenilenme günü değişmiş olsa da o dönemin ödemesi bulunur
+      const kind: PeriodKind = action.kind === 'card' ? 'card' : (state.subscriptions.find((s) => s.id === action.refId)?.cycle ?? 'monthly')
+      const existing = findPayment(state.payments, action.refId, parseISO(action.dueDate), kind)
+      if (existing) {
+        if (action.paid === true) return state
+        return { ...state, payments: state.payments.filter((p) => p.id !== existing.id) }
+      }
+      if (action.paid === false) return state
       const payment: Payment = {
         id: newId(),
         kind: action.kind,
@@ -119,6 +128,9 @@ function reducer(state: State, action: Action): State {
       }
       return { ...state, payments: [...state.payments, payment] }
     }
+    case 'payment/remove':
+      if (!state.payments.some((p) => p.id === action.id)) return state
+      return { ...state, payments: state.payments.filter((p) => p.id !== action.id) }
     case 'undo/restore':
       return restoreDeleted(state, action.before, action.ids)
     case 'state/restore':
