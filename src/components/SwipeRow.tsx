@@ -46,6 +46,8 @@ export function SwipeRow({
   const [dragging, setDragging] = useState(false)
   // Silinirken: satır sola kayıp çıkar, ardından yüksekliği kapanır
   const [removing, setRemoving] = useState<null | 'slide' | 'collapse'>(null)
+  // Silme sürerken düğmeye yeniden basılırsa onDelete ikinci kez çalışmasın (durum güncellenmeden de geçerli)
+  const busy = useRef(false)
   const box = useRef<HTMLDivElement>(null)
   const reveal = Math.min(1, Math.max(0, x / OPEN))
   // Tam kaydırma: eşik geçilince düğme uzayıp simgesi satırın yanına gelir, hafif titreşim olur; bırakınca silinir
@@ -53,6 +55,8 @@ export function SwipeRow({
   // Düğme satırla sayfa kenarı arasındaki boşluğu doldurana kadar uzar (yuvarlak → hap)
   const pill = Math.max(BUTTON, -x - 24)
   function remove() {
+    if (busy.current) return
+    busy.current = true
     haptic()
     setRemoving('slide')
     window.setTimeout(() => {
@@ -67,6 +71,7 @@ export function SwipeRow({
           setRemoving(null)
           setFull(false)
           setX(0)
+          busy.current = false
         }, 400)
       }, 260)
     }, 240)
@@ -104,6 +109,8 @@ export function SwipeRow({
         // Kaydırılmadıkça gizli
         style={{
           visibility: x === 0 && !dragging && !removing ? 'hidden' : 'visible',
+          // Silinirken düğme artık dokunmaya cevap vermesin (görünmez ama üstünden dokunulabiliyordu)
+          pointerEvents: removing ? 'none' : undefined,
           width: pill,
           height: BUTTON,
           paddingLeft: full ? 13 : 0,
