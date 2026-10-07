@@ -91,7 +91,7 @@ function reducer(state: State, action: Action): State {
         subscriptions: state.subscriptions.map((s) =>
           s.cardId === action.id ? { ...s, cardId: null } : s,
         ),
-        payments: state.payments.filter((p) => p.refId !== action.id),
+        // Ödeme geçmişi kalır: Geçmiş ekranındaki toplamlar değişmez
       }
     case 'subscription/save':
       return {
@@ -100,10 +100,10 @@ function reducer(state: State, action: Action): State {
         missingLogos: noteMissingLogo(state.missingLogos, action.subscription),
       }
     case 'subscription/delete':
+      // Ödeme geçmişi kalır: Geçmiş ekranındaki toplamlar değişmez
       return {
         ...state,
         subscriptions: state.subscriptions.filter((s) => s.id !== action.id),
-        payments: state.payments.filter((p) => p.refId !== action.id),
       }
     case 'payment/toggle': {
       const existing = state.payments.find((p) => p.refId === action.refId && p.dueDate === action.dueDate)
