@@ -46,13 +46,14 @@ function addMonths(anchor: Day, n: number): Day {
   return dayInMonth(ny, nm, d)
 }
 
-/** Aboneliğin [start, end] aralığındaki yenilenmeleri */
+/** Aboneliğin [start, end] aralığındaki yenilenmeleri. İlk yenilenme tarihinden (anchor) önce hiçbiri üretilmez. */
 function renewalsBetween(sub: SubRow, start: Day, end: Day): Day[] {
   const anchor = fromKey(sub.renewal_date)
   const step = sub.cycle === 'monthly' ? 1 : 12
   const a = parts(anchor)
   const s = parts(start)
-  let n = Math.floor(((s.y - a.y) * 12 + (s.m - a.m)) / step) - 1
+  // Hep ilk tarihten sayılır. Anchor ileride ise n 0'da kalır, öncesi üretilmez.
+  let n = Math.max(0, Math.floor(((s.y - a.y) * 12 + (s.m - a.m)) / step) - 1)
   let date = addMonths(anchor, n * step)
   while (date < start) date = addMonths(anchor, ++n * step)
   const out: Day[] = []
