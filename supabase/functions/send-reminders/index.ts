@@ -176,7 +176,22 @@ function group<T extends { user_id: string }>(rows: T[] | null) {
 }
 
 /** Sorgunun satırları. Hata varsa istisna: o zaman hiçbir hatırlatma gönderilmez (istek 500 döner). */
-function rowsOf<T>(res: { data: unknown[] | null; error: { message: string } | null }, table: string) {
+type ReadResult = { data: unknown[] | null; error: { message: string } | null }
+
+/** Supabase bir istekte en çok 1000 satır döndürür; tablo eksik okunmasın diye sayfa sayfa çekilir */
+const PAGE = 1000
+async function readAll(page: (from: number, to: number) => PromiseLike<ReadResult>): Promise<ReadResult> {
+  const data: unknown[] = []
+  for (let from = 0; ; from += PAGE) {
+    const res = await page(from, from + PAGE - 1)
+    if (res.error) return res
+    const rows = res.data ?? []
+    data.push(...rows)
+    if (rows.length < PAGE) return { data, error: null }
+  }
+}
+
+function rowsOf<T>(res: ReadResult, table: string) {
   if (res.error) throw new Error(`${table} read failed: ${res.error.message}`)
   return (res.data ?? []) as T[]
 }
@@ -338,13 +353,15 @@ async function deliver(userId: string, devices: PushRow[], msg: Message, today: 
 async function runReminders() {
   const now = nowInIstanbul()
   const [pushRes, settingsRes, subsRes, cardsRes, paymentsRes, sentRes] = await Promise.all([
-    db.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth'),
-    db.from('user_settings').select('user_id, notify'),
-    db.from('subscriptions').select('id, user_id, name, card_id, cycle, renewal_date'),
-    db.from('cards').select('id, user_id, bank_name, last4, kind, statement_day'),
+    readAll((a, b) => db.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth').order('id').range(a, b)),
+    readAll((a, b) => db.from('user_settings').select('user_id, notify').order('user_id').range(a, b)),
+    readAll((a, b) => db.from('subscriptions').select('id, user_id, name, card_id, cycle, renewal_date').order('id').range(a, b)),
+    readAll((a, b) => db.from('cards').select('id, user_id, bank_name, last4, kind, statement_day').order('id').range(a, b)),
     // Dönem eşleşmesi için geriye dönük: yıllık bir ödeme aydan eski olabilir, bu yüzden bir önceki yılın başından çekilir
-    db.from('payments').select('user_id, ref_id, due_date').gte('due_date', toKey(dayOf(parts(now.today).y - 1, 1, 1))),
-    db.from('notification_log').select('user_id, key').eq('sent_on', toKey(now.today)),
+    readAll((a, b) =>
+      db.from('payments').select('user_id, ref_id, due_date').gte('due_date', toKey(dayOf(parts(now.today).y - 1, 1, 1))).order('id').range(a, b),
+    ),
+    readAll((a, b) => db.from('notification_log').select('user_id, key').eq('sent_on', toKey(now.today)).order('user_id').order('key').range(a, b)),
   ])
   // Bir okuma bile başarısızsa hiçbir şey gönderilmez: yoksa bildirimi kapalı kullanıcılara ya da ödenmiş faturalara hatırlatma gider
   const pushRows = rowsOf<PushRow>(pushRes, 'push_subscriptions')
