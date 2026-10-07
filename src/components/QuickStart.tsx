@@ -61,9 +61,9 @@ export function HomeQuickStart({ nav }: { nav: Nav }) {
   )
 }
 
-/** "YouTube Premium" → "YouTube", "Google Gemini" → "Gemini": ızgara altındaki kısa isim */
+/** "YouTube Premium" → "YouTube", "Google Gemini" → "Gemini": ızgara altındaki kısa isim. Sondaki plan adı atılır; "Google One" bütün kalır. */
 function shortName(name: string) {
-  return name.replace(/^Google /, '').replace(/ (Premium|Plus|Nitro|Game Pass|Creative Cloud)$/, '')
+  return name.replace(/^Google (?!One\b)/, '').replace(/ (Plus|Premium|Pro|Family|Basic|Standard|Nitro|Game Pass|Creative Cloud)$/, '')
 }
 
 /** iPhone ana ekranı gibi küçük logo + kısa isim */
