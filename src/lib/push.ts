@@ -38,6 +38,9 @@ function within<T>(work: PromiseLike<T>, ms: number): Promise<T | undefined> {
 /** Servis çalışanı hazır olana kadar bekler; 3 sn'de olmazsa (ör. geliştirme sunucusu, servis çalışanı yok) undefined döner */
 const swReady = () => ('serviceWorker' in navigator ? within(navigator.serviceWorker.ready, 3000) : Promise.resolve(undefined))
 
+/** Sunucuya ulaşılamadı (internet yok): adres bir sonraki açılışta yeniden kaydedilir */
+class Offline extends Error {}
+
 /**
  * Adresi hesaba kaydeder. Telefon önceki bir hesaba bağlıysa (çıkış yapılmadan hesap değiştiyse) adres
  * claim_push_subscription ile yeni hesaba taşınır. Fonksiyon veritabanında yoksa doğrudan tabloya yazılır.
@@ -49,6 +52,8 @@ async function save(sub: PushSubscription) {
   if (!p256dh || !auth) throw new Error('Bildirim anahtarı alınamadı')
   const { error, status } = await supabase.rpc('claim_push_subscription', { p_endpoint: sub.endpoint, p_p256dh: p256dh, p_auth: auth })
   if (!error) return
+  // İstek hiç gitmediyse (status 0) sunucu reddetmedi; internet yoktur
+  if (status === 0 || !navigator.onLine) throw new Offline(error.message)
   if (error.code !== 'PGRST202' && status !== 404) throw new Error(error.message)
   const { error: upsertError } = await supabase
     .from('push_subscriptions')
@@ -124,7 +129,9 @@ async function current(): Promise<PushState> {
     await subscribeAndSave(reg)
     return 'on'
   } catch (e) {
-    // Kaydedilemediyse "açık" denmez; izin düğmesiyle tekrar denenir
+    // İnternet yoksa abonelik telefonda duruyor ve adres zaten kayıtlıdır; bir sonraki açılışta yeniden kaydedilir
+    if (e instanceof Offline && (await reg.pushManager.getSubscription())) return 'on'
+    // Sunucu kaydı reddettiyse "açık" denmez; izin düğmesiyle tekrar denenir
     console.warn('Bildirim adresi kaydedilemedi:', e)
     return 'default'
   }
