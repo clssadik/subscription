@@ -400,7 +400,7 @@ export function NameGate({ userId }: { userId: string }) {
 
   return (
     <main data-screen-active data-keep-page className="app-screen z-50 mx-auto flex max-w-md flex-col bg-page">
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-[var(--top-gap)] pb-[max(1.25rem,env(safe-area-inset-bottom))] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div data-scroller className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-[var(--top-gap)] pb-[max(1.25rem,env(safe-area-inset-bottom))] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="flex min-h-[calc(100%+1px)] flex-col">
           <Brand size={40} className="mt-6 justify-center" />
           <div className="mt-10 text-center">

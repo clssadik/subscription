@@ -12,22 +12,19 @@ export function PaidOverlay({ title, detail, onClose }: { title: string; detail:
   }, [onClose])
 
   return createPortal(
-    <div
-      role="status"
-      aria-live="polite"
-      onClick={onClose}
-      className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-5 bg-page/90 backdrop-blur-md animate-in fade-in duration-200"
-    >
+    <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-5 bg-page/90 backdrop-blur-md animate-in fade-in duration-200">
       <svg viewBox="0 0 96 96" className="paid-pop size-28" aria-hidden>
         <circle cx="48" cy="48" r="44" className="fill-bh-green" />
         <path d="M30 49.5 L42.5 62 L67 36" fill="none" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" className="paid-check" />
       </svg>
-      <div className="text-center animate-in fade-in slide-in-from-bottom-2 duration-300 [animation-delay:150ms] [animation-fill-mode:both]">
+      <div role="status" aria-live="polite" className="text-center animate-in fade-in slide-in-from-bottom-2 duration-300 [animation-delay:150ms] [animation-fill-mode:both]">
         {/* Satır yüksekliği 1 olunca iPhone, kayarak gelen bu blokta Ö harfinin noktalarını kesiyor: biraz pay bırakılır */}
         <p className="num num-bold text-[34px] leading-[1.2]">Ödendi</p>
         <p className="mt-1 text-[15px] text-subtle">{title}</p>
         <p className="mt-0.5 text-[13px] text-subtle">{detail}</p>
       </div>
+      {/* Tüm ekran bir düğme: dokununca hemen kapanır. Ekran okuyucu ve klavye için de düğme olarak duyurulur. */}
+      <button type="button" aria-label="Kapat" onClick={onClose} className="absolute inset-0" />
     </div>,
     document.body,
   )
