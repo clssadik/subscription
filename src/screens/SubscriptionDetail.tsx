@@ -12,7 +12,7 @@ import { TearTicket } from '@/components/TearTicket'
 import { canMarkPaid, daysUntil, dueLabel, nextRenewal, paidThisMonth, toKey } from '@/lib/dates'
 import { dayOf, formatDate, formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
-import { CYCLE_LABELS } from '@/lib/types'
+import { CURRENCIES, CYCLE_LABELS } from '@/lib/types'
 import type { Nav } from '@/App'
 
 export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
@@ -30,7 +30,12 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
   const history = state.payments
     .filter((p) => p.refId === sub.id)
     .sort((a, b) => b.dueDate.localeCompare(a.dueDate))
-  const totalPaid = history.reduce((s, p) => s + (p.amount ?? 0), 0)
+  // Ödemeler kendi para biriminde toplanır: para birimi sonradan değişen abonelikte eski ödemeler eski birimiyle kalır.
+  // Birimi kaydedilmemiş eski ödemeler aboneliğin birimi sayılır.
+  const paidTotals = CURRENCIES.map((c) => {
+    const mine = history.filter((p) => (p.currency ?? sub.currency) === c)
+    return { currency: c, count: mine.length, total: mine.reduce((s, p) => s + (p.amount ?? 0), 0) }
+  }).filter((t) => t.count > 0)
   const anchor = parseISO(sub.renewalDate)
 
   // Titreşim koçan koparken (dokunuşun içinde) verilir; burada ses, kayıt ve "Ödendi" ekranı
@@ -110,7 +115,7 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
 
       <div className="mt-5 mb-2 flex items-baseline justify-between px-1 text-subtle">
         <h2 className="label">Geçmiş</h2>
-        {history.length > 0 && <span className="num text-[11px]">{formatMoney(totalPaid, sub.currency)} · {history.length} ödeme</span>}
+        {history.length > 0 && <span className="num text-[11px]">{paidTotals.map((t) => formatMoney(t.total, t.currency)).join(' + ')} · {history.length} ödeme</span>}
       </div>
       {history.length === 0 ? (
         <p className="rounded-[18px] bg-surface px-3.5 py-3 text-sm text-subtle">Henüz ödeme yok.</p>
@@ -120,7 +125,7 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
             <li key={p.id} className="flex items-center gap-2.5 rounded-[18px] bg-surface px-3.5 py-2.5">
               <CheckCircle2Icon className="size-[18px] text-bh-green" />
               <span className="flex-1">{formatDate(parseISO(p.dueDate), 'd MMMM yyyy')}</span>
-              <span className="num text-sm">{p.amount != null ? formatMoney(p.amount, p.currency) : ''}</span>
+              <span className="num text-sm">{p.amount != null ? formatMoney(p.amount, p.currency ?? sub.currency) : ''}</span>
             </li>
           ))}
         </ul>
