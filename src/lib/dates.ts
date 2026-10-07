@@ -8,6 +8,7 @@ import {
   endOfMonth,
   format,
   getDaysInMonth,
+  isSameMonth,
   parseISO,
   startOfDay,
   startOfMonth,
@@ -98,12 +99,17 @@ export function nextRenewal(sub: Subscription, payments: Payment[] = [], from: D
   return dates.find((d) => !isPaid(payments, sub.id, d, sub.cycle)) ?? dates[0] ?? parseISO(sub.renewalDate)
 }
 
-/** Bugünden itibaren henüz "ödendi" işaretlenmemiş ilk dönem; bir önceki dönemin son ödemesiyle birlikte */
+/**
+ * Bugünden itibaren henüz "ödendi" işaretlenmemiş ilk dönem; bir önceki dönemin son ödemesiyle birlikte.
+ * Hepsi ödendiyse bugünden sonraki ilk dönem (paid: true). Geçmiş bir dönem asla seçilmez.
+ */
 export function nextCardCycle(card: DueCard, payments: Payment[] = [], from: Date = new Date()) {
   const today = startOfDay(from)
   const cycles = cardCyclesBetween(card, addMonths(today, -2), addMonths(today, 4))
-  const i = Math.max(0, cycles.findIndex((c) => c.due >= today && !isPaid(payments, card.id, c.due, 'card')))
-  return { ...cycles[i], previousDue: cycles[i - 1]?.due ?? null }
+  const open = cycles.findIndex((c) => c.due >= today && !isPaid(payments, card.id, c.due, 'card'))
+  const future = cycles.findIndex((c) => c.due >= today)
+  const i = open >= 0 ? open : future >= 0 ? future : cycles.length - 1
+  return { ...cycles[i], previousDue: cycles[i - 1]?.due ?? null, paid: isPaid(payments, card.id, cycles[i].due, 'card') }
 }
 
 /** Bugün ya da sonraki ilk hesap kesimi */
@@ -125,8 +131,31 @@ export function canMarkPaid(date: Date, from: Date = new Date()) {
 
 /** Bu ay içinde ödendi işaretlenmiş bir ödemesi var mı */
 export function paidThisMonth(payments: Payment[], refId: string, from: Date = new Date()) {
+  return !!paymentThisMonth(payments, refId, from)
+}
+
+/** Son ödemesi bu ayda olan ödemelerden en yenisi (kartın ekstre notunda ve geri almada kullanılır) */
+export function paymentThisMonth(payments: Payment[], refId: string, from: Date = new Date()): Payment | undefined {
   const month = format(from, 'yyyy-MM')
-  return payments.some((p) => p.refId === refId && p.dueDate.startsWith(month))
+  return payments
+    .filter((p) => p.refId === refId && p.dueDate.startsWith(month))
+    .sort((a, b) => b.dueDate.localeCompare(a.dueDate))[0]
+}
+
+/** Son ödeme gününün ait olduğu kesim (dueForStatement'ın tersi) */
+export function statementOfDue(due: Date) {
+  return addDays(due, -10)
+}
+
+/** Son ödemesi geçmiş ama ödendi işaretlenmemiş dönemler, en eskisi başta. En fazla son iki aya bakar. */
+export function overdueCardCycles(card: DueCard, payments: Payment[] = [], from: Date = new Date()): CardCycle[] {
+  const today = startOfDay(from)
+  return cardCyclesBetween(card, addMonths(today, -2), addDays(today, -1)).filter((c) => !isPaid(payments, card.id, c.due, 'card'))
+}
+
+/** Son ödeme bu takvim ayında mı */
+export function dueThisMonth(due: Date, from: Date = new Date()) {
+  return isSameMonth(due, from)
 }
 
 export function daysUntil(date: Date, from: Date = new Date()) {

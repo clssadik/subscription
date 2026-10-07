@@ -8,7 +8,7 @@ import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { PaidNote } from '@/components/PaidNote'
 import { RoundButton } from '@/components/ScreenHeader'
-import { canMarkPaid, daysUntil, hasDue, monthlyCost, nextCardCycle, paidThisMonth, toKey } from '@/lib/dates'
+import { canMarkPaid, daysUntil, dueLabel, hasDue, monthlyCost, nextCardCycle, overdueCardCycles, paidThisMonth, toKey, type CardCycle } from '@/lib/dates'
 import { luminance } from '@/lib/color'
 import { formatDate, formatMoney } from '@/lib/format'
 import { serviceColor } from '@/lib/services'
@@ -26,18 +26,23 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
   // Banka kartında son ödeme yok
   const cycle = hasDue(card) ? nextCardCycle(card, state.payments) : null
   const due = cycle?.due ?? null
+  // Son ödemesi geçmiş, ödenmemiş ekstreler (en eskisi başta)
+  const overdue = hasDue(card) ? overdueCardCycles(card, state.payments) : []
   // Aylık maliyete göre büyükten küçüğe: banka kartında yaydaki dilimlerle liste aynı sırada
   const onCard = state.subscriptions.filter((s) => s.cardId === card.id).sort((a, b) => monthlyCost(b) - monthlyCost(a))
   const monthlyTry = onCard.filter((s) => s.currency === 'TRY').reduce((sum, s) => sum + monthlyCost(s), 0)
 
-  function markPaid() {
-    if (!due) return
+  // Ekstre ödendi işaretlenir (ya da işaretliyse kalkar); adı kesim ayından
+  function toggleCycle(c: CardCycle) {
+    dispatch({ type: 'payment/toggle', kind: 'card', refId: card!.id, dueDate: toKey(c.due) })
+  }
+
+  function markPaid(c: CardCycle) {
     haptic()
     play('paid')
-    const dueDate = toKey(due)
-    dispatch({ type: 'payment/toggle', kind: 'card', refId: card!.id, dueDate })
-    toast(`${card!.bankName} ${formatDate(due, 'LLLL')} ödemesi işaretlendi`, {
-      action: { label: 'Geri al', onClick: () => dispatch({ type: 'payment/toggle', kind: 'card', refId: card!.id, dueDate }) },
+    toggleCycle(c)
+    toast(`${card!.bankName} ${formatDate(c.statement, 'LLLL')} ekstresi ödendi`, {
+      action: { label: 'Geri al', onClick: () => toggleCycle(c) },
     })
   }
 
@@ -56,6 +61,28 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
         <p className="num mt-1.5 rounded-full bg-surface px-3.5 py-1 text-xl tracking-[0.06em]">•••• {card.last4}</p>
       </div>
 
+      {/* Son ödemesi geçen ekstreler: en önemli uyarı, her biri için ayrı "Ödendi" */}
+      {overdue.length > 0 && (
+        <section className="mt-3 rounded-[22px] bg-bh-red p-3.5 text-white">
+          <h2 className="label opacity-90">Son ödemesi geçen</h2>
+          <ul className="mt-1.5 grid gap-2">
+            {overdue.map((c) => (
+              <li key={toKey(c.due)} className="flex items-center gap-3">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{formatDate(c.statement, 'LLLL')} ekstresi</span>
+                  <span className="block truncate text-sm">
+                    {formatDate(c.due, 'd MMMM')} · <span className="num-bold">{dueLabel(c.due)}</span>
+                  </span>
+                </span>
+                <button onClick={() => markPaid(c)} className="pressable min-h-10 shrink-0 rounded-[14px] bg-white px-4 font-medium text-[#141414]">
+                  Ödendi
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* Kredi kartı: son ödemeye kalan gün. Banka kartında son ödeme yok: yay aboneliklerin aylık paylarını gösterir. */}
       {cycle ? (
         <>
@@ -72,10 +99,11 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
 
       {/* Gelecek ayın ekstresi, ay değişmeden işaretlenemez */}
       {due && !canMarkPaid(due) && paidThisMonth(state.payments, card.id) && <PaidNote month={new Date()} />}
-      {due && canMarkPaid(due) && (
-        <button onClick={markPaid} className="pressable mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-ink font-semibold text-page">
+      {/* Ekstre zaten ödendiyse düğme çıkmaz: basınca işareti kaldırırdı */}
+      {cycle && !cycle.paid && canMarkPaid(cycle.due) && (
+        <button onClick={() => markPaid(cycle)} className="pressable mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-ink font-semibold text-page">
           <CheckCircle2Icon className="size-[18px] text-bh-yellow" />
-          {formatDate(due, 'LLLL')} ekstresi ödendi
+          {formatDate(cycle.statement, 'LLLL')} ekstresi ödendi
         </button>
       )}
 

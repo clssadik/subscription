@@ -7,7 +7,7 @@ import { BankBrand } from '@/components/BankMark'
 import { Segmented } from '@/components/FormBits'
 import { PinnedLayout } from '@/components/PinnedLayout'
 import { luminance } from '@/lib/color'
-import { daysUntil, hasDue, nextCardDue, nextStatement, paidThisMonth } from '@/lib/dates'
+import { daysUntil, dueLabel, dueThisMonth, hasDue, nextCardCycle, nextStatement, overdueCardCycles, paidThisMonth } from '@/lib/dates'
 import { formatDate } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import type { CreditCard } from '@/lib/types'
@@ -28,15 +28,22 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
     )
   }
 
-  // Kredi kartlarının sıradaki (ödenmemiş) son ödemeleri, en yakını başta; bu ay içinde olanlar afişte sayılır
+  // Kredi kartlarının sıradaki (ödenmemiş) dönemleri, en yakını başta; bu ay içinde olanlar afişte sayılır
   const dues = cards
     .filter(hasDue)
-    .map((card) => ({ card, due: nextCardDue(card, payments) }))
+    .map((card) => ({ card, ...nextCardCycle(card, payments) }))
     .sort((a, b) => a.due.getTime() - b.due.getTime())
-  const upcoming = dues.filter(({ due }) => daysUntil(due) >= 0 && due.getMonth() === new Date().getMonth())
+  // Son ödemesi geçmiş, ödenmemiş dönemler (en eskisi başta). Varsa afiş bunu gösterir, "yapıldı" demez.
+  const overdue = cards
+    .filter(hasDue)
+    .flatMap((card) => overdueCardCycles(card, payments).map((c) => ({ card, ...c })))
+    .sort((a, b) => a.due.getTime() - b.due.getTime())
+  const upcoming = dues.filter(({ due, paid }) => !paid && daysUntil(due) >= 0 && dueThisMonth(due))
   // Bu ay ödenecek kalmadıysa afiş sıradakini gösterir ("Yok" yazmak yerine)
   const next = upcoming.length === 0 ? dues.find(({ due }) => daysUntil(due) >= 0) : undefined
   const paidNow = cards.filter((c) => hasDue(c) && paidThisMonth(payments, c.id)).length
+  // Afişte gösterilen kartlar: gecikme varsa gecikenler, yoksa sıradaki ya da bu ay ödenecekler
+  const posterCards = overdue.length > 0 ? [...new Map(overdue.map((o) => [o.card.id, o.card])).values()] : next ? [next.card] : upcoming.map((u) => u.card)
   // Liste: kredi kartları (hesap kesimi en yakın olan üstte) ya da banka kartları; üstteki seçiciyle
   const credit = cards
     .filter(hasDue)
@@ -57,30 +64,49 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
             {/* Bauhaus afiş: solda sayı, sağda her ödenecek kart için kendi renginde bir şekil. Beyaz zemin (koyu temada da). */}
             <section className="grid h-[196px] shrink-0 grid-cols-[1fr_150px] overflow-hidden rounded-[26px] bg-surface dark:bg-[#F2F2F2] dark:text-[#141414]">
               <div className="flex min-w-0 flex-col py-4 pl-[18px]">
-                <div className="label text-subtle dark:text-[#141414]/60">{next ? 'Sonraki son ödeme' : upcoming.length > 0 ? 'Bu ay ödenecek' : 'Kartlar'}</div>
-                {next ? (
-                  <div className="mt-0.5 flex items-baseline gap-2">
-                    <span className="num num-bold text-[96px] leading-[0.9]">{formatDate(next.due, 'd')}</span>
-                    <span className="text-lg font-medium">{formatDate(next.due, 'MMMM')}</span>
-                  </div>
+                {overdue.length > 0 ? (
+                  <>
+                    <div className="label text-subtle dark:text-[#141414]/60">Son ödemesi geçen</div>
+                    <div className="mt-0.5 flex items-baseline gap-2">
+                      <span className="num num-bold text-[96px] leading-[0.9] text-bh-red">{formatDate(overdue[0].due, 'd')}</span>
+                      <span className="text-lg font-medium">{formatDate(overdue[0].due, 'MMMM')}</span>
+                    </div>
+                    <div className="mt-auto pr-2 text-xs leading-snug">
+                      <span className="num-bold text-bh-red">
+                        {dueLabel(overdue[0].due)}
+                        {overdue.length > 1 && ` · ${overdue.length} ekstre`}
+                      </span>
+                      <span className="block truncate font-medium">{overdue[0].card.bankName} •• {overdue[0].card.last4}</span>
+                    </div>
+                  </>
                 ) : (
-                  <div className="mt-0.5 flex items-baseline gap-2">
-                    <span className="num num-bold text-[96px] leading-[0.9]">{upcoming.length || cards.length}</span>
-                    <span className="text-lg font-medium">kart</span>
-                  </div>
-                )}
-                {(next ?? upcoming[0]) && (
-                  <div className="mt-auto pr-2 text-xs leading-snug">
-                    <span className="text-subtle dark:text-[#141414]/60">
-                      {next ? (paidNow > 0 ? 'Bu ayki ödemeler yapıldı' : formatDate(next.due, 'EEEE')) : 'İlk son ödeme'}
-                    </span>
-                    <span className="block truncate font-medium">
-                      {next ? `${next.card.bankName} •• ${next.card.last4}` : `${upcoming[0].card.bankName} · ${formatDate(upcoming[0].due, 'd MMMM')}`}
-                    </span>
-                  </div>
+                  <>
+                    <div className="label text-subtle dark:text-[#141414]/60">{next ? 'Sonraki son ödeme' : upcoming.length > 0 ? 'Bu ay ödenecek' : 'Kartlar'}</div>
+                    {next ? (
+                      <div className="mt-0.5 flex items-baseline gap-2">
+                        <span className="num num-bold text-[96px] leading-[0.9]">{formatDate(next.due, 'd')}</span>
+                        <span className="text-lg font-medium">{formatDate(next.due, 'MMMM')}</span>
+                      </div>
+                    ) : (
+                      <div className="mt-0.5 flex items-baseline gap-2">
+                        <span className="num num-bold text-[96px] leading-[0.9]">{upcoming.length || cards.length}</span>
+                        <span className="text-lg font-medium">kart</span>
+                      </div>
+                    )}
+                    {(next ?? upcoming[0]) && (
+                      <div className="mt-auto pr-2 text-xs leading-snug">
+                        <span className="text-subtle dark:text-[#141414]/60">
+                          {next ? (paidNow > 0 ? 'Bu ayki ödemeler yapıldı' : formatDate(next.due, 'EEEE')) : 'İlk son ödeme'}
+                        </span>
+                        <span className="block truncate font-medium">
+                          {next ? `${next.card.bankName} •• ${next.card.last4}` : `${upcoming[0].card.bankName} · ${formatDate(upcoming[0].due, 'd MMMM')}`}
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
-              <Poster cards={next ? [next.card] : upcoming.map((u) => u.card)} />
+              <Poster cards={posterCards} />
             </section>
 
             {credit.length > 0 && debit.length > 0 && (
