@@ -12,7 +12,7 @@ const VAPID_PUBLIC_KEY = 'BFVT29HQePlVJboPZDKRBAn307QY7bZB2Xpwx194YjEqwEVCixr8vY
  * Bu telefonun durumu:
  * - install: iPhone'da tarayıcıdan açılmış; bildirim sadece ana ekrandaki uygulamada çalışır
  * - unsupported: tarayıcı bildirimi desteklemiyor
- * - default: henüz sorulmadı
+ * - default: henüz sorulmadı; ya da izin var ama adres kaydedilemedi (izin düğmesiyle tekrar denenir)
  * - denied: reddedildi (telefon ayarlarından açılır)
  * - on: izin verildi ve kayıtlı
  */
@@ -38,12 +38,22 @@ function within<T>(work: PromiseLike<T>, ms: number): Promise<T | undefined> {
 /** Servis çalışanı hazır olana kadar bekler; 3 sn'de olmazsa (ör. geliştirme sunucusu, servis çalışanı yok) undefined döner */
 const swReady = () => ('serviceWorker' in navigator ? within(navigator.serviceWorker.ready, 3000) : Promise.resolve(undefined))
 
+/**
+ * Adresi hesaba kaydeder. Telefon önceki bir hesaba bağlıysa (çıkış yapılmadan hesap değiştiyse) adres
+ * claim_push_subscription ile yeni hesaba taşınır. Fonksiyon veritabanında yoksa doğrudan tabloya yazılır.
+ */
 async function save(sub: PushSubscription) {
   const json = sub.toJSON()
-  const { error } = await supabase
+  const p256dh = json.keys?.p256dh
+  const auth = json.keys?.auth
+  if (!p256dh || !auth) throw new Error('Bildirim anahtarı alınamadı')
+  const { error, status } = await supabase.rpc('claim_push_subscription', { p_endpoint: sub.endpoint, p_p256dh: p256dh, p_auth: auth })
+  if (!error) return
+  if (error.code !== 'PGRST202' && status !== 404) throw new Error(error.message)
+  const { error: upsertError } = await supabase
     .from('push_subscriptions')
-    .upsert({ endpoint: sub.endpoint, p256dh: json.keys?.p256dh, auth: json.keys?.auth }, { onConflict: 'endpoint' })
-  if (error) throw new Error(error.message)
+    .upsert({ endpoint: sub.endpoint, p256dh, auth }, { onConflict: 'endpoint' })
+  if (upsertError) throw new Error(upsertError.message)
 }
 
 /** Adresi hesaptan siler (oturum açıkken; veritabanı yalnızca kendi satırını siler) ve aboneliği kapatır */
@@ -67,6 +77,27 @@ export async function forgetDevice(): Promise<void> {
   }
 }
 
+/** Abonelik bu uygulamanın anahtarıyla mı açılmış; anahtar değişmişse eski abonelik çalışmaz */
+function sameServerKey(sub: PushSubscription) {
+  const have = sub.options?.applicationServerKey
+  // Tarayıcı bu bilgiyi vermiyorsa olduğu gibi bırakılır
+  if (have === undefined) return true
+  if (!have) return false
+  const want = keyBytes(VAPID_PUBLIC_KEY)
+  const got = new Uint8Array(have)
+  return got.length === want.length && got.every((b, i) => b === want[i])
+}
+
+/** Bu telefonun aboneliğini kurup adresi kaydeder. İzin verilmiş olmalı (soru sorulmaz). Hata dışarı çıkar. */
+async function subscribeAndSave(reg: ServiceWorkerRegistration) {
+  const existing = await reg.pushManager.getSubscription()
+  if (existing && sameServerKey(existing)) return save(existing)
+  // Abonelik yoksa ya da anahtarı eskiyse: varsa kapatılır, yenisi açılır
+  if (existing) await drop(existing)
+  const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(VAPID_PUBLIC_KEY) })
+  await save(sub)
+}
+
 // Son bilinen durum: sayfa tekrar açılınca beklemeden doğru hâli çizilir (yoksa önce boş kutu, sonra içerik gelip sayfa kayıyordu)
 let last: PushState | null = null
 
@@ -85,12 +116,18 @@ async function current(): Promise<PushState> {
   if (!supported() || !isConfigured) return 'unsupported'
   if (Notification.permission === 'denied') return 'denied'
   if (Notification.permission === 'default') return 'default'
-  const reg = await navigator.serviceWorker.ready
-  const sub = await reg.pushManager.getSubscription()
-  if (!sub) return 'default'
-  // Adres her açılışta yeniden kaydedilir (telefon adresi değiştirebiliyor, hesap değişmiş olabilir); sonucu beklenmez
-  save(sub).catch(() => {})
-  return 'on'
+  const reg = await swReady()
+  if (!reg) return 'unsupported'
+  try {
+    // Adres her açılışta yeniden kaydedilir (telefon adresi değiştirebiliyor, hesap değişmiş olabilir).
+    // İzin zaten verilmiş; abonelik yoksa soru sorulmadan yeniden kurulur
+    await subscribeAndSave(reg)
+    return 'on'
+  } catch (e) {
+    // Kaydedilemediyse "açık" denmez; izin düğmesiyle tekrar denenir
+    console.warn('Bildirim adresi kaydedilemedi:', e)
+    return 'default'
+  }
 }
 
 /** Bu telefonun bildirim durumu; enable izin ister ve kaydeder (dokunuşun içinde çağrılmalı) */
@@ -107,7 +144,7 @@ export function usePush() {
     return () => {
       alive = false
     }
-  }, [])
+  }, [setState])
 
   const enable = useCallback(async () => {
     const permission = await Notification.requestPermission()
@@ -115,13 +152,15 @@ export function usePush() {
       setState(permission === 'denied' ? 'denied' : 'default')
       return
     }
-    const reg = await navigator.serviceWorker.ready
-    const sub =
-      (await reg.pushManager.getSubscription()) ??
-      (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(VAPID_PUBLIC_KEY) }))
-    await save(sub)
+    const reg = await swReady()
+    if (!reg) {
+      setState('unsupported')
+      return
+    }
+    // Kaydedilemezse hata dışarı çıkar (ekrandaki uyarı gösterir); durum "açık" olmaz
+    await subscribeAndSave(reg)
     setState('on')
-  }, [])
+  }, [setState])
 
   return { state, enable }
 }
