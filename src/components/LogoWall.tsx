@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Logo } from '@/components/Logo'
-import { luminance } from '@/lib/color'
+import { contrastInk, contrastRatio } from '@/lib/color'
 import { FEATURED_SERVICES, type Service } from '@/lib/services'
 import { cn } from '@/lib/utils'
 
@@ -36,7 +36,7 @@ const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)]
 /** Kutunun zemini: markanın rengi; siyah markalar (GitHub, Notion, TIDAL) koyu zeminde kaybolmasın diye açık gri */
 function tileColor(s: Service) {
   const hex = `#${s.icon!.hex}`
-  return luminance(hex) < 0.15 ? '#F2F2F2' : hex
+  return contrastRatio(hex, '#000000') < 1.5 ? '#F2F2F2' : hex
 }
 
 /** i. kutu için: ekrandaki diğer servislerden farklı, yan komşularıyla aynı renkte olmayan yeni bir servis */
@@ -96,7 +96,7 @@ export function LogoWall() {
             onAnimationEnd={() => setTiles((all) => all.map((x, j) => (j === i ? { ...x, prev: x.color } : x)))}
           />
           <span key={t.key} className="relative animate-in fade-in zoom-in-75 duration-300">
-            <Logo serviceKey={t.key} name={t.key} size={46} tile={false} color={luminance(t.color) > 0.55 ? '#141414' : '#FFFFFF'} />
+            <Logo serviceKey={t.key} name={t.key} size={46} tile={false} color={contrastInk(t.color)} />
           </span>
         </div>
       ))}
