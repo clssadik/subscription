@@ -1,5 +1,5 @@
 import { CheckIcon } from 'lucide-react'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { HoldButton } from '@/components/HoldButton'
 import { Logo } from '@/components/Logo'
@@ -43,6 +43,8 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   const progress = useRef(0)
   const [blockHeight, setBlockHeight] = useState(0)
   const [scrolled, setScrolled] = useState(false)
+  // Blok veri olunca çizilir (boşken ekran başka). Yalnızca bu değişince yeniden ölçülür ve izlenir.
+  const empty = subscriptions.length === 0 && cards.length === 0
   useLayoutEffect(() => {
     const el = block.current
     if (!el) return
@@ -52,13 +54,15 @@ export function HomeScreen({ nav }: { nav: Nav }) {
     const ro = new ResizeObserver(measure)
     ro.observe(el)
     return () => ro.disconnect()
-  })
+  }, [empty])
   // iPhone iki uçta da esnetince başlık ve blok listeyle birlikte hareket eder (src/lib/useScrollLimit.ts)
   const scroller = useRef<HTMLDivElement>(null)
   const content = useRef<HTMLDivElement>(null)
   const limit = useScrollLimit(scroller, content)
   useScrollMemory('home', scroller, blockHeight > 0)
   const frame = useRef(0)
+  // Sayfadan çıkınca bekleyen kaydırma karesi iptal edilir
+  useEffect(() => () => cancelAnimationFrame(frame.current), [])
   function onScroll(e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget
     setScrolled(el.scrollTop > 0)
@@ -257,7 +261,6 @@ export function HomeScreen({ nav }: { nav: Nav }) {
             <ul className="grid gap-1.5">
               {items.map((i) => {
                 const key = `${i.kind}-${i.kind === 'card' ? i.card.id : i.subscription.id}-${i.date.getTime()}`
-                const past = daysUntil(i.date) < 0
                 return (
                   <li key={key} className="flex items-center gap-3 rounded-[18px] bg-surface py-2 pr-3 pl-1.5 transition-transform duration-100 has-[button:active]:scale-[0.98]">
                     <button
@@ -275,7 +278,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
                         <Logo serviceKey={i.subscription.serviceKey} name={i.subscription.name} size={30} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium">{i.subscription.name}</span>
-                          <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · {i.paid ? 'ödendi' : past ? 'geçti' : dueLabel(i.date)}</span>
+                          <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · {i.paid ? 'ödendi' : dueLabel(i.date)}</span>
                         </span>
                         <span className="num text-[15px]">{formatMoney(i.subscription.amount, i.subscription.currency)}</span>
                       </HoldButton>
@@ -284,7 +287,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
                         <BankMark bankName={i.card.bankName} color={i.card.color} size={30} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium">{i.card.bankName}</span>
-                          <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · son ödeme · {i.paid ? 'ödendi' : past ? 'geçti' : dueLabel(i.date)}</span>
+                          <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · son ödeme · {i.paid ? 'ödendi' : dueLabel(i.date)}</span>
                         </span>
                         <span className="num text-[15px]">•• {i.card.last4}</span>
                       </HoldButton>
@@ -296,17 +299,5 @@ export function HomeScreen({ nav }: { nav: Nav }) {
         </div>
       </div>
     </div>
-  )
-}
-
-/** "4 gün" ya da "Bugün": kalan süre büyük rakamla */
-export function BigDays({ date, small }: { date: Date; small?: boolean }) {
-  const d = daysUntil(date)
-  if (d === 0) return <span className={cn('num num-bold', small ? 'text-[26px]' : 'text-[34px]')}>Bugün</span>
-  return (
-    <>
-      <span className={cn('num num-bold', small ? 'text-[30px]' : 'text-[52px]')}>{d}</span>
-      <span className="text-sm"> gün</span>
-    </>
   )
 }
