@@ -327,8 +327,8 @@ export function matchService(name: string) {
   return SERVICES.find((s) => normalize(s.name) === n || s.key === n)
 }
 
-/** Arama ve eşleştirme için sade yazım: "NETFLİX" ve "ıcloud" → "netflix", "icloud" */
+/** Arama ve eşleştirme için sade yazım, boşluksuz: "NETFLİX" → "netflix", "HBO Max" ve "hbomax" aynı */
 export function normalize(s: string) {
-  return fold(s)
+  return fold(s).replace(/ /g, '')
 }
 
