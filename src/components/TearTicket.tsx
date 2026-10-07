@@ -72,20 +72,17 @@ export function TearTicket({
   const start = useRef<{ x: number; y: number; id: number; dir: 'h' | 'v' | null } | null>(null)
   const tween = useRef(0)
   const progress = Math.min(1, cut / width)
-  // Koparma kararı verildi, ödeme henüz işlenmedi. Ödeme bir kez işlenir: zamanlayıcıda ya da düşüş bitince. Ekran bu arada
-  // kapanırsa unmount'ta işlenir (koparılmış bir ödeme kaybolmasın).
-  const paidDue = useRef(false)
+  // Koparma kararı verildi, ödeme henüz işlenmedi: o an verilen onTear burada bekler. Ödeme bir kez işlenir: zamanlayıcıda ya da
+  // düşüş bitince. Ekran bu arada kapanırsa unmount'ta işlenir (koparılmış bir ödeme kaybolmasın).
+  const paidDue = useRef<(() => void) | null>(null)
   const paidTimer = useRef(0)
   const fallAnim = useRef<Animation | null>(null)
-  const latestTear = useRef(onTear)
-  useEffect(() => {
-    latestTear.current = onTear
-  })
   const pay = useCallback(() => {
     window.clearTimeout(paidTimer.current)
-    if (!paidDue.current) return
-    paidDue.current = false
-    latestTear.current()
+    const onPaid = paidDue.current
+    if (!onPaid) return
+    paidDue.current = null
+    onPaid()
   }, [])
   // Sayfa kapanınca bekleyen animasyon ve zamanlayıcılar durur
   useEffect(
@@ -180,7 +177,7 @@ export function TearTicket({
     haptic()
     closeTip()
     setFalling(true)
-    paidDue.current = true
+    paidDue.current = onTear
     // Kesik sona kadar tamamlanır, sonra kopan kâğıt sallanarak süzülüp düşer
     animateCut(from, width, 160, () => {
       const el = root.current
