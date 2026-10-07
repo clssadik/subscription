@@ -10,6 +10,8 @@ import webpush from 'npm:web-push@3.6.7'
 
 const TZ = 'Europe/Istanbul'
 const APP_URL = 'https://subly-tr.vercel.app'
+/** Cron her 15 dakikada çalışır; günün son turu 23:45. Daha geç seçilen saat 23:45'te gönderilir. */
+const LAST_RUN_MINUTES = 23 * 60 + 45
 
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
   auth: { persistSession: false },
@@ -308,7 +310,7 @@ async function runReminders() {
       const notify = notifyBy.get(userId) ?? DEFAULT_NOTIFY
       if (!notify.enabled) continue
       const [h, m] = notify.time.split(':').map(Number)
-      if (now.minutes < h * 60 + m) continue
+      if (now.minutes < Math.min(h * 60 + m, LAST_RUN_MINUTES)) continue
       const messages = messagesFor(notify, subsBy.get(userId) ?? [], cardsBy.get(userId) ?? [], paidBy.get(userId) ?? new Map<string, Day[]>(), now)
         .filter((msg) => !sent.has(`${userId}|${msg.key}`))
       for (const msg of messages) {
