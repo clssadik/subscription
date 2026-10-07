@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { AddSheet, type SheetTarget } from '@/components/AddSheet'
 import { InstallGate } from '@/components/InstallGate'
@@ -79,7 +79,7 @@ export default function App() {
 }
 
 function Main({ user }: { user: User }) {
-  const { ready } = useStore()
+  const { ready, state } = useStore()
   const { settings } = useSettings(user.id)
   const [tab, setTab] = useState<Tab>('home')
   const [detailId, setDetailId] = useState<string | null>(null)
@@ -134,6 +134,14 @@ function Main({ user }: { user: User }) {
         else setAccountPage(null)
       }),
   })
+
+  // Açık detayın aboneliği ya da kartı silinince (düzenle → sil) önceki sayfaya dönülür: yoksa sayfa boş kalıyordu
+  useEffect(() => {
+    if (!ready) return
+    if (detailId && !state.subscriptions.some((s) => s.id === detailId)) go('pop', () => setDetailId(null))
+    else if (cardId && !state.cards.some((c) => c.id === cardId)) go('pop', () => setCardId(null))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- go her çizimde yeniden oluşur; sadece veri değişince bakılır
+  }, [ready, state.subscriptions, state.cards, detailId, cardId])
 
   const nav: Nav = {
     add: (preset) => setSheet({ kind: 'subscription', ...preset }),
