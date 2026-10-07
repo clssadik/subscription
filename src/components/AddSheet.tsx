@@ -251,6 +251,7 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
     e.preventDefault()
     const value = parseAmount(amount)
     if (!name.trim()) return fail('Abonelik adı girin.')
+    if (hasCardNumber(name)) return fail('Abonelik adına kart numarası yazılmaz.')
     if (!isValidAmount(value)) return fail('Tutar sayı olmalı, ör. 229,99.')
     if (!renewalDate) return fail('Yenilenme tarihi seçin.')
     let linkedCard = cardId || null
@@ -289,6 +290,7 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
             value={name}
             onChange={setName}
             placeholder="Netflix"
+            maxLength={60}
             items={SERVICES}
             onPick={(s) => {
               setServiceKey(s.key)
@@ -353,8 +355,12 @@ const NEW_CARD = '__new'
 /** Kart formunun alanları (kart ekleme ve abonelik eklerken yeni kart) */
 type NewCard = { bankName: string; last4: string; kind: CardKind; statementDay: number | null }
 
+/** Kart numarası gibi: altı ya da daha çok hane. Ad alanlarına tam kart numarası yazılıp kaydedilmesin. */
+const hasCardNumber = (text: string) => text.replace(/\D/g, '').length >= 6
+
 function cardProblem(c: NewCard) {
   if (!c.bankName.trim()) return 'Banka adı girin.'
+  if (hasCardNumber(c.bankName)) return 'Banka adına kart numarası yazılmaz.'
   if (!/^\d{4}$/.test(c.last4)) return 'Son 4 hane tam 4 rakam olmalı.'
   if (c.kind === 'credit' && !c.statementDay) return 'Hesap kesim günü seçin.'
   return ''
@@ -382,7 +388,11 @@ function buildCard(c: NewCard, existing?: CreditCard): CreditCard {
 
 function CardInputs({ value, onChange, idPrefix, existing }: { value: NewCard; onChange: (c: NewCard) => void; idPrefix: string; existing?: CreditCard }) {
   const set = (patch: Partial<NewCard>) => onChange({ ...value, ...patch })
-  const digits = (v: string, max: number) => v.replace(/\D/g, '').slice(0, max)
+  // Son 4 hane: yazarken ilk 4 hane kalır; bir seferde birden çok hane gelirse (yapıştırma: "4111 1111 1111 1234") sondaki 4 hane alınır
+  const last4Of = (typed: string) => {
+    const next = typed.replace(/\D/g, '')
+    return next.length - value.last4.length > 1 ? next.slice(-4) : next.slice(0, 4)
+  }
   return (
     <>
       <Segmented
@@ -399,13 +409,14 @@ function CardInputs({ value, onChange, idPrefix, existing }: { value: NewCard; o
             value={value.bankName}
             onChange={(bankName) => set({ bankName })}
             placeholder="Garanti BBVA"
+            maxLength={40}
             items={BANKS}
             onPick={(b) => set({ bankName: b.name })}
           />
           {value.bankName.trim() && <span aria-hidden className="size-4 shrink-0 rounded-full" style={{ background: colorFor(value.bankName, existing) }} />}
         </Field>
         <Field label="Son 4 hane" htmlFor={`${idPrefix}-last4`}>
-          <input id={`${idPrefix}-last4`} className={cn(inputClass, 'num tracking-widest')} inputMode="numeric" autoComplete="off" value={value.last4} onChange={(e) => set({ last4: digits(e.target.value, 4) })} placeholder="1234" />
+          <input id={`${idPrefix}-last4`} className={cn(inputClass, 'num tracking-widest')} inputMode="numeric" autoComplete="off" value={value.last4} onChange={(e) => set({ last4: last4Of(e.target.value) })} placeholder="1234" />
         </Field>
         {/* Banka kartında kesim yok: satır yumuşakça kapanır / açılır */}
         <div
@@ -486,6 +497,7 @@ function SuggestInput<T extends { key: string; name: string }>({
   value,
   onChange,
   placeholder,
+  maxLength,
   items,
   onPick,
 }: {
@@ -493,6 +505,7 @@ function SuggestInput<T extends { key: string; name: string }>({
   value: string
   onChange: (v: string) => void
   placeholder: string
+  maxLength?: number
   items: T[]
   onPick: (item: T) => void
 }) {
@@ -512,6 +525,7 @@ function SuggestInput<T extends { key: string; name: string }>({
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         placeholder={placeholder}
+        maxLength={maxLength}
         autoComplete="off"
       />
       {focused && hints.length > 0 && (
