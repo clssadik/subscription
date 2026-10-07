@@ -78,6 +78,13 @@ function cardCyclesBetween(card: CardRow, start: Day, end: Day) {
   return out
 }
 
+/** Ödemenin dönemi (src/lib/dates.ts → periodKey ile aynı): kartta kesimin ayı, aylık abonelikte ayı, yıllıkta yılı */
+type PeriodKind = 'card' | 'monthly' | 'yearly'
+function periodKey(kind: PeriodKind, day: Day) {
+  if (kind === 'card') return toKey(day - 10).slice(0, 7)
+  return toKey(day).slice(0, kind === 'yearly' ? 4 : 7)
+}
+
 /** İstanbul'da şu an: gün, dakika (gece yarısından beri), haftanın günü (1 = pazartesi) */
 function nowInIstanbul() {
   const f = new Intl.DateTimeFormat('en-CA', {
@@ -172,9 +179,10 @@ const text = {
 }
 
 /** Bir kullanıcının bugün gönderilecek hatırlatmaları */
-function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Set<string>, now: ReturnType<typeof nowInIstanbul>): Message[] {
+function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Map<string, Day[]>, now: ReturnType<typeof nowInIstanbul>): Message[] {
   const { today } = now
-  const isPaid = (ref: string, day: Day) => paid.has(`${ref}|${toKey(day)}`)
+  // Ödendi: aynı kayıt için aynı dönemde bir ödeme var mı (kesim ya da yenilenme tarihi sonradan değişse de geçerli)
+  const isPaid = (ref: string, day: Day, kind: PeriodKind) => (paid.get(ref) ?? []).some((d) => periodKey(kind, d) === periodKey(kind, day))
   const out: Message[] = []
 
   const cardOf = new Map(cards.map((c) => [c.id, c]))
@@ -184,7 +192,7 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Set
     const card = sub.card_id ? cardOf.get(sub.card_id) : undefined
     for (const date of renewalsBetween(sub, today - 1, today + 7)) {
       const diff = date - today
-      if (isPaid(sub.id, date)) continue
+      if (isPaid(sub.id, date, sub.cycle)) continue
       if (diff >= 0 && days.includes(diff)) out.push({ key: `sub:${sub.id}:${toKey(date)}:${diff}`, ...text.subDue(sub, card, date, diff) })
       if (diff === -1 && notify.overdue && own !== 'off') out.push({ key: `sub-late:${sub.id}:${toKey(date)}`, ...text.subLate(sub, card) })
     }
@@ -195,7 +203,7 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Set
     for (const { statement, due } of cardCyclesBetween(card, today - 1, today + 40)) {
       const diff = due - today
       if (notify.statement && statement === today) out.push({ key: `stmt:${card.id}:${toKey(statement)}`, ...text.statement(card, due) })
-      if (isPaid(card.id, due)) continue
+      if (isPaid(card.id, due, 'card')) continue
       if (diff >= 0 && notify.cardDays.includes(diff)) out.push({ key: `card:${card.id}:${toKey(due)}:${diff}`, ...text.cardDue(card, due, diff) })
       if (diff === -1 && notify.overdue) out.push({ key: `card-late:${card.id}:${toKey(due)}`, ...text.cardLate(card) })
     }
@@ -209,10 +217,10 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Set
     const end = weekly ? today + 6 : dayOf(y, m, daysInMonth(y, m))
     const due: { day: Day; name: string }[] = []
     for (const sub of subs)
-      for (const date of renewalsBetween(sub, today, end)) if (!isPaid(sub.id, date)) due.push({ day: date, name: sub.name })
+      for (const date of renewalsBetween(sub, today, end)) if (!isPaid(sub.id, date, sub.cycle)) due.push({ day: date, name: sub.name })
     for (const card of cards)
       if (card.kind === 'credit' && card.statement_day != null)
-        for (const c of cardCyclesBetween(card, today, end)) if (!isPaid(card.id, c.due)) due.push({ day: c.due, name: card.bank_name })
+        for (const c of cardCyclesBetween(card, today, end)) if (!isPaid(card.id, c.due, 'card')) due.push({ day: c.due, name: card.bank_name })
     if (due.length > 0)
       out.push({ key: `summary:${weekly ? 'w' : 'm'}`, ...text.summary(weekly, due.sort((a, b) => a.day - b.day).map((d) => d.name)) })
   }
@@ -239,18 +247,20 @@ async function runReminders() {
     db.from('user_settings').select('user_id, notify'),
     db.from('subscriptions').select('id, user_id, name, card_id, cycle, renewal_date'),
     db.from('cards').select('id, user_id, bank_name, last4, kind, statement_day'),
-    db.from('payments').select('user_id, ref_id, due_date').gte('due_date', toKey(now.today - 60)),
+    // Dönem eşleşmesi için geriye dönük: yıllık bir ödeme aydan eski olabilir, bu yüzden bir önceki yılın başından çekilir
+    db.from('payments').select('user_id, ref_id, due_date').gte('due_date', toKey(dayOf(parts(now.today).y - 1, 1, 1))),
     db.from('notification_log').select('user_id, key').eq('sent_on', toKey(now.today)),
   ])
   const phones = group(pushRows as PushRow[])
   const subsBy = group(subs as SubRow[])
   const cardsBy = group(cards as CardRow[])
   const notifyBy = new Map((settings ?? []).map((s) => [s.user_id as string, { ...DEFAULT_NOTIFY, ...(s.notify as Partial<Notify>) }]))
-  const paidBy = new Map<string, Set<string>>()
+  // Kullanıcı → kayıt → ödemelerin vade tarihleri (dönem eşleşmesi messagesFor içinde)
+  const paidBy = new Map<string, Map<string, Day[]>>()
   for (const p of payments ?? []) {
-    const set = paidBy.get(p.user_id) ?? new Set<string>()
-    set.add(`${p.ref_id}|${p.due_date}`)
-    paidBy.set(p.user_id, set)
+    const byRef = paidBy.get(p.user_id) ?? new Map<string, Day[]>()
+    byRef.set(p.ref_id, [...(byRef.get(p.ref_id) ?? []), fromKey(p.due_date)])
+    paidBy.set(p.user_id, byRef)
   }
   const sent = new Set((sentToday ?? []).map((r) => `${r.user_id}|${r.key}`))
 
@@ -260,7 +270,7 @@ async function runReminders() {
     if (!notify.enabled) continue
     const [h, m] = notify.time.split(':').map(Number)
     if (now.minutes < h * 60 + m) continue
-    const messages = messagesFor(notify, subsBy.get(userId) ?? [], cardsBy.get(userId) ?? [], paidBy.get(userId) ?? new Set(), now)
+    const messages = messagesFor(notify, subsBy.get(userId) ?? [], cardsBy.get(userId) ?? [], paidBy.get(userId) ?? new Map<string, Day[]>(), now)
       .filter((msg) => !sent.has(`${userId}|${msg.key}`))
     for (const msg of messages) {
       // Önce kaydet: iki çağrı üst üste gelirse aynı bildirim iki kez gitmesin
