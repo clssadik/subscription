@@ -112,13 +112,6 @@ export function nextCardCycle(card: DueCard, payments: Payment[] = [], from: Dat
   return { ...cycles[i], previousDue: cycles[i - 1]?.due ?? null, paid: isPaid(payments, card.id, cycles[i].due, 'card') }
 }
 
-/** Bugün ya da sonraki ilk hesap kesimi */
-export function nextStatement(card: DueCard, from: Date = new Date()) {
-  const today = startOfDay(from)
-  const thisMonth = statementInMonth(card, today)
-  return thisMonth >= today ? thisMonth : statementInMonth(card, addMonths(today, 1))
-}
-
 /** Bugünden itibaren henüz "ödendi" işaretlenmemiş ilk son ödeme günü. */
 export function nextCardDue(card: DueCard, payments: Payment[] = [], from: Date = new Date()) {
   return nextCardCycle(card, payments, from).due
