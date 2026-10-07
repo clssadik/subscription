@@ -31,7 +31,7 @@ const PAGES: Record<LegalPage, { title: string; sections: { heading: string; bod
     sections: [
       {
         heading: 'Ne saklanır?',
-        body: 'E-posta adresi, eklenen abonelikler (ad, tutar, yenilenme tarihi), kartlar için yalnızca banka adı ve son 4 hane, hesap kesim günü ve "ödendi" işaretleri.',
+        body: 'E-posta adresi, profil adı, bildirim ayarları ve bu telefonun bildirim adresi. Abonelikte ad, tutar ve yenilenme tarihi; kartta banka adı, son 4 hane, kesim günü ve limit. Ayrıca "ödendi" işaretleri ve logosu olmayan servislerin adı.',
       },
       {
         heading: 'Ne saklanmaz?',
@@ -42,12 +42,12 @@ const PAGES: Record<LegalPage, { title: string; sections: { heading: string; bod
         body: 'Veriler hesaba bağlı olarak güvenli bir sunucuda tutulur; aynı e-postayla başka bir cihazdan girildiğinde orada da görünür. Telefonda da bir kopyası durur, böylece uygulama internet yokken de açılır.',
       },
       {
-        heading: 'Kimseyle paylaşılmaz',
-        body: 'Veriler satılmaz, reklam için kullanılmaz, kimseyle paylaşılmaz. Logosu olmayan bir servis eklendiğinde, logonun eklenebilmesi için yalnızca servisin adı not alınır.',
+        heading: 'Kimlerle paylaşılır?',
+        body: 'Veriler satılmaz ve reklam için kullanılmaz. Bildirimler Apple ya da Google’ın bildirim servisi üzerinden iletilir; veriler Supabase’de tutulur.',
       },
       {
         heading: 'Silme',
-        body: 'Çıkış yapıldığında telefondaki kopya silinir. Silinen bir abonelik ya da kart sunucudan da silinir.',
+        body: 'Çıkış yapmak bu telefondaki kopyayı siler; veriler hesapta kalır. Hesap ekranındaki "Hesabı sil" hesabı ve bütün verileri kalıcı olarak siler. Silinen bir abonelik ya da kart sunucudan da silinir.',
       },
     ],
   },
@@ -62,7 +62,7 @@ export function LegalSheet({ page, onClose }: { page: LegalPage | null; onClose:
   return (
     <Drawer open={!!page} onOpenChange={(o) => !o && onClose()}>
       <DrawerContent className="max-h-[88svh] rounded-t-[30px] border-0 bg-page data-[vaul-drawer-direction=bottom]:max-h-[88svh]">
-        <div className="mx-auto w-full max-w-md overflow-y-auto px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto w-full max-w-md overflow-y-auto overscroll-contain px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <DrawerTitle className="num num-bold pt-3 pb-1 text-center text-xl">{content?.title}</DrawerTitle>
           <DrawerDescription className="sr-only">Monthwise hakkında kısa bilgi</DrawerDescription>
           {content?.sections.map((s) => (
