@@ -127,7 +127,7 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
                 <HoldButton onOpen={() => nav.openSubscription(s.id)} className="pressable flex w-full items-center gap-3 rounded-[18px] bg-surface px-3 py-2.5 text-left">
                   <Logo serviceKey={s.serviceKey} name={s.name} size={30} />
                   <span className="flex-1 truncate font-medium">{s.name}</span>
-                  {!cycle && s.currency === 'TRY' && <span aria-hidden className="size-2.5 shrink-0 rounded-[3px]" style={{ background: arcColor(s, surfaces) }} />}
+                  {!cycle && s.currency === 'TRY' && <span aria-hidden className="size-2.5 shrink-0 rounded-[3px]" style={{ background: arcColor(s, surfaces.page) }} />}
                   <span className="num text-[15px]">
                     {formatMoney(s.amount, s.currency)}
                     {s.cycle === 'yearly' && <span className="text-[11px] text-subtle">/yıl</span>}
@@ -142,10 +142,13 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
   )
 }
 
-/** Açık ve koyu temada yayların üstünde durduğu zeminler: sayfa, kart, iz */
+/**
+ * Açık ve koyu temada yayların zeminleri: dilimler sayfanın ve kartların (listedeki kutular) üstünde,
+ * gösterge yayı ise izin (track) üstünde durur.
+ */
 const SURFACES = {
-  light: ['#F1ECE2', '#FFFFFF', '#E2DBCD'],
-  dark: ['#000000', '#141414', '#262626'],
+  light: { page: ['#F1ECE2', '#FFFFFF'], track: ['#E2DBCD'] },
+  dark: { page: ['#000000', '#141414'], track: ['#262626'] },
 } as const
 
 function useSurfaces() {
@@ -153,13 +156,13 @@ function useSurfaces() {
 }
 
 /** Renk zeminlerden birinde kaybolursa (siyah GitHub koyu temada, sarı Paycell açıkta) yazı rengi; değilse rengin kendisi. Stroke için style ile verilir. */
-function strokeOn(color: string, surfaces: readonly string[]) {
-  return surfaces.some((z) => contrastRatio(color, z) < 1.6) ? 'var(--ink)' : color
+function strokeOn(color: string, zones: readonly string[]) {
+  return zones.some((z) => contrastRatio(color, z) < 1.6) ? 'var(--ink)' : color
 }
 
 /** Yaydaki dilim rengi: servisin rengi */
-function arcColor(s: Subscription, surfaces: readonly string[]) {
-  return strokeOn(serviceColor(s.serviceKey, s.name), surfaces)
+function arcColor(s: Subscription, zones: readonly string[]) {
+  return strokeOn(serviceColor(s.serviceKey, s.name), zones)
 }
 
 /**
@@ -172,17 +175,27 @@ function ShareArc({ subscriptions, total }: { subscriptions: Subscription[]; tot
   const R = 112
   const cx = W / 2
   const cy = 140
-  const GAP = 0.012
+  const GAP = 0.012 // dilimler arası boşluk (iki dilim arasında toplam iki kat)
+  const MIN = 0.03 // en küçük dilimin görünür uzunluğu: küçük aboneliklerin dilimi boşlukta kaybolmasın
   const point = (p: number) => `${cx - R * Math.cos(Math.PI * p)} ${cy - R * Math.sin(Math.PI * p)}`
   const arc = (from: number, to: number) => `M ${point(from)} A ${R} ${R} 0 0 1 ${point(to)}`
 
-  const items = subscriptions.filter((s) => s.currency === 'TRY').map((s) => ({ id: s.id, value: monthlyCost(s), color: arcColor(s, surfaces) }))
+  const items = subscriptions.filter((s) => s.currency === 'TRY').map((s) => ({ id: s.id, value: monthlyCost(s), color: arcColor(s, surfaces.page) }))
   const sum = items.reduce((t, i) => t + i.value, 0)
-  // Her dilimin başı = kendinden öncekilerin payları toplamı; aralarda küçük boşluk
+  // Dilimler yayın boşluk dışındaki kısmını payına göre doldurur. Payı MIN'in altında kalan dilim MIN'e çıkar,
+  // fazlası büyük dilimlerden alınır: her dilim en az MIN, toplam hep tam yay.
+  const room = 1 - Math.max(0, items.length - 1) * 2 * GAP
+  const floor = Math.min(MIN, room / Math.max(1, items.length))
+  const raw = items.map((i) => (sum > 0 ? i.value / sum : 1 / items.length) * room)
+  const floored = raw.map((r) => Math.max(r, floor))
+  const excess = floored.reduce((t, x) => t + x, 0) - room
+  const above = raw.map((r) => Math.max(r - floor, 0))
+  const aboveSum = above.reduce((t, x) => t + x, 0)
+  const lengths = floored.map((f, n) => f - (aboveSum > 0 ? (excess * above[n]) / aboveSum : 0))
+  // Her dilimin başı: önceki dilimlerin uzunlukları ve aralarındaki boşluklar
   const slices = items.map((i, n) => {
-    const from = items.slice(0, n).reduce((t, x) => t + x.value, 0) / sum
-    const to = from + i.value / sum
-    return { ...i, from: n === 0 ? 0 : from + GAP, to: n === items.length - 1 ? 1 : to - GAP }
+    const from = lengths.slice(0, n).reduce((t, l) => t + l + 2 * GAP, 0)
+    return { ...i, from, to: from + lengths[n] }
   })
 
   return (
@@ -190,7 +203,7 @@ function ShareArc({ subscriptions, total }: { subscriptions: Subscription[]; tot
       <svg viewBox={`0 0 ${W} 150`} className="w-full" role="img" aria-label={`Bu karttan aylık ${formatMoney(total)}, ${items.length} abonelik`}>
         {/* Stroke style ile: iOS Safari'de var() sunum özniteliğinde (stroke="var(..)") güvenilir değil */}
         {slices.length === 0 && <path d={arc(0, 1)} fill="none" style={{ stroke: 'var(--line)' }} strokeWidth={22} />}
-        {slices.map((sl) => sl.to > sl.from && <path key={sl.id} d={arc(sl.from, sl.to)} fill="none" style={{ stroke: sl.color }} strokeWidth={22} />)}
+        {slices.map((sl) => <path key={sl.id} d={arc(sl.from, sl.to)} fill="none" style={{ stroke: sl.color }} strokeWidth={22} />)}
       </svg>
       <div className="absolute inset-x-0 bottom-1.5 text-center">
         {items.length > 0 ? (
@@ -232,7 +245,7 @@ function Gauge({ color, due, previousDue }: { color: string; due: Date | null; p
     <div className="relative mx-auto mt-3 w-[86%]">
       <svg viewBox={`0 0 ${W} 150`} className="w-full" role="img" aria-label={due ? `Son ödemeye ${left} gün kaldı` : 'Banka kartı'}>
         <path d={arc(1)} fill="none" style={{ stroke: 'var(--line)' }} strokeWidth={22} />
-        {progress > 0.01 && <path d={arc(progress)} fill="none" style={{ stroke: strokeOn(color, surfaces) }} strokeWidth={22} />}
+        {progress > 0.01 && <path d={arc(progress)} fill="none" style={{ stroke: strokeOn(color, surfaces.track) }} strokeWidth={22} />}
         {due && <circle cx={end.x} cy={end.y} r={9} className="fill-bh-yellow" />}
       </svg>
       <div className="absolute inset-x-0 bottom-1.5 text-center">

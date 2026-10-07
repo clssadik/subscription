@@ -180,12 +180,19 @@ const POSTER = [
 
 /** Bu ay ödenecek kartlar Bauhaus şekilleri olarak, son ödemesi en yakın olan başta. Boş kalan yerler koyu gri. */
 function Poster({ cards }: { cards: CreditCard[] }) {
+  // Şekiller yediye sığar; daha fazla kart varsa son yer "+N" olur, böylece şekiller ve yanındaki sayı aynı kartları anlatır
+  const more = cards.length > POSTER.length ? cards.length - (POSTER.length - 1) : 0
+  const drawn = more ? cards.slice(0, POSTER.length - 1) : cards
   return (
     <div aria-hidden className="relative my-2 mr-2 rounded-[20px] bg-[#141414]">
-      {POSTER.map((shape, i) => (
-        // Siyah kartlar (Papara) siyah panelde kaybolmasın: ince açık kenar
-        <span key={i} className={cn('absolute', shape, cards[i] && contrastRatio(cards[i].color, '#141414') < 1.6 && 'ring-1 ring-white/30')} style={{ background: cards[i]?.color ?? '#262626' }} />
-      ))}
+      {POSTER.map((shape, i) =>
+        more && i === POSTER.length - 1 ? (
+          <span key={i} className={cn('num absolute flex items-center justify-center bg-[#262626] text-[13px] font-medium text-white', shape)}>+{more}</span>
+        ) : (
+          // Siyah kartlar (Papara) siyah panelde kaybolmasın: ince açık kenar
+          <span key={i} className={cn('absolute', shape, drawn[i] && contrastRatio(drawn[i].color, '#141414') < 1.6 && 'ring-1 ring-white/30')} style={{ background: drawn[i]?.color ?? '#262626' }} />
+        ),
+      )}
       {cards.length > 0 && <span className="absolute top-3.5 left-3.5 size-14 rounded-full ring-[3px] ring-bh-yellow" />}
     </div>
   )
