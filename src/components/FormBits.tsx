@@ -28,9 +28,12 @@ export function Field({ label, htmlFor, stacked, children }: { label: string; ht
   )
 }
 
+// Klavye odağı halkası yalnızca imleçli cihazlarda (pointer-fine): iPhone'da dokununca alan değişmez.
+const fieldFocus = 'pointer-fine:focus-visible:ring-2 pointer-fine:focus-visible:ring-[color:var(--focus)]'
+
 // iPhone'da 16px altı yazı tipli alanlara dokununca sayfa yakınlaşıyor; o yüzden text-base.
-export const inputClass = 'w-full min-w-0 bg-transparent text-base outline-none placeholder:text-subtle/60'
-export const selectClass = 'bg-transparent text-base font-medium text-bh-blue outline-none dark:text-[#6E9BFF]'
+export const inputClass = `w-full min-w-0 bg-transparent text-base outline-none placeholder:text-subtle/60 ${fieldFocus}`
+export const selectClass = `bg-transparent text-base font-medium text-bh-blue outline-none dark:text-[#6E9BFF] ${fieldFocus}`
 
 export function Segmented<T extends string>({
   value,
@@ -102,7 +105,7 @@ export function DaySelect({
         id={id}
         value={value ?? ''}
         onChange={(e) => onChange(Number(e.target.value))}
-        className={cn('w-full appearance-none bg-transparent pr-6 text-base outline-none', value ? 'text-ink' : 'text-subtle/60')}
+        className={cn('w-full appearance-none bg-transparent pr-6 text-base outline-none', fieldFocus, value ? 'text-ink' : 'text-subtle/60')}
       >
         <option value="" disabled>Gün seçin</option>
         {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (

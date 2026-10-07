@@ -97,6 +97,8 @@
     --border: var(--line);
     --input: var(--line);
     --ring: #F4C21B;
+    /* Klavye odağı çizgisi: sarı halka krem ve beyaz üstünde 3:1'in altında kalır, o yüzden mavi */
+    --focus: #1F4FB4;
     --radius: 0.875rem;
 }
 
@@ -111,6 +113,8 @@
     --hero-fg: #FFFFFF;
     --nav: #141414;
     --nav-off: #5C5C5C;
+    /* Koyuda açık mavi: #1F4FB4 siyah üstünde 3:1'in altında kalır */
+    --focus: #6E9BFF;
     color-scheme: dark;
 }
 
@@ -147,6 +151,18 @@ html:not(.dark) .text-bh-red { color: #B02D18; }
   img {
     -webkit-user-drag: none;
   }
+}
+
+/* Klavyeyle odak: düğme ve bağlantılarda mavi çizgi. iPhone'da dokunmada :focus-visible gelmediği için görünüm değişmez.
+   Yazı alanları ve açılır listeler bu kurala girmez: kendi imleçleri ve klavyeleri var (bkz. FormBits.tsx).
+   Katmanın dışında: Tailwind'in outline-none gibi sınıfları bu çizgiyi silemesin. */
+button:focus-visible,
+a[href]:focus-visible,
+[role='button']:focus-visible,
+[role='switch']:focus-visible,
+[tabindex]:not(input):not(select):not(textarea):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 @layer utilities {
