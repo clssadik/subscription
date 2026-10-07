@@ -16,17 +16,24 @@ import { useUndoable } from '@/lib/undo'
 import { cn } from '@/lib/utils'
 import type { Nav } from '@/App'
 
+/** Metin, aramanın (normalize edilmiş) bir kelimesinin başıyla başlıyor mu: "mu" hem "Apple Music" hem "Music" için tutar */
+function startsWord(text: string | undefined, q: string) {
+  const words = (text ?? '').split(/\s+/).map(normalize).filter(Boolean)
+  return words.some((_, i) => words.slice(i).join('').startsWith(q))
+}
+
 export function HistoryScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
   const undoable = useUndoable()
   const { payments, subscriptions, cards } = state
-  // Arama açıkken üstteki grafik kapanır; liste abonelik ya da banka adına göre, adın başından süzülür
+  // Arama açıkken üstteki grafik kapanır; liste abonelik adına ya da o aboneliğin kartının banka adına göre süzülür
   const search = useSearch()
   const { q } = search
-  const nameOf = (p: (typeof payments)[number]) =>
-    p.kind === 'subscription'
-      ? (subscriptions.find((x) => x.id === p.refId)?.name ?? '')
-      : (cards.find((x) => x.id === p.refId)?.bankName ?? '')
+  const matches = (p: (typeof payments)[number]) => {
+    if (p.kind === 'card') return startsWord(cards.find((x) => x.id === p.refId)?.bankName, q)
+    const s = subscriptions.find((x) => x.id === p.refId)
+    return startsWord(s?.name, q) || startsWord(cards.find((c) => c.id === s?.cardId)?.bankName, q)
+  }
 
   // Sola kaydırıp "Kaldır": ödendi işareti kalkar, ödeme yeniden bekleyen olur. Mesajdaki "Geri al" geri getirir.
   const unmark = (p: (typeof payments)[number], name: string) =>
@@ -35,10 +42,11 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
   // Son 6 ayda ödendi işaretlenen abonelik tutarları, para birimi bazında. Kart ekstreleri tutarsız tutulduğu için dahil değil.
   const thisMonth = startOfMonth(new Date())
   const months = Array.from({ length: 6 }, (_, i) => addMonths(thisMonth, i - 5))
+  // Para birimi eklenmeden önce kaydedilen ödemeler TL sayılır
   const paidIn = (m: Date, currency: Currency) => {
     const key = format(m, 'yyyy-MM')
     return payments
-      .filter((p) => p.kind === 'subscription' && p.currency === currency && p.dueDate.startsWith(key))
+      .filter((p) => p.kind === 'subscription' && (p.currency ?? 'TRY') === currency && p.dueDate.startsWith(key))
       .reduce((s, p) => s + (p.amount ?? 0), 0)
   }
   const sums = months.map((m) => paidIn(m, 'TRY'))
@@ -57,7 +65,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
   ]
 
   // Ay ay gruplanmış liste, yeniden eskiye
-  const sorted = payments.filter((p) => !q || normalize(nameOf(p)).startsWith(q)).sort((a, b) => b.dueDate.localeCompare(a.dueDate))
+  const sorted = payments.filter((p) => !q || matches(p)).sort((a, b) => b.dueDate.localeCompare(a.dueDate))
   const groups = new Map<string, typeof sorted>()
   for (const p of sorted) {
     const k = p.dueDate.slice(0, 7)
@@ -100,7 +108,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
                       className={cn(i === 5 ? 'rounded-[14px_14px_4px_4px] bg-bh-yellow' : 'rounded bg-white/20')}
                       style={{ height: Math.max(3, (sums[i] / max) * 52) }}
                     />
-                    <div className="mt-1 text-[9px] opacity-70">{formatDate(m, 'LLL')}</div>
+                    <div className="mt-1 text-[10px] opacity-70">{formatDate(m, 'LLL')}</div>
                   </div>
                 ))}
               </div>
@@ -115,7 +123,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
             <span className="flex size-12 items-center justify-center rounded-full bg-bh-green/15 text-bh-green">
               <CheckIcon className="size-6" strokeWidth={2.2} />
             </span>
-            <p className="mt-3 font-medium">Henüz ödeme yok</p>
+            <p className="mt-3 font-medium">Henüz ödeme yok.</p>
           </div>
         )}
         {[...groups.entries()].map(([month, list]) => (
@@ -159,7 +167,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
                       <div className="flex items-center gap-3 px-3 py-2.5">
                         <BankMark bankName={c?.bankName ?? '?'} color={c?.color ?? '#888'} size={30} />
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate font-medium">{c ? `${c.bankName} ekstresi` : 'Kart ekstresi'}</span>
+                          <span className="block truncate font-medium">{c ? `${c.bankName} ekstresi` : 'Silinmiş kart'}</span>
                           <span className="block text-[11px] text-subtle">{date} · son ödeme</span>
                         </span>
                         {c && <span className="num text-[15px]">•• {c.last4}</span>}
