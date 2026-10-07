@@ -16,6 +16,7 @@ import {
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Wordmark } from '@/components/Brand'
+import { HoldToConfirm } from '@/components/HoldToConfirm'
 import { LegalSheet, type LegalPage } from '@/components/LegalSheet'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Group, Row, RowIcon, Switch } from '@/components/SettingsList'
@@ -64,6 +65,7 @@ export function AccountScreen({ user, open }: { user: User; open: (page: Account
   const { pref, setPref } = useTheme()
   const [sound, setSound] = useSoundEnabled()
   const [legal, setLegal] = useState<LegalPage | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const email = user.email ?? ''
   const demo = user.id === DEMO_ID
   const notify = settings.notify
@@ -87,6 +89,31 @@ export function AccountScreen({ user, open }: { user: User; open: (page: Account
     // Test hesabının verileri cihazda kalsın; gerçek hesapta çıkarken temizlenir
     if (user.id === DEMO_ID) return demoSignOut()
     clearCache(user.id)
+    await supabase.auth.signOut()
+  }
+
+  /** Hesabı ve sunucudaki bütün verileri siler; bu telefondaki kopya da temizlenip çıkış yapılır */
+  async function deleteAccount() {
+    if (deleting) return
+    setDeleting(true)
+    try {
+      const { error } = await supabase.functions.invoke('delete-account', { method: 'POST' })
+      if (error) throw error
+    } catch {
+      setDeleting(false)
+      toast.error('Hesap silinemedi. Tekrar deneyin.')
+      return
+    }
+    haptic()
+    clearCache(user.id)
+    try {
+      // Ayarlar gibi bu hesaba ait öteki kayıtlar da bu telefondan silinir
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith('abonelik-takip:') && k.includes(user.id))
+        .forEach((k) => localStorage.removeItem(k))
+    } catch {
+      // depolama kapalıysa yapacak bir şey yok
+    }
     await supabase.auth.signOut()
   }
 
@@ -204,6 +231,15 @@ export function AccountScreen({ user, open }: { user: User; open: (page: Account
           Çıkış yap
         </button>
       </Group>
+
+      {/* Hesap ve bütün verileri silinir: yanlışlıkla olmasın diye basılı tutulunca dolar */}
+      {!demo && (
+        <Group>
+          <HoldToConfirm onConfirm={deleteAccount} className="flex min-h-[52px] w-full items-center justify-center text-[15px] text-[var(--ios-red)]">
+            {deleting ? 'Siliniyor…' : 'Hesabı sil'}
+          </HoldToConfirm>
+        </Group>
+      )}
 
       <p className="mt-6 text-center text-[12px] text-subtle"><Wordmark /></p>
       <LegalSheet page={legal} onClose={() => setLegal(null)} />
