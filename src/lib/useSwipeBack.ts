@@ -61,6 +61,8 @@ export function useSwipeBack(
     }
 
     const down = (e: PointerEvent) => {
+      // Tek parmak: ikinci parmak, ilk parmak bitene kadar yok sayılır (yoksa sayfa yarım kayıp kalır)
+      if (start && e.pointerId !== start.id) return
       if (e.pointerType === 'mouse' && e.button !== 0) return
       if ((e.target as Element).closest('[data-no-swipe-back], input, textarea, select')) return
       // data-no-swipe-back="band": o yükseklikte ekranın tüm genişliği kapalı (kenardaki boşluktan başlayan parmak da)

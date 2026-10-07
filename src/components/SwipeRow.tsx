@@ -1,5 +1,5 @@
 import { Trash2Icon, type LucideIcon } from 'lucide-react'
-import { useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { haptic } from '@/lib/haptics'
 import { HOLD_MS } from '@/lib/useLongPress'
 import { cn } from '@/lib/utils'
@@ -76,7 +76,8 @@ export function SwipeRow({
       }, 260)
     }, 240)
   }
-  const start = useRef<{ x: number; y: number; base: number; dir: 'h' | 'v' | null } | null>(null)
+  // Satırı tutan tek parmak (id): başka parmaklar yok sayılır
+  const start = useRef<{ x: number; y: number; base: number; dir: 'h' | 'v' | null; id: number } | null>(null)
   // Basılı tutunca satır hafifçe küçülür. Kısa gecikme: kaydırmaya başlayan parmak satırı küçültmesin.
   const [pressed, setPressed] = useState(false)
   const pressTimer = useRef(0)
@@ -88,6 +89,14 @@ export function SwipeRow({
     clearTimeout(holdTimer.current)
     setPressed(false)
   }
+  // Satır sayfadan kalkınca bekleyen basılı tutma zamanlayıcıları çalışmasın (kalkmış satırın onTap'i açılmasın)
+  useEffect(
+    () => () => {
+      clearTimeout(pressTimer.current)
+      clearTimeout(holdTimer.current)
+    },
+    [],
+  )
 
   return (
     // Satırın kendi yatay kaydırması var: sayfanın sağa çekerek geri dönüşü burada çalışmaz
@@ -136,7 +145,11 @@ export function SwipeRow({
           touchAction: 'pan-y',
         }}
         onPointerDown={(e) => {
-          start.current = { x: e.clientX, y: e.clientY, base: x, dir: null }
+          // İkinci parmak ilk parmak bitene kadar yok sayılır (zamanlayıcıları ezip yetim bırakmasın)
+          if (start.current && start.current.id !== e.pointerId) return
+          clearTimeout(pressTimer.current)
+          clearTimeout(holdTimer.current)
+          start.current = { x: e.clientX, y: e.clientY, base: x, dir: null, id: e.pointerId }
           pressTimer.current = window.setTimeout(() => setPressed(true), 70)
           held.current = false
           if (onTap && x === 0)
@@ -149,7 +162,7 @@ export function SwipeRow({
         }}
         onPointerMove={(e) => {
           const s = start.current
-          if (!s) return
+          if (!s || e.pointerId !== s.id) return
           const dx = e.clientX - s.x
           const dy = e.clientY - s.y
           if (!s.dir && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
@@ -170,8 +183,10 @@ export function SwipeRow({
             }
           }
         }}
-        onPointerUp={() => {
+        onPointerUp={(e) => {
           const s = start.current
+          // Başka parmağın bırakılması bu satırın basışını bitirmesin
+          if (s && e.pointerId !== s.id) return
           start.current = null
           setDragging(false)
           release()
@@ -188,7 +203,9 @@ export function SwipeRow({
             else if (!held.current) onTap?.()
           }
         }}
-        onPointerCancel={() => {
+        onPointerCancel={(e) => {
+          const s = start.current
+          if (s && e.pointerId !== s.id) return
           start.current = null
           setDragging(false)
           setFull(false)

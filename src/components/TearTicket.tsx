@@ -1,5 +1,5 @@
 import { ScissorsIcon } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
 import { haptic } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
@@ -67,9 +67,34 @@ export function TearTicket({
   const [entering, setEntering] = useState(false)
   const [tip, setTip] = useState(() => !tipSeen())
   const showTip = tip && canTear
-  const start = useRef<{ x: number; y: number; dir: 'h' | 'v' | null } | null>(null)
+  // Koparan tek parmak (id): başka parmaklar yok sayılır
+  const start = useRef<{ x: number; y: number; id: number; dir: 'h' | 'v' | null } | null>(null)
   const tween = useRef(0)
   const progress = Math.min(1, cut / width)
+  // Koparma kararı verildi, ödeme henüz işlenmedi. Ödeme bir kez işlenir: zamanlayıcıda ya da düşüş bitince. Ekran bu arada
+  // kapanırsa unmount'ta işlenir (koparılmış bir ödeme kaybolmasın).
+  const paidDue = useRef(false)
+  const paidTimer = useRef(0)
+  const fallAnim = useRef<Animation | null>(null)
+  const latestTear = useRef(onTear)
+  useEffect(() => {
+    latestTear.current = onTear
+  })
+  const pay = useCallback(() => {
+    window.clearTimeout(paidTimer.current)
+    if (!paidDue.current) return
+    paidDue.current = false
+    latestTear.current()
+  }, [])
+  // Sayfa kapanınca bekleyen animasyon ve zamanlayıcılar durur
+  useEffect(
+    () => () => {
+      cancelAnimationFrame(tween.current)
+      fallAnim.current?.cancel()
+      pay()
+    },
+    [pay],
+  )
 
   // Kesik noktasını yumuşakça bir değere götürür (bırakınca açılma, koparken tamamlanma, tanıtım)
   function animateCut(from: number, to: number, ms: number, done?: () => void) {
@@ -141,6 +166,7 @@ export function TearTicket({
     haptic()
     closeTip()
     setFalling(true)
+    paidDue.current = true
     // Kesik sona kadar tamamlanır, sonra kopan kâğıt sallanarak süzülüp düşer
     animateCut(from, width, 160, () => {
       const el = root.current
@@ -153,15 +179,17 @@ export function TearTicket({
         ],
         { duration: FALL_MS, easing: 'cubic-bezier(0.5, 0, 0.85, 0.4)', fill: 'forwards' },
       )
-      const paid = window.setTimeout(onTear, FALL_MS * PAID_AT)
+      fallAnim.current = fall
+      paidTimer.current = window.setTimeout(pay, FALL_MS * PAID_AT)
       fall.onfinish = () => {
-        window.clearTimeout(paid)
+        pay()
         // Önce koçan görünmez yapılıp kesik kapatılır, sonra düşüş kaldırılır: yerinde birleşik hâliyle bir an bile görünmesin
         flushSync(() => {
           setEntering(true)
           setCut(0)
         })
         fall.cancel()
+        fallAnim.current = null
         setFalling(false)
         requestAnimationFrame(() => requestAnimationFrame(() => setEntering(false)))
       }
@@ -236,14 +264,15 @@ export function TearTicket({
           touchAction: 'pan-y',
         }}
         onPointerDown={(e) => {
-          if (!canTear || falling) return
+          // İkinci parmak ilk parmak bitene kadar yok sayılır
+          if (!canTear || falling || (start.current && start.current.id !== e.pointerId)) return
           cancelAnimationFrame(tween.current)
           setWidth(e.currentTarget.offsetWidth)
-          start.current = { x: e.clientX, y: e.clientY, dir: null }
+          start.current = { x: e.clientX, y: e.clientY, id: e.pointerId, dir: null }
         }}
         onPointerMove={(e) => {
           const s = start.current
-          if (!s) return
+          if (!s || e.pointerId !== s.id) return
           const mx = e.clientX - s.x
           const my = e.clientY - s.y
           if (!s.dir && (Math.abs(mx) > 8 || Math.abs(my) > 8)) {
@@ -265,13 +294,15 @@ export function TearTicket({
           }
           setCut(next)
         }}
-        onPointerUp={() => {
+        onPointerUp={(e) => {
           const s = start.current
+          if (s && e.pointerId !== s.id) return
           start.current = null
           if (s && cut > 0) animateCut(cut, 0, 480)
         }}
-        onPointerCancel={() => {
+        onPointerCancel={(e) => {
           const s = start.current
+          if (s && e.pointerId !== s.id) return
           start.current = null
           // Koparken (düşüş sırasında) gelen iptal kesiği kapatmasın
           if (s && cut > 0) animateCut(cut, 0, 480)
