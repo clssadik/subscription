@@ -65,6 +65,8 @@
 
 :root {
     --page: #F1ECE2;
+    /* --page'in üç sayılı hali: sis rgb(var(--page-rgb) / oran) ile yapılır (src/lib/fog.ts) */
+    --page-rgb: 241 236 226;
     --ink: #141414;
     /* İkincil yazı: krem ve beyaz zeminde 4,5:1'in üstünde kalsın diye koyu tutuldu */
     --subtle: #6B6357;
@@ -100,6 +102,7 @@
 
 :root.dark {
     --page: #000000;
+    --page-rgb: 0 0 0;
     --ink: #F2F2F2;
     --subtle: #858585;
     --surface: #141414;

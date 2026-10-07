@@ -14,5 +14,8 @@ export const BOTTOM_FOG: Record<FogLevel, { solid: number; above: number }> = {
   light: { solid: 40, above: 10 },
 }
 
-/** Zemin rengi, verilen oranda saydam */
-export const fog = (level: number) => `color-mix(in srgb, var(--page) ${Math.round(level * 100)}%, transparent)`
+/**
+ * Zemin rengi, verilen oranda saydam. color-mix değil rgb: iOS 16.0-16.1 color-mix'i bilmez, sis tamamen kayboluyordu.
+ * --page-rgb (src/index.css) --page'in üç sayılı hali; iki tema için de orada tanımlı.
+ */
+export const fog = (level: number) => `rgb(var(--page-rgb) / ${level})`
