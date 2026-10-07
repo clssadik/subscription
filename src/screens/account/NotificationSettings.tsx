@@ -61,7 +61,7 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
                 aria-label="Bildirim saati"
                 value={n.time}
                 onChange={(e) => e.target.value && updateNotify({ time: e.target.value })}
-                className="absolute inset-0 opacity-0"
+                className="absolute inset-0 text-base opacity-0"
               />
             }
           />
@@ -95,7 +95,7 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
                     label={s.name}
                     value={own === undefined ? 'Genel ayar' : own === 'off' ? 'Kapalı' : DAY_LABELS[own]}
                     select={
-                      <select aria-label={`${s.name} bildirimi`} value={value} onChange={(e) => setOverride(s.id, e.target.value)} className="absolute inset-0 opacity-0">
+                      <select aria-label={`${s.name} bildirimi`} value={value} onChange={(e) => setOverride(s.id, e.target.value)} className="absolute inset-0 text-base opacity-0">
                         <option value="default">Genel ayar ({daysLabel(n.subscriptionDays).toLocaleLowerCase('tr')})</option>
                         {REMINDER_DAYS.map((d) => (
                           <option key={d} value={d}>{DAY_LABELS[d]}</option>

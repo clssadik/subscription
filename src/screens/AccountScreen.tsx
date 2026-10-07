@@ -131,7 +131,7 @@ export function AccountScreen({ user, open }: { user: User; open: (page: Account
           }}
           className="flex w-full items-center gap-3 px-3.5 py-3 text-left active:bg-line/60"
         >
-          <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[#A4A4AA] font-label text-xl font-medium text-white dark:bg-[#636366]">
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[#636366] font-label text-xl font-medium text-white">
             {initials(settings.name, email)}
           </span>
           <span className="min-w-0 flex-1">
@@ -182,7 +182,7 @@ export function AccountScreen({ user, open }: { user: User; open: (page: Account
                 haptic()
                 setPref(e.target.value as ThemePref)
               }}
-              className="absolute inset-0 opacity-0"
+              className="absolute inset-0 text-base opacity-0"
             >
               {Object.entries(THEME_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>{label}</option>

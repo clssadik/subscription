@@ -12,7 +12,7 @@ export function ProfileEditor({ user, onBack }: { user: User; onBack: () => void
     <>
       <SubPageHeader title="Profil" onBack={onBack} />
       <div className="mt-4 flex flex-col items-center">
-        <span className="flex size-24 items-center justify-center rounded-full bg-[#A4A4AA] font-label text-4xl font-medium text-white dark:bg-[#636366]">
+        <span className="flex size-24 items-center justify-center rounded-full bg-[#636366] font-label text-4xl font-medium text-white">
           {initials(settings.name, email)}
         </span>
       </div>
