@@ -24,12 +24,14 @@ import { DEMO_ID, demoSignOut } from '@/lib/demo'
 import { formatMoney } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { isInstalled } from '@/lib/install'
+import { usePush } from '@/lib/push'
 import { randomCards, randomSubscriptions } from '@/lib/seed'
 import { initials, useSettings } from '@/lib/settings'
 import { play, useSoundEnabled } from '@/lib/sound'
 import { clearCache, useStore } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
 import { type ThemePref, useTheme } from '@/lib/theme'
+import { CURRENCIES } from '@/lib/types'
 import { useUndoable } from '@/lib/undo'
 import { InstallGuide } from './account/InstallGuide'
 import { NotificationSettings } from './account/NotificationSettings'
@@ -58,13 +60,19 @@ export function AccountScreen({ user, open }: { user: User; open: (page: Account
   const { state, dispatch } = useStore()
   const undoable = useUndoable()
   const { settings } = useSettings(user.id)
+  const { state: pushState } = usePush()
   const { pref, setPref } = useTheme()
   const [sound, setSound] = useSoundEnabled()
   const [legal, setLegal] = useState<LegalPage | null>(null)
   const email = user.email ?? ''
   const demo = user.id === DEMO_ID
   const notify = settings.notify
-  const monthly = state.subscriptions.filter((s) => s.currency === 'TRY').reduce((sum, s) => sum + monthlyCost(s), 0)
+  // Aylık toplam her para biriminde ayrı (TL önce); kur bilgisi olmadığı için birbirine eklenmez
+  const monthly = CURRENCIES.map((currency) => ({
+    currency,
+    total: state.subscriptions.filter((s) => s.currency === currency).reduce((sum, s) => sum + monthlyCost(s), 0),
+  })).filter((t) => t.total > 0)
+  const monthlyText = monthly.map((t) => formatMoney(t.total, t.currency)).join(' + ')
 
   function addTestData() {
     const cards = randomCards(10)
@@ -114,7 +122,8 @@ export function AccountScreen({ user, open }: { user: User; open: (page: Account
         <Row
           icon={<RowIcon Icon={BellIcon} className="bg-[var(--tile)] text-ink" />}
           label="Bildirimler"
-          value={notify.enabled ? 'Açık' : 'Kapalı'}
+          // Ayar açık olsa da telefon izni yoksa (ya da kayıtlı değilse) bildirim gelmez
+          value={pushState === 'on' && notify.enabled ? 'Açık' : 'Kapalı'}
           onClick={() => open('notifications')}
         />
         <Row
@@ -166,7 +175,8 @@ export function AccountScreen({ user, open }: { user: User; open: (page: Account
         <Row
           icon={<RowIcon Icon={WalletIcon} className="bg-[var(--tile)] text-ink" />}
           label="Harcama özeti"
-          value={state.subscriptions.length ? `${formatMoney(monthly)}/ay` : undefined}
+          // Uzun tutarlar satırı taşırmasın diye kesilir; TL başta olduğu için en sondaki para birimi kesilir
+          value={monthly.length ? <span className="block max-w-44 truncate">{monthlyText}/ay</span> : undefined}
           onClick={() => open('spending')}
         />
       </Group>
