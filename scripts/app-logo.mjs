@@ -52,9 +52,9 @@ const white = await sharp({ create: { width: side, height: side, channels: 3, ba
 
 await sharp(white).resize(1024, 1024).png({ compressionLevel: 9 }).toFile('public/logo-mark.png')
 
-// İkon: siyah zemin, işaret karenin %64'ü
+// İkon: siyah zemin, işaret karenin %72'si
 const S = 1024
-const markSide = Math.round(S * 0.64)
+const markSide = Math.round(S * 0.72)
 await sharp({ create: { width: S, height: S, channels: 3, background: '#000000' } })
   .composite([{ input: await sharp(white).resize(markSide, markSide).png().toBuffer(), gravity: 'center' }])
   .png()

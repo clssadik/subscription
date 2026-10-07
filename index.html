@@ -58,7 +58,7 @@
         position: fixed; inset: 0; z-index: 100;
         display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
         background: #F1ECE2; color: #141414;
-        font: 200 24px/1 'Outfit', -apple-system, system-ui, sans-serif;
+        font: 200 28px/1 'Outfit', -apple-system, system-ui, sans-serif;
         transition: opacity 360ms ease, transform 360ms ease;
       }
       html.dark #splash { background: #000; color: #F2F2F2; }
@@ -67,7 +67,7 @@
       /* Ana ekran uygulamasında sayfa saat çubuğunun altından başlar: logo ekranın değil sayfanın ortasına gelip ~30pt aşağıda kalıyordu.
          100lvh - 100svh orada saat çubuğunun boyu (src/index.css); alttan o kadar boşluk logoyu ekranın tam ortasına taşır. */
       @media (display-mode: standalone) { #splash { box-sizing: border-box; padding-bottom: calc(100lvh - 100svh); } }
-      #splash img { width: 140px; height: 140px; animation: splash-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both, splash-breathe 1.6s 520ms ease-in-out infinite; }
+      #splash img { width: 155px; height: 155px; animation: splash-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both, splash-breathe 1.6s 520ms ease-in-out infinite; }
       /* İnce, hepsi büyük harf; harf aralığının sağda bıraktığı boşluk soldaki dolguyla dengelenir (ortada dursun) */
       #splash span { text-transform: uppercase; letter-spacing: 0.24em; padding-left: 0.24em; animation: splash-in 520ms 90ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
       #splash.hide { opacity: 0; transform: scale(1.04); pointer-events: none; }

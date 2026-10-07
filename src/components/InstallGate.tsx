@@ -12,8 +12,8 @@ export function InstallGate({ onContinue }: { onContinue: () => void }) {
   return (
     <main className="app-screen mx-auto flex max-w-md flex-col bg-black text-[#F2F2F2]">
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3.5 pt-[var(--top-gap)]">
-        <img src={LOGO_URL} alt="" width={170} height={170} className="size-[170px] shrink-0" />
-        <Wordmark className="text-[24px]" />
+        <img src={LOGO_URL} alt="" width={190} height={190} className="size-[190px] shrink-0" />
+        <Wordmark className="text-[28px]" />
       </div>
 
       <section className="rounded-t-[28px] bg-surface px-5 pt-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-ink">
