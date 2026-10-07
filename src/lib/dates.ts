@@ -22,13 +22,14 @@ function dayInMonth(year: number, month: number, day: number) {
   return new Date(year, month, Math.min(day, last))
 }
 
-/** Aboneliğin [start, end] aralığına düşen bütün yenilenme tarihleri. */
+/** Aboneliğin [start, end] aralığına düşen bütün yenilenme tarihleri. Çapadan önce yenilenme yoktur. */
 export function renewalsBetween(sub: Subscription, start: Date, end: Date) {
   const anchor = parseISO(sub.renewalDate)
   const monthly = sub.cycle === 'monthly'
   const step = monthly ? addMonths : addYears
   // Hep ilk tarihten sayıyoruz ki 31'inde başlayan abonelik Şubat'tan sonra 28'ine kaymasın.
-  let n = (monthly ? differenceInCalendarMonths : differenceInCalendarYears)(start, anchor) - 1
+  // Sayaç 0'ın altına inmez: çapa gelecekteyse ilk yenilenme çapanın kendisidir.
+  let n = Math.max(0, (monthly ? differenceInCalendarMonths : differenceInCalendarYears)(start, anchor) - 1)
   let date = step(anchor, n)
   while (date < start) date = step(anchor, ++n)
   const out: Date[] = []
@@ -90,11 +91,11 @@ export function isPaid(payments: Payment[], refId: string, date: Date, kind: Per
   return !!findPayment(payments, refId, date, kind)
 }
 
-/** Bugünden itibaren henüz "ödendi" işaretlenmemiş ilk yenilenme. */
+/** Bugünden itibaren henüz "ödendi" işaretlenmemiş ilk yenilenme. Çapa 3 yıldan uzaktaysa pencerede yenilenme yoktur: çapa döner. */
 export function nextRenewal(sub: Subscription, payments: Payment[] = [], from: Date = new Date()) {
   const today = startOfDay(from)
   const dates = renewalsBetween(sub, today, addYears(today, 3))
-  return dates.find((d) => !isPaid(payments, sub.id, d, sub.cycle)) ?? dates[0]
+  return dates.find((d) => !isPaid(payments, sub.id, d, sub.cycle)) ?? dates[0] ?? parseISO(sub.renewalDate)
 }
 
 /** Bugünden itibaren henüz "ödendi" işaretlenmemiş ilk dönem; bir önceki dönemin son ödemesiyle birlikte */
