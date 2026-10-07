@@ -115,7 +115,6 @@ const dayLabel = (day: Day) =>
 /** Kart kısaca: "Garanti BBVA •• 4821" */
 const cardLabel = (card: CardRow) => `${card.bank_name} •• ${card.last4}`
 const when = (diff: number) => (diff === 0 ? 'bugün' : diff === 1 ? 'yarın' : diff === 7 ? '1 hafta sonra' : `${diff} gün sonra`)
-const cap = (s: string) => s[0].toLocaleUpperCase('tr') + s.slice(1)
 
 // ---------- Veri ----------
 
