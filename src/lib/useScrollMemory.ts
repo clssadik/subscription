@@ -18,19 +18,22 @@ export function useScrollMemory(key: string, scroller: RefObject<HTMLElement | n
     restored.current = true
     const y = saved.get(key) ?? 0
     if (y > 0) {
-      el.scrollTop = y
+      el.scrollTo({ top: y })
       el.dispatchEvent(new Event('scroll'))
     }
   })
+  // Dinleyiciler belgeye bir kez bağlanır ve her olayda o an ekranda olan kayan alana bakar: alan sonradan oluşsa ya da değişse de
+  // (ör. Anasayfa boş ekrandan listeye geçince) doğru alan izlenir. Kaydırma olayı kabarcıklanmadığı için yakalama aşamasında dinlenir.
   useEffect(() => {
-    const el = scroller.current
-    if (!el) return
-    const save = () => saved.set(key, el.scrollTop)
-    const top = () => el.scrollTo({ top: 0, behavior: 'smooth' })
-    el.addEventListener('scroll', save, { passive: true })
+    const save = (e: Event) => {
+      const el = scroller.current
+      if (el && e.target === el) saved.set(key, el.scrollTop)
+    }
+    const top = () => scroller.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    window.addEventListener('scroll', save, { capture: true, passive: true })
     window.addEventListener(`scroll-top:${key}`, top)
     return () => {
-      el.removeEventListener('scroll', save)
+      window.removeEventListener('scroll', save, { capture: true })
       window.removeEventListener(`scroll-top:${key}`, top)
     }
   }, [key, scroller])
