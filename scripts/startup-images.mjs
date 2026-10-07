@@ -18,6 +18,7 @@ const DEVICES = [
   [414, 896, 3], // XS Max, 11 Pro Max
   [414, 896, 2], // XR, 11
   [375, 667, 2], // SE, 8
+  [414, 736, 3], // 6s/7/8 Plus
 ]
 const THEMES = { light: '#F1ECE2', dark: '#000000' }
 

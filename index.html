@@ -45,6 +45,8 @@
     <link rel="apple-touch-startup-image" href="/splash/dark-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" />
     <link rel="apple-touch-startup-image" href="/splash/light-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: light)" />
     <link rel="apple-touch-startup-image" href="/splash/dark-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" />
+    <link rel="apple-touch-startup-image" href="/splash/light-1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)" />
+    <link rel="apple-touch-startup-image" href="/splash/dark-1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" />
     <!-- startup-images:end -->
     <meta name="apple-mobile-web-app-title" content="Monthwise" />
     <title>Monthwise</title>
@@ -73,7 +75,7 @@
       #splash.hide { opacity: 0; transform: scale(1.04); pointer-events: none; }
       @keyframes splash-in { from { opacity: 0; transform: scale(0.82) translateY(6px); } }
       @keyframes splash-breathe { 50% { transform: scale(0.95); } }
-      @media (prefers-reduced-motion: reduce) { #splash img, /* İnce, hepsi büyük harf; harf aralığının sağda bıraktığı boşluk soldaki dolguyla dengelenir (ortada dursun) */
+      @media (prefers-reduced-motion: reduce) { #splash img,
       #splash span { text-transform: uppercase; letter-spacing: 0.24em; padding-left: 0.24em; animation: none; } }
     </style>
   </head>
