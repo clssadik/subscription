@@ -11,8 +11,9 @@ export function PaidNote({ month, onUndo }: { month: Date; onUndo?: () => void }
       </span>
       <span className="flex-1">{formatDate(month, 'LLLL')} ödendi</span>
       {onUndo && (
-        // Yanlışlıkla dokunmayla olmasın: basılı tutunca dolar ve geri alır
-        <HoldToConfirm onConfirm={onUndo} className="min-h-9 min-w-[92px] rounded-[12px] bg-page px-3 text-sm font-medium text-bh-red">
+        // Yanlışlıkla dokunmayla olmasın: basılı tutunca dolar ve geri alır.
+        // Dokunma alanı 44px: kenarlık şeffaf ve zemin kenarlığın içinde kalıyor, görünen düğme 36px olarak aynı.
+        <HoldToConfirm onConfirm={onUndo} className="min-h-11 min-w-[100px] rounded-[16px] border-4 border-transparent bg-clip-padding bg-page px-3 text-sm font-medium text-bh-red">
           Geri al
         </HoldToConfirm>
       )}

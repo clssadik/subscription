@@ -249,7 +249,16 @@ export function TearTicket({
         role={canTear ? 'button' : undefined}
         tabIndex={canTear ? 0 : undefined}
         aria-label={canTear ? hint : undefined}
-        onKeyDown={(e) => canTear && (e.key === 'Enter' || e.key === ' ') && tear()}
+        onKeyDown={(e) => {
+          if (!canTear || (e.key !== 'Enter' && e.key !== ' ')) return
+          // Boşluk sayfayı kaydırmasın
+          e.preventDefault()
+          tear()
+        }}
+        // Ekran okuyucuyla etkinleştirme tıklama olarak gelir (detail 0). Parmakla dokunuş (detail 1 ve üstü) kaydırmaya bırakılır.
+        onClick={(e) => {
+          if (canTear && e.detail === 0) tear()
+        }}
         // -mt-px: koçan gövdenin altına 1px biner. iPhone'da ikisinin arasında zemin renginde ince bir boşluk kalıp
         // kesik çizginin yerinde düz açık renkli bir çizgi gibi görünüyordu.
         className={cn('relative z-10 -mt-px origin-top-right select-none', canTear && 'cursor-grab')}
@@ -315,7 +324,12 @@ export function TearTicket({
         <div className="mt-2 flex items-center gap-3 rounded-[18px] bg-surface py-2.5 pr-2.5 pl-3.5 text-sm animate-in fade-in slide-in-from-top-1 duration-300">
           <ScissorsIcon className="size-[18px] shrink-0 -rotate-90 text-bh-blue" />
           <p className="flex-1 leading-snug">Ödemeyi işaretlemek için koçanı sağa çekerek koparın.</p>
-          <button type="button" onClick={closeTip} className="shrink-0 rounded-full bg-page px-3 py-1.5 text-[13px] font-medium">
+          {/* Dokunma alanı 44px'e tamamlanır; düğmenin görünüşü aynı kalır (kendi kutusu büyümez, sahte öğe alana yayılır) */}
+          <button
+            type="button"
+            onClick={closeTip}
+            className="relative shrink-0 rounded-full bg-page px-3 py-1.5 text-[13px] font-medium before:absolute before:top-1/2 before:left-0 before:h-11 before:w-full before:-translate-y-1/2 before:content-['']"
+          >
             Tamam
           </button>
         </div>
