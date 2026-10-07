@@ -1,5 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react'
-import { wakeScrollers } from './transition'
+import { reducedMotion, wakeScrollers } from './transition'
 
 /** Bırakınca geri dönmek için en az bu kadar çekilmeli (ekran genişliğine oranla) ya da hızlıca fırlatılmalı (px/ms) */
 const COMPLETE_AT = 0.3
@@ -111,7 +111,8 @@ export function useSwipeBack(
       const p = dx / width()
       // Kalan yol bırakılan hıza göre ama sınırlar içinde; geri oturma hep aynı sakin sürede
       const ms = done ? Math.min(MAX_MS, Math.max(MIN_MS, ((to - dx) / Math.max(last.v, 0.6)) * 2)) : 420
-      const options = { duration: ms, easing: EASE, fill: 'forwards' as const }
+      // Hareket azaltılmışsa animasyon atlanır: sayfa hemen son yerine (kapalıysa önceki sayfa) gider
+      const options = { duration: reducedMotion() ? 0 : ms, easing: EASE, fill: 'forwards' as const }
       const anim = el.animate(
         [
           { translate: `${dx}px 0`, boxShadow: shadow(p) },

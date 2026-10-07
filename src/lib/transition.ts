@@ -3,12 +3,15 @@ import { flushSync } from 'react-dom'
 /** Sayfa geçiş türleri. Animasyonlar src/index.css'te (::view-transition, html[data-motion=…]). */
 export type Motion = 'push' | 'pop' | 'fade' | 'tab-right' | 'tab-left'
 
+/** Hareket azaltılmış mı (iPhone'daki "Hareketi azalt"): animasyonlar atlanır, son hâl hemen gösterilir */
+export const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+
 /**
  * Ekranı değiştiren güncellemeyi iPhone tarzı bir geçişle yapar (View Transitions, iOS 18+).
  * Tarayıcı desteklemiyorsa ya da hareket azaltılmışsa güncellemeyi hemen yapar ve false döner.
  */
 export function transition(motion: Motion, update: () => void) {
-  if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (!document.startViewTransition || reducedMotion()) {
     update()
     return false
   }

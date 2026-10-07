@@ -2,6 +2,7 @@ import { ScissorsIcon } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
 import { haptic } from '@/lib/haptics'
+import { reducedMotion } from '@/lib/transition'
 import { cn } from '@/lib/utils'
 
 // Abonelik detayındaki ödeme fişi. Kesik çizginin altındaki koçan soldan sağa doğru kesilir (parmak sağa çekilir).
@@ -99,6 +100,12 @@ export function TearTicket({
   // Kesik noktasını yumuşakça bir değere götürür (bırakınca açılma, koparken tamamlanma, tanıtım)
   function animateCut(from: number, to: number, ms: number, done?: () => void) {
     cancelAnimationFrame(tween.current)
+    // Hareket azaltılmışsa kesik hemen son yerine gider
+    if (reducedMotion()) {
+      setCut(to)
+      done?.()
+      return
+    }
     const t0 = performance.now()
     const step = (now: number) => {
       const t = Math.min(1, (now - t0) / ms)
@@ -116,6 +123,11 @@ export function TearTicket({
     if (!restore || !el) return
     const w = el.offsetWidth
     setWidth(w)
+    // Hareket azaltılmışsa koçan yükselmeden, kesik kapanmadan doğrudan yerine oturur
+    if (reducedMotion()) {
+      setCut(0)
+      return
+    }
     setCut(w)
     const rise = el.animate(
       [
@@ -132,6 +144,8 @@ export function TearTicket({
   // Tanıtım dürtmesi: koçan biraz kesilip bekler ve geri açılır. Tek bir animasyondur: tanıtım kapanınca yarıda
   // durdurulmaz (koçan yarı kesik kalmasın), kullanıcı koçanı tutunca ya da koparınca animateCut onu keser.
   function nudge(w: number) {
+    // Hareket azaltılmışsa tanıtım kıpırdatması yapılmaz (koçan olduğu gibi kalır)
+    if (reducedMotion()) return
     cancelAnimationFrame(tween.current)
     const t0 = performance.now()
     const [open, hold, close] = [520, 220, 620]
@@ -177,7 +191,8 @@ export function TearTicket({
           { transform: `translate(-6px, 24px) ${pose(1)} rotate(-8deg)`, opacity: 1, offset: 0.25 },
           { transform: 'translate(-30px, 360px) rotate(-26deg) rotateY(-40deg) rotateX(55deg)', opacity: 0 },
         ],
-        { duration: FALL_MS, easing: 'cubic-bezier(0.5, 0, 0.85, 0.4)', fill: 'forwards' },
+        // Hareket azaltılmışsa düşüş atlanır; ödeme (pay) düşüş bitince hemen işlenir
+        { duration: reducedMotion() ? 0 : FALL_MS, easing: 'cubic-bezier(0.5, 0, 0.85, 0.4)', fill: 'forwards' },
       )
       fallAnim.current = fall
       paidTimer.current = window.setTimeout(pay, FALL_MS * PAID_AT)
