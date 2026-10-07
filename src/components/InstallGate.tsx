@@ -4,7 +4,7 @@ import { InstallSteps } from '@/screens/account/InstallGuide'
 
 /**
  * Telefonda tarayıcıdan açılınca ilk gelen tam ekran rehber: Monthwise'ı ana ekrana eklemeyi anlatır.
- * Açılış ekranının devamı gibi: siyah zeminde hayalet, adımlar alttaki panelde (Safari'nin Paylaş düğmesine yakın).
+ * Açılış ekranının devamı gibi: siyah zeminde beyaz logo, adımlar alttaki panelde (Safari'nin Paylaş düğmesine yakın).
  * Ana ekrandan açılan uygulamada görünmez. "Safari'de devam et" bu oturum için geçer (src/lib/install.ts).
  */
 export function InstallGate({ onContinue }: { onContinue: () => void }) {
@@ -12,7 +12,7 @@ export function InstallGate({ onContinue }: { onContinue: () => void }) {
   return (
     <main className="app-screen mx-auto flex max-w-md flex-col bg-black text-[#F2F2F2]">
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3.5 pt-[var(--top-gap)]">
-        <img src={LOGO_URL} alt="" width={240} height={240} className="size-[240px] shrink-0" />
+        <img src={LOGO_URL} alt="" width={170} height={170} className="size-[170px] shrink-0" />
         <Wordmark className="text-[24px]" />
       </div>
 

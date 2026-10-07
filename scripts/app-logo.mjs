@@ -1,93 +1,63 @@
-// Uygulama logosu (hayalet) kaynak görselden iki dosya üretir:
-// - public/logo.png: ana ekran ikonlarının kaynağı (siyah zemin, kare). Sonra: npm run generate-pwa-assets
-// - public/logo-ghost.webp: uygulama içi ve açılış ekranı için arka planı şeffaf hayalet
-// Çalıştır: node scripts/app-logo.mjs <kaynak.png>  (kaynak: tam siyah zeminde hayalet)
+// Uygulama logosu: renkli zemindeki beyaz işaretten iki dosya üretir:
+// - public/logo-mark.png: şeffaf zeminde beyaz işaret (uygulama içi; açık temada CSS ile siyaha çevrilir)
+// - public/logo.png: ana ekran ikonlarının kaynağı (siyah zeminde beyaz işaret). Sonra: npm run generate-pwa-assets
+// Çalıştır: node scripts/app-logo.mjs <kaynak> <x,y,genişlik,yükseklik>  (işaretin bulunduğu alan; dışındaki yazılar karışmasın)
 import sharp from 'sharp'
 
-const src = process.argv[2]
-if (!src) throw new Error('Kaynak görsel yolu gerekli')
+const [src, area] = process.argv.slice(2)
+if (!src || !area) throw new Error('Kullanım: node scripts/app-logo.mjs <kaynak> <x,y,genişlik,yükseklik>')
+const [left, top, width, height] = area.split(',').map(Number)
 
-const { data, info } = await sharp(src).removeAlpha().raw().toBuffer({ resolveWithObject: true })
+// Beyazlık = mavi kanal (turuncu zeminde düşük, beyazda yüksek). 4 kat büyütülüp yumuşatılır ve eşiklenir:
+// JPEG'in pürüzlü kenarı düzgün bir çizgiye döner.
+// sharp tek zincirde işlemleri kendi sırasıyla uygular ve aynı işlemin ikincisi ilkini ezer: adımlar ayrı çalıştırılır.
+const UP = 4
+const step = (buf, w, h, f) => f(sharp(buf, { raw: { width: w, height: h, channels: 1 } })).extractChannel(0).raw().toBuffer()
+const blue = await sharp(src)
+  .extract({ left, top, width, height })
+  .extractChannel('blue')
+  .resize(width * UP, height * UP, { kernel: 'lanczos3' })
+  .raw()
+  .toBuffer()
+const info = { width: width * UP, height: height * UP }
+const sharpEdge = await step(blue, info.width, info.height, (s) => s.blur(UP * 0.8).linear(6, -6 * 160))
+const data = await step(sharpEdge, info.width, info.height, (s) => s.blur(0.8))
 const { width: W, height: H } = info
-const bright = (p) => Math.max(data[p * 3], data[p * 3 + 1], data[p * 3 + 2])
 
-// Hayaletin sınırları
+// İşaretin sınırları
 let x0 = W, y0 = H, x1 = 0, y1 = 0
 for (let y = 0; y < H; y++)
   for (let x = 0; x < W; x++)
-    if (bright(y * W + x) > 24) [x0, y0, x1, y1] = [Math.min(x0, x), Math.min(y0, y), Math.max(x1, x), Math.max(y1, y)]
-const cx = (x0 + x1) / 2
-const cy = (y0 + y1) / 2
+    if (data[y * W + x] > 128) [x0, y0, x1, y1] = [Math.min(x0, x), Math.min(y0, y), Math.max(x1, x), Math.max(y1, y)]
+const side = Math.max(x1 - x0, y1 - y0) + 1
+const cx = Math.round((x0 + x1) / 2)
+const cy = Math.round((y0 + y1) / 2)
 
-// Dış zemin: kenarlardan başlayıp koyu piksellerde yayılan doldurma (gözler içeride kaldığı için opak kalır)
-const T = 48
-const outside = new Uint8Array(W * H)
-const stack = []
-for (let x = 0; x < W; x++) stack.push(x, (H - 1) * W + x)
-for (let y = 0; y < H; y++) stack.push(y * W, y * W + W - 1)
-while (stack.length) {
-  const p = stack.pop()
-  if (outside[p] || bright(p) >= T) continue
-  outside[p] = 1
-  const x = p % W
-  if (x > 0) stack.push(p - 1)
-  if (x < W - 1) stack.push(p + 1)
-  if (p >= W) stack.push(p - W)
-  if (p < W * (H - 1)) stack.push(p + W)
-}
-
-// Şeffaf kopya: içerisi opak, kenar 1-2 piksel içeri alınıp yumuşatılır (koyu kenar açık zeminde gri hale yapıyordu)
-const inside = Buffer.alloc(W * H)
-for (let p = 0; p < W * H; p++) inside[p] = outside[p] ? 0 : 255
-const alpha = await sharp(inside, { raw: { width: W, height: H, channels: 1 } })
-  .blur(2)
-  .linear(3, -380)
+// Kare kesilir (gerekirse boşlukla genişletilerek), beyaz renk + işaretin maskesi saydamlık olur
+const pad = Math.ceil(side / 2) + 1
+const square = await sharp(data, { raw: { width: W, height: H, channels: 1 } })
+  .extend({ top: pad, bottom: pad, left: pad, right: pad, background: '#000000' })
   .extractChannel(0)
   .raw()
   .toBuffer()
-const rgba = Buffer.alloc(W * H * 4)
-for (let p = 0; p < W * H; p++) {
-  for (let k = 0; k < 3; k++) rgba[p * 4 + k] = data[p * 3 + k]
-  rgba[p * 4 + 3] = alpha[p]
-}
-const side = Math.ceil(Math.max(x1 - x0, y1 - y0) * 1.04)
-const cut = {
-  left: Math.round(cx - side / 2),
-  top: Math.round(cy - side / 2),
-  width: side,
-  height: side,
-}
-const pad = Math.max(0, -cut.left)
-// sharp tek zincirde önce kırpıp sonra genişletir: genişletilmiş hâli ayrı üretilir
-const padded = await sharp(rgba, { raw: { width: W, height: H, channels: 4 } })
-  .extend({ left: pad, right: pad, background: { r: 0, g: 0, b: 0, alpha: 0 } })
+const alpha = await sharp(square, { raw: { width: W + 2 * pad, height: H + 2 * pad, channels: 1 } })
+  .extract({ left: cx - Math.floor(side / 2) + pad, top: cy - Math.floor(side / 2) + pad, width: side, height: side })
+  .extractChannel(0)
+  .raw()
+  .toBuffer()
+const white = await sharp({ create: { width: side, height: side, channels: 3, background: '#FFFFFF' } })
+  .joinChannel(alpha, { raw: { width: side, height: side, channels: 1 } })
   .png()
   .toBuffer()
-await sharp(padded)
-  .extract({ ...cut, left: cut.left + pad })
-  .resize(512, 512)
-  .webp({ quality: 90, alphaQuality: 100 })
-  .toFile('public/logo-ghost.webp')
 
-// İkon: yukarıdan aşağı koyu mordan siyaha geçen zemin; hayalet karenin ~%79'u.
-// Şeffaf kesimden yerleştirilir (kaynağın kendi siyahı mor zeminde kare gibi görünmesin)
+await sharp(white).resize(1024, 1024).png({ compressionLevel: 9 }).toFile('public/logo-mark.png')
+
+// İkon: siyah zemin, işaret karenin %64'ü
 const S = 1024
-const bg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}">
-  <defs><linearGradient id="l" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#2A1B5C"/>
-    <stop offset="1" stop-color="#05040C"/>
-  </linearGradient></defs>
-  <rect width="100%" height="100%" fill="url(#l)"/>
-</svg>`)
-const ghostSide = Math.round(S * 0.79 * (side / (y1 - y0)))
-const ghost = await sharp(padded)
-  .extract({ ...cut, left: cut.left + pad })
-  .resize(ghostSide, ghostSide)
-  .png()
-  .toBuffer()
-await sharp(bg)
-  .composite([{ input: ghost, left: Math.round((S - ghostSide) / 2), top: Math.round((S - ghostSide) / 2) }])
+const markSide = Math.round(S * 0.64)
+await sharp({ create: { width: S, height: S, channels: 3, background: '#000000' } })
+  .composite([{ input: await sharp(white).resize(markSide, markSide).png().toBuffer(), gravity: 'center' }])
   .png()
   .toFile('public/logo.png')
 
-console.log('public/logo.png ve public/logo-ghost.webp yazıldı')
+console.log('public/logo.png ve public/logo-mark.png yazıldı')
