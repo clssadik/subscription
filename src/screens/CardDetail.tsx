@@ -1,5 +1,5 @@
 import { CheckCircle2Icon, ChevronLeftIcon, PencilIcon } from 'lucide-react'
-import { addMonths } from 'date-fns'
+import { addMonths, parseISO } from 'date-fns'
 import { toast } from 'sonner'
 import { haptic } from '@/lib/haptics'
 import { play } from '@/lib/sound'
@@ -8,7 +8,7 @@ import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { PaidNote } from '@/components/PaidNote'
 import { RoundButton } from '@/components/ScreenHeader'
-import { canMarkPaid, daysUntil, dueLabel, hasDue, monthlyCost, nextCardCycle, overdueCardCycles, paidThisMonth, toKey, type CardCycle } from '@/lib/dates'
+import { canMarkPaid, daysUntil, dueLabel, hasDue, monthlyCost, nextCardCycle, overdueCardCycles, paymentThisMonth, statementOfDue, toKey, type CardCycle } from '@/lib/dates'
 import { luminance } from '@/lib/color'
 import { formatDate, formatMoney } from '@/lib/format'
 import { serviceColor } from '@/lib/services'
@@ -32,18 +32,28 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
   const onCard = state.subscriptions.filter((s) => s.cardId === card.id).sort((a, b) => monthlyCost(b) - monthlyCost(a))
   const monthlyTry = onCard.filter((s) => s.currency === 'TRY').reduce((sum, s) => sum + monthlyCost(s), 0)
 
-  // Ekstre ödendi işaretlenir (ya da işaretliyse kalkar); adı kesim ayından
-  function toggleCycle(c: CardCycle) {
-    dispatch({ type: 'payment/toggle', kind: 'card', refId: card!.id, dueDate: toKey(c.due) })
+  // Ekstrenin ödeme kaydını açar ya da kaldırır (son ödeme gününe göre tutulur)
+  function toggleDue(due: Date) {
+    dispatch({ type: 'payment/toggle', kind: 'card', refId: card!.id, dueDate: toKey(due) })
   }
 
   function markPaid(c: CardCycle) {
     haptic()
     play('paid')
-    toggleCycle(c)
+    toggleDue(c.due)
     toast(`${card!.bankName} ${formatDate(c.statement, 'LLLL')} ekstresi ödendi`, {
-      action: { label: 'Geri al', onClick: () => toggleCycle(c) },
+      action: { label: 'Geri al', onClick: () => toggleDue(c.due) },
     })
+  }
+
+  // Ödendi notu: sıradaki ekstre ödenmişse o, değilse bu ay ödenen ekstre. Adı kesim ayından; geri alınabilir.
+  const paidThis = paymentThisMonth(state.payments, card.id)
+  const note = cycle?.paid ? cycle.due : paidThis ? parseISO(paidThis.dueDate) : null
+
+  function undoPaid(due: Date) {
+    haptic()
+    play('undo')
+    toggleDue(due)
   }
 
   return (
@@ -97,9 +107,8 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
         <ShareArc subscriptions={onCard} total={monthlyTry} />
       )}
 
-      {/* Gelecek ayın ekstresi, ay değişmeden işaretlenemez */}
-      {due && !canMarkPaid(due) && paidThisMonth(state.payments, card.id) && <PaidNote month={new Date()} />}
-      {/* Ekstre zaten ödendiyse düğme çıkmaz: basınca işareti kaldırırdı */}
+      {/* Ödenmiş ekstre notu (geri alınabilir); ekstre adı kesim ayı. Ekstre zaten ödendiyse düğme çıkmaz: basınca işareti kaldırırdı */}
+      {note && <PaidNote month={statementOfDue(note)} onUndo={() => undoPaid(note)} />}
       {cycle && !cycle.paid && canMarkPaid(cycle.due) && (
         <button onClick={() => markPaid(cycle)} className="pressable mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-ink font-semibold text-page">
           <CheckCircle2Icon className="size-[18px] text-bh-yellow" />
