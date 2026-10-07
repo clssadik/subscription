@@ -51,7 +51,7 @@ export function SpendingSummary({ onBack }: { onBack: () => void }) {
               <span className="label opacity-70">Yıllık</span>
               <p className="num mt-0.5 text-lg">{totals.map((t) => formatMoney(t.monthly * 12, t.currency)).join(' + ')}</p>
             </div>
-            <p className="mt-2 text-[12px] opacity-70">{subs.length} abonelik · yıllıklar aya bölünerek hesaplandı</p>
+            <p className="mt-2 text-[12px] opacity-70">{subs.length} abonelik</p>
           </section>
 
           <Group title="En pahalı">
@@ -65,7 +65,8 @@ export function SpendingSummary({ onBack }: { onBack: () => void }) {
             ))}
           </Group>
 
-          {byCard.length > 0 && (
+          {/* TL abonelik varsa her zaman: kartı seçilmemişler de "Kart seçilmemiş" satırında görünsün */}
+          {tl.length > 0 && (
             <Group title="Kartlara göre (TL)">
               {byCard.map(({ card, monthly }) => (
                 <div key={card.id} className="px-3.5 py-3">
