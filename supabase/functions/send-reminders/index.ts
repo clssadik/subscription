@@ -281,16 +281,19 @@ function isKnownPushEndpoint(endpoint: string) {
   }
 }
 
+/** Log için sunucu adı. Adresin tamamı loglanmaz (gizli kısmı içerir). */
+const hostOf = (endpoint: string) => {
+  try {
+    return new URL(endpoint).host
+  } catch {
+    return 'invalid url'
+  }
+}
+
 async function push(sub: PushRow, payload: Record<string, unknown>): Promise<PushResult> {
+  // Adres kullanıcı verisinden geliyor: tanınmayan sunucuya istek atılmaz
   if (!isKnownPushEndpoint(sub.endpoint)) {
-    // Sunucu adresi kullanıcı verisinden geliyor; tanınmayan adrese istek atılmaz (sadece sunucu adı loglanır, adresin tamamı değil)
-    let host = 'invalid url'
-    try {
-      host = new URL(sub.endpoint).host
-    } catch {
-      // geçersiz adres
-    }
-    console.warn('push skipped, unknown endpoint host:', sub.id, host)
+    console.warn('push skipped, unknown endpoint host:', sub.id, hostOf(sub.endpoint))
     return 'skipped'
   }
   try {
@@ -324,7 +327,7 @@ async function deliver(userId: string, devices: PushRow[], msg: Message, today: 
   for (const device of devices) results.push(await push(device, payload))
   const accepted = results.filter((r) => r === 'ok').length
   // Hiçbir telefona ulaşmadı ve geçici bir hata vardı: kaydı sil ki bir sonraki turda yeniden denensin.
-  // Süresi dolmuş adresler (410) yeniden denemeyi gerektirmez; kayıt kalır.
+  // Kaldırılmış (404/410) ya da atlanan adresler için yeniden denemek anlamsız; kayıt kalır.
   if (accepted === 0 && results.includes('error')) {
     const { error: releaseError } = await db.from('notification_log').delete().eq('user_id', userId).eq('key', msg.key).eq('sent_on', claim.sent_on)
     if (releaseError) console.error('notification_log release failed', userId, msg.key, releaseError.message)
@@ -347,8 +350,8 @@ async function runReminders() {
   const pushRows = rowsOf<PushRow>(pushRes, 'push_subscriptions')
   const settingsRows = rowsOf<{ user_id: string; notify: unknown }>(settingsRes, 'user_settings')
   // Ad ve banka adı kullanıcıdan geliyor: bildirim kısa kalsın diye 60 karakterle sınırlanır
-  const subRows = rowsOf<SubRow>(subsRes, 'subscriptions').map((s) => ({ ...s, name: clip(s.name, 60) }))
-  const cardRows = rowsOf<CardRow>(cardsRes, 'cards').map((c) => ({ ...c, bank_name: clip(c.bank_name, 60) }))
+  const subRows = rowsOf<SubRow>(subsRes, 'subscriptions').map((s) => ({ ...s, name: clip(s.name ?? '', 60) }))
+  const cardRows = rowsOf<CardRow>(cardsRes, 'cards').map((c) => ({ ...c, bank_name: clip(c.bank_name ?? '', 60) }))
   const payRows = rowsOf<{ user_id: string; ref_id: string; due_date: string }>(paymentsRes, 'payments')
   const sentRows = rowsOf<{ user_id: string; key: string }>(sentRes, 'notification_log')
 
