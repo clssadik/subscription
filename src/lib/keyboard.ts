@@ -62,6 +62,8 @@ export function keepPageInPlace() {
     true,
   )
 
+  // Şu an kaydırılmış (henüz geri alınmamış) alanlar
+  const shifted = new WeakSet<HTMLElement>()
   document.addEventListener(
     'focusin',
     (e) => {
@@ -71,6 +73,10 @@ export function keepPageInPlace() {
       const inDrawer = isField(el) && !!el.closest('[data-vaul-drawer]')
       if (!isField(el) || (!inDrawer && !fitsAboveKeyboard(el))) return
       if (!keyboardOpen() && performance.now() - lastTouch > 1000) return
+      // Alan zaten kaydırılmışken (geri alma bitmeden ikinci odaklanma) yeniden yakalanmaz: kaydırılmış hâl "asıl" konum
+      // sanılır ve geri konunca alan ekranın dışında kalırdı. İlk geri alma yeterli.
+      if (shifted.has(el)) return
+      shifted.add(el)
       const before = el.style.transform
       el.style.transform = 'translateY(-200vh)'
       let done = false
@@ -79,6 +85,7 @@ export function keepPageInPlace() {
       const restore = () => {
         if (done) return
         done = true
+        shifted.delete(el)
         vv.removeEventListener('resize', onResize)
         el.style.transform = before
       }
@@ -86,8 +93,14 @@ export function keepPageInPlace() {
       // klavye açılıp panel kısalınca kaydırılır.
       if (inDrawer) {
         requestAnimationFrame(() => requestAnimationFrame(restore))
-        // Panel klavyeyle birlikte ~0,5 sn kayarak yerleşiyor (src/index.css); yerleştikten sonra ölçülür
-        if (!keyboardOpen()) vv.addEventListener('resize', () => window.setTimeout(() => revealInDrawer(el), 550), { once: true })
+        // Panel klavyeyle birlikte ~0,5 sn kayarak yerleşiyor (src/index.css); yerleştikten sonra ölçülür.
+        // Klavye hiç açılmadan alan odaktan çıkarsa bu dinleyici de kalkar (birikmesin). Restore'da kaldırılmaz: klavye
+        // restore'dan sonra açılıyor ve yeniden konumlandırma o zaman gerekiyor.
+        if (!keyboardOpen()) {
+          const reveal = () => window.setTimeout(() => revealInDrawer(el), 550)
+          vv.addEventListener('resize', reveal, { once: true })
+          el.addEventListener('focusout', () => vv.removeEventListener('resize', reveal), { once: true })
+        }
         return
       }
       // Klavye zaten açıksa kısa bir an yeter; değilse klavye açılıp iPhone kaydırma kararını verene kadar beklenir
