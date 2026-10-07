@@ -7,7 +7,7 @@ import { play } from '@/lib/sound'
 import { DaySelect, Field, FieldGroup, inputClass, PrimaryButton, Segmented, selectClass } from '@/components/FormBits'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer'
 import { BANKS, bankColor, bankName as fullBankName, cardColor } from '@/lib/banks'
-import { parseAmount } from '@/lib/format'
+import { isValidAmount, parseAmount } from '@/lib/format'
 import { SERVICES, getService, matchService, normalize } from '@/lib/services'
 import { newId, useStore } from '@/lib/store'
 import { useUndoable } from '@/lib/undo'
@@ -251,7 +251,7 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
     e.preventDefault()
     const value = parseAmount(amount)
     if (!name.trim()) return fail('Abonelik adı girin.')
-    if (!(value > 0)) return fail('Tutar sayı olmalı, ör. 229,99.')
+    if (!isValidAmount(value)) return fail('Tutar sayı olmalı, ör. 229,99.')
     if (!renewalDate) return fail('Yenilenme tarihi seçin.')
     let linkedCard = cardId || null
     if (newCard) {

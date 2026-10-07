@@ -22,12 +22,21 @@ export function splitMoney(amount: number, currency: Currency = 'TRY') {
 
 export const formatDate = (d: Date, pattern: string) => format(d, pattern, { locale: tr })
 
-/** "1.234,56" veya "1234.56" gibi girdileri sayıya çevirir. Geçersizse NaN. */
+/** "1.234,56", "12 345,67" veya "1234.56" gibi girdileri sayıya çevirir. Tanınmayan biçim (ör. "1,234.56", "0x1A") NaN olur. */
 export function parseAmount(input: string) {
-  const s = input.trim().replace(/\s/g, '')
-  if (!s) return NaN
-  const normalized = s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s
-  return Number(normalized)
+  const s = input.replace(/\s/g, '')
+  // Binlik noktalı: "1.000" = 1000, "1.234,56" = 1234.56
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) return Number(s.replace(/\./g, '').replace(',', '.'))
+  // Virgüllü ondalık: "99,90" = 99.9
+  if (/^\d+(,\d+)?$/.test(s)) return Number(s.replace(',', '.'))
+  // Noktalı ondalık: "12.5" = 12.5
+  if (/^\d+\.\d+$/.test(s)) return Number(s)
+  return NaN
+}
+
+/** Kaydedilebilir tutar: sonlu, sıfırdan büyük, bir trilyondan küçük ve en fazla iki ondalıklı */
+export function isValidAmount(value: number) {
+  return Number.isFinite(value) && value > 0 && value < 1e12 && Math.round(value * 100) / 100 === value
 }
 
 /** Türkçe gün eki: 1'i, 2'si, 3'ü, 6'sı, 9'u, 10'u, 20'si, 30'u */
@@ -36,9 +45,4 @@ export function dayOf(n: number) {
   const tens: Record<number, string> = { 10: 'u', 20: 'si', 30: 'u' }
   const suffix = n % 10 === 0 ? tens[n] : ones[n % 10]
   return `${n}'${suffix}`
-}
-
-/** E-postanın baş harfi: hesap butonu için */
-export function initial(email: string) {
-  return (email.trim()[0] ?? '?').toLocaleUpperCase('tr')
 }
