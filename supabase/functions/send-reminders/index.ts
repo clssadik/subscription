@@ -144,6 +144,28 @@ const DEFAULT_NOTIFY: Notify = {
   perSubscription: {},
 }
 
+/** Kayıtlı bildirim ayarları. Tipi bozuk ya da eksik alan varsayılana düşer (ör. saat "25:00" ise 09:00). */
+function notifyFrom(raw: unknown): Notify {
+  const r: Record<string, unknown> = typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {}
+  const d = DEFAULT_NOTIFY
+  const days = (v: unknown, fallback: number[]) => (Array.isArray(v) && v.every((x) => Number.isInteger(x)) ? (v as number[]) : fallback)
+  const perSubscription: Record<string, 'off' | number> = {}
+  const per = r.perSubscription
+  if (typeof per === 'object' && per !== null && !Array.isArray(per))
+    for (const [id, v] of Object.entries(per)) if (v === 'off' || Number.isInteger(v)) perSubscription[id] = v as 'off' | number
+  const time = r.time
+  return {
+    enabled: typeof r.enabled === 'boolean' ? r.enabled : d.enabled,
+    subscriptionDays: days(r.subscriptionDays, d.subscriptionDays),
+    cardDays: days(r.cardDays, d.cardDays),
+    statement: typeof r.statement === 'boolean' ? r.statement : d.statement,
+    time: typeof time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(time) ? time : d.time,
+    overdue: typeof r.overdue === 'boolean' ? r.overdue : d.overdue,
+    summary: r.summary === 'off' || r.summary === 'weekly' || r.summary === 'monthly' ? r.summary : d.summary,
+    perSubscription,
+  }
+}
+
 function group<T extends { user_id: string }>(rows: T[] | null) {
   const map = new Map<string, T[]>()
   for (const r of rows ?? []) map.set(r.user_id, [...(map.get(r.user_id) ?? []), r])
@@ -268,7 +290,8 @@ async function runReminders() {
   const phones = group(pushRows)
   const subsBy = group(subRows)
   const cardsBy = group(cardRows)
-  const notifyBy = new Map(settingsRows.map((s): [string, Notify] => [s.user_id, { ...DEFAULT_NOTIFY, ...(s.notify as Partial<Notify>) }]))
+  // Ayar satırı yoksa kullanıcı için varsayılanlar geçerli (okuma başarılı olduğu için bu güvenli)
+  const notifyBy = new Map(settingsRows.map((s): [string, Notify] => [s.user_id, notifyFrom(s.notify)]))
   // Kullanıcı → kayıt → ödemelerin vade tarihleri (dönem eşleşmesi messagesFor içinde)
   const paidBy = new Map<string, Map<string, Day[]>>()
   for (const p of payRows) {
