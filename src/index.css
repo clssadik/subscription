@@ -114,6 +114,10 @@
     color-scheme: dark;
 }
 
+/* Açık temada kırmızı yazı (hata, "sil" düğmeleri) krem zeminde 3,9:1'de kalıyordu. Sadece yazıyı koyulaştırır;
+   dolgu ve ikonlar #D9381E kalır. Katmanın dışında olduğu için text-bh-red kuralını geçer. */
+html:not(.dark) .text-bh-red { color: #B02D18; }
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
