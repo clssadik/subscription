@@ -26,12 +26,45 @@ function keyBytes(base64: string) {
   return Uint8Array.from(raw, (c) => c.charCodeAt(0))
 }
 
+/** Söz en çok ms bekler; yetişmezse ya da hata verirse undefined döner (sayfa ya da çıkış takılı kalmasın) */
+function within<T>(work: PromiseLike<T>, ms: number): Promise<T | undefined> {
+  let timer = 0
+  const limit = new Promise<undefined>((resolve) => {
+    timer = window.setTimeout(resolve, ms)
+  })
+  return Promise.race([Promise.resolve(work).catch(() => undefined), limit]).finally(() => window.clearTimeout(timer))
+}
+
+/** Servis çalışanı hazır olana kadar bekler; 3 sn'de olmazsa (ör. geliştirme sunucusu, servis çalışanı yok) undefined döner */
+const swReady = () => ('serviceWorker' in navigator ? within(navigator.serviceWorker.ready, 3000) : Promise.resolve(undefined))
+
 async function save(sub: PushSubscription) {
   const json = sub.toJSON()
   const { error } = await supabase
     .from('push_subscriptions')
     .upsert({ endpoint: sub.endpoint, p256dh: json.keys?.p256dh, auth: json.keys?.auth }, { onConflict: 'endpoint' })
   if (error) throw new Error(error.message)
+}
+
+/** Adresi hesaptan siler (oturum açıkken; veritabanı yalnızca kendi satırını siler) ve aboneliği kapatır */
+async function drop(sub: PushSubscription) {
+  await within(supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint), 3000)
+  await sub.unsubscribe()
+}
+
+/**
+ * Çıkış yapılırken: bu telefonun adresi hesaptan silinir ve bildirim aboneliği kapatılır; böylece eski hesabın
+ * hatırlatmaları bu telefona gelmez. Hata olursa sessizce geçilir, çünkü internetsiz de çıkış yapılabilmeli.
+ */
+export async function forgetDevice(): Promise<void> {
+  try {
+    if (!supported()) return
+    const reg = await swReady()
+    const sub = await reg?.pushManager.getSubscription()
+    if (sub) await drop(sub)
+  } catch {
+    // İnternet yoksa adres sunucuda kalabilir; abonelik kapandıysa sunucu bir sonraki gönderimde adresi kendisi siler
+  }
 }
 
 // Son bilinen durum: sayfa tekrar açılınca beklemeden doğru hâli çizilir (yoksa önce boş kutu, sonra içerik gelip sayfa kayıyordu)

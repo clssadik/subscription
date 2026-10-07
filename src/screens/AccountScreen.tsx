@@ -25,7 +25,7 @@ import { DEMO_ID, demoSignOut } from '@/lib/demo'
 import { formatMoney } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { isInstalled } from '@/lib/install'
-import { usePush } from '@/lib/push'
+import { forgetDevice, usePush } from '@/lib/push'
 import { randomCards, randomSubscriptions } from '@/lib/seed'
 import { initials, useSettings } from '@/lib/settings'
 import { play, useSoundEnabled } from '@/lib/sound'
@@ -88,7 +88,14 @@ export function AccountScreen({ user, open }: { user: User; open: (page: Account
     haptic()
     // Test hesabının verileri cihazda kalsın; gerçek hesapta çıkarken temizlenir
     if (user.id === DEMO_ID) return demoSignOut()
+    // Bu telefonun bildirim adresi hesaptan silinir; oturum açıkken yapılmalı
+    await forgetDevice()
     clearCache(user.id)
+    try {
+      localStorage.removeItem(`abonelik-takip:settings:${user.id}`)
+    } catch {
+      // depolama kapalıysa yapacak bir şey yok
+    }
     await supabase.auth.signOut()
   }
 
