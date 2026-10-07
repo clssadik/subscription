@@ -1,5 +1,5 @@
 import { ChevronsUpDownIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { createContext, useContext, useId, type ReactNode } from 'react'
 import { dayOf } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -11,19 +11,25 @@ export function FieldGroup({ children }: { children: ReactNode }) {
   return <div className="divide-y divide-line rounded-[18px] bg-surface [&>*:has(+[data-collapsed])]:border-b-0">{children}</div>
 }
 
+/** Alanın etiketinin kimliği: içindeki seçim grubu (Segmented) bu etiketle adlanır */
+const FieldLabelId = createContext<string | undefined>(undefined)
+
 export function Field({ label, htmlFor, stacked, children }: { label: string; htmlFor?: string; stacked?: boolean; children: ReactNode }) {
+  const labelId = useId()
   if (stacked) {
     return (
       <div className="grid gap-2 px-3.5 py-3">
-        <label htmlFor={htmlFor} className="label text-subtle">{label}</label>
-        {children}
+        <label id={labelId} htmlFor={htmlFor} className="label text-subtle">{label}</label>
+        <FieldLabelId.Provider value={labelId}>{children}</FieldLabelId.Provider>
       </div>
     )
   }
   return (
     <div className="flex min-h-12 items-center gap-3 px-3.5 py-1.5">
-      <label htmlFor={htmlFor} className="label w-24 shrink-0 text-subtle">{label}</label>
-      <div className="relative flex min-w-0 flex-1 items-center gap-2">{children}</div>
+      <label id={labelId} htmlFor={htmlFor} className="label w-24 shrink-0 text-subtle">{label}</label>
+      <div className="relative flex min-w-0 flex-1 items-center gap-2">
+        <FieldLabelId.Provider value={labelId}>{children}</FieldLabelId.Provider>
+      </div>
     </div>
   )
 }
@@ -41,6 +47,7 @@ export function Segmented<T extends string>({
   onChange,
   className,
   activeClass = 'bg-bh-yellow text-[#141414]',
+  ariaLabel,
 }: {
   value: T
   options: { value: T; label: string }[]
@@ -48,11 +55,19 @@ export function Segmented<T extends string>({
   className?: string
   /** Seçili düğmenin rengi */
   activeClass?: string
+  /** Alanın içinde değilse grubun adı (alanın içindekine gerek yok: etiketinden alır) */
+  ariaLabel?: string
 }) {
   const index = Math.max(0, options.findIndex((o) => o.value === value))
+  const fieldLabelId = useContext(FieldLabelId)
   return (
     // İç düğmenin köşesi = dış köşe - boşluk (18 - 4 = 14px): ikisi aynı eğriyi izler
-    <div className={cn('relative flex rounded-[18px] bg-page p-1 text-sm', className)} role="radiogroup">
+    <div
+      className={cn('relative flex rounded-[18px] bg-page p-1 text-sm', className)}
+      role="radiogroup"
+      aria-label={ariaLabel}
+      aria-labelledby={fieldLabelId}
+    >
       {/* Seçili zemin: seçim değişince yeni seçeneğin altına kayar */}
       <span
         aria-hidden
@@ -68,6 +83,8 @@ export function Segmented<T extends string>({
           onClick={() => onChange(o.value)}
           className={cn(
             'relative min-h-9 flex-1 rounded-[14px] px-2 transition-colors duration-300',
+            // Dokunma alanı 44px: düğme 36px kalır, üst ve alt kenardan 4px'lik ek alan da dokunulabilir olur
+            "before:absolute before:inset-x-0 before:-inset-y-1 before:content-['']",
             value === o.value ? cn('font-medium', activeClass, 'bg-transparent dark:bg-transparent shadow-none') : 'text-subtle',
           )}
         >

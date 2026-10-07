@@ -10,8 +10,8 @@ export function SearchButton({ search }: { search: Search }) {
   return (
     <button
       onClick={search.toggle}
-      aria-label={search.open ? 'Aramayı kapat' : 'Ara'}
-      aria-pressed={search.open}
+      aria-label="Ara"
+      aria-expanded={search.open}
       className={cn(
         'pressable flex size-11 items-center justify-center rounded-full transition-colors duration-300',
         search.open ? 'bg-ink text-page' : 'bg-surface',
@@ -61,6 +61,7 @@ export function SearchSwap({ search, placeholder, children }: { search: Search; 
                 if (e.key === 'Enter') e.currentTarget.blur()
               }}
               placeholder={placeholder}
+              aria-label={placeholder}
               className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-subtle [&::-webkit-search-cancel-button]:hidden"
             />
             {query && (
@@ -71,7 +72,8 @@ export function SearchSwap({ search, placeholder, children }: { search: Search; 
                   setQuery('')
                   input.current?.focus()
                 }}
-                className="-mr-1 flex size-7 items-center justify-center rounded-full text-subtle animate-in fade-in zoom-in-75 duration-150"
+                // Dokunma alanı 44px: simge 28px kutuda kalır, etrafındaki 8px da dokunulabilir olur
+                className="-mr-1 relative flex size-7 items-center justify-center rounded-full text-subtle before:absolute before:-inset-2 before:content-[''] animate-in fade-in zoom-in-75 duration-150"
               >
                 <XIcon className="size-4" />
               </button>
