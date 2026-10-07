@@ -17,15 +17,28 @@ self.addEventListener('push', (event) => {
   )
 })
 
+// Push servisi aboneliği yenilediğinde (ör. anahtar değişince) aynı ayarlarla yeniden abone olunur.
+// Yeni adres sunucuya uygulama açılınca kaydedilir (src/lib/push.ts current()).
+self.addEventListener('pushsubscriptionchange', (event) => {
+  const options = (event.oldSubscription && event.oldSubscription.options) || { userVisibleOnly: true }
+  event.waitUntil(self.registration.pushManager.subscribe(options))
+})
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const url = (event.notification.data && event.notification.data.url) || '/'
+  const data = event.notification.data || {}
+  const url = data.url || '/'
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
-      for (const client of list) {
-        if ('focus' in client) return client.focus()
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (list) => {
+      const client = list.find((c) => 'focus' in c)
+      if (!client) return self.clients.openWindow(url)
+      const win = await client.focus().catch(() => client)
+      try {
+        // Açık pencere başka bir sayfadaysa oraya götürülür; zaten oradaysa yeniden yüklenmez
+        if (new URL(win.url).pathname !== new URL(url, self.location.origin).pathname) await win.navigate(url)
+      } catch {
+        // Bu tarayıcı pencereyi yönlendiremiyorsa açık kalır
       }
-      return self.clients.openWindow(url)
     }),
   )
 })
