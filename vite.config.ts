@@ -11,10 +11,16 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['logo-mark.png', 'favicon.ico', 'apple-touch-icon-180x180.png', 'push-handler.js'],
-      // Bildirimleri gösteren kod (public/push-handler.js) servis çalışanına eklenir
-      workbox: { importScripts: ['push-handler.js'] },
+      // Simgeler, logolar ve yazı tipleri aşağıdaki desenle önbelleğe alınır (varsayılan yalnızca js/css/html).
+      // Aynı dosyalar ayrıca listelenirse servis çalışanında çift girdi olur; bu yüzden includeAssets ve manifest simgeleri yok.
+      includeManifestIcons: false,
+      workbox: {
+        // Bildirimleri gösteren kod (public/push-handler.js) servis çalışanına eklenir
+        importScripts: ['push-handler.js'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+      },
       manifest: {
+        id: '/',
         name: 'Monthwise',
         short_name: 'Monthwise',
         description: 'Abonelik ve kredi kartı ödemelerini takip et',
