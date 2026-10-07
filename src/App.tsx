@@ -8,6 +8,7 @@ import { ScrollPage } from '@/components/ScrollPage'
 import { BottomNav, type Tab } from '@/components/BottomNav'
 import { Toaster } from '@/components/ui/sonner'
 import { useUser } from '@/lib/auth'
+import { toKey } from '@/lib/dates'
 import { shouldShowInstallGate, skipInstallGate } from '@/lib/install'
 import { initials, useSettings } from '@/lib/settings'
 import { StoreProvider, useStore } from '@/lib/store'
@@ -43,6 +44,14 @@ const TAB_ORDER: Tab[] = ['home', 'subscriptions', 'cards', 'history', 'account'
 // Hesap da kalıcı: alt sayfası (Profil, Bildirimler…) detay gibi üstünde açılır, sağa çekince altında görünür.
 const LIST_TABS: Tab[] = ['home', 'subscriptions', 'cards', 'history', 'account']
 const isListTab = (t: Tab) => LIST_TABS.includes(t)
+
+/** Bugünün anahtarı (yyyy-MM-dd): gün değişince değişir */
+const todayKey = () => toKey(new Date())
+/** Bir sonraki yerel gece yarısına kadar geçen süre (ms) */
+const msUntilMidnight = () => {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime()
+}
 
 export default function App() {
   const user = useUser()
@@ -88,6 +97,32 @@ function Main({ user }: { user: User }) {
   // Hesap'ın açık alt sayfası (Profil, Bildirimler…): detay sayfası gibi açılır
   const [accountPage, setAccountPage] = useState<AccountPage | null>(null)
   const [sheet, setSheet] = useState<SheetTarget>(null)
+
+  // Gün değişince (gece yarısı ya da uygulama ertesi gün öne gelince) ekranlar yeni tarihle çizilsin. Ekranlar tarihi her çizimde
+  // hesaplar; bu değer değişince Ana bileşen de yeniden çizilir. Değer kullanılmaz, değişmesi yeterli.
+  const [, setDay] = useState(todayKey)
+  useEffect(() => {
+    let timer = 0
+    const sync = () => {
+      setDay(todayKey())
+      window.clearTimeout(timer)
+      // Bir sonraki gece yarısında uyanır (1 sn fazla: saat farkı yüzünden erken uyanıp günü değiştirmesin)
+      timer = window.setTimeout(sync, msUntilMidnight() + 1000)
+    }
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') sync()
+    }
+    sync()
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('pageshow', sync)
+    window.addEventListener('focus', sync)
+    return () => {
+      window.clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('pageshow', sync)
+      window.removeEventListener('focus', sync)
+    }
+  }, [])
 
   // Sayfa geçişi (iPhone'daki gibi): detay sağ kenardan gelir, eski sayfa biraz sola kayıp kararır; geri dönünce tersi (View Transitions).
   // Alt menüden sekme değişince yeni sayfa sekmenin yönünden kısa bir kaymayla gelir (Web Animations; sekmeler silinmediği için).
