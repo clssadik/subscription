@@ -13,6 +13,7 @@ import { formatDate, formatMoney } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { play } from '@/lib/sound'
 import { useStore } from '@/lib/store'
+import { useTheme } from '@/lib/theme'
 import { useScrollLimit } from '@/lib/useScrollLimit'
 import { useScrollMemory } from '@/lib/useScrollMemory'
 import { CURRENCIES } from '@/lib/types'
@@ -31,6 +32,7 @@ const AMOUNT_SIZE = 'calc(42px - 16px * var(--p, 0))'
 
 export function HomeScreen({ nav }: { nav: Nav }) {
   const { state, dispatch } = useStore()
+  const theme = useTheme().resolved
   const { cards, subscriptions, payments } = state
   // Kaydırınca üst blok (toplam, sıradaki, iki küçük kart) birlikte küçülür; tarih başlığı sabit. --p 0 (en üstte) → 1 (COLLAPSE px kaydırınca).
   // Yeni iPhone'larda --p'yi kaydırmaya bağlı CSS animasyonu sürer (kaydırmayla aynı karede, geride kalmaz; src/index.css .shrink-block).
@@ -170,7 +172,8 @@ export function HomeScreen({ nav }: { nav: Nav }) {
               </div>
               {/* Şerit ve "ödendi" satırı küçülmenin ilk yarısında kaybolur */}
               <div className="mt-auto opacity-[calc(1-2*var(--p,0))]">
-                <ShareBar subscriptions={subscriptions} />
+                {/* Kartın zemini: koyu temada mavi, açık temada siyah (index.css --hero) */}
+                <ShareBar subscriptions={subscriptions} background={theme === 'dark' ? '#1F4FB4' : '#141414'} />
                 <div className="mt-1.5 text-[11px] opacity-70">
                   {formatMoney(tryTotal.paid)}
                   {totals.slice(1).filter((t) => t.paid > 0).map((t) => ` + ${formatMoney(t.paid, t.currency)}`)} ödendi
