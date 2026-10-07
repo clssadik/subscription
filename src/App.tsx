@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { AddSheet, type SheetTarget } from '@/components/AddSheet'
 import { InstallGate } from '@/components/InstallGate'
@@ -118,6 +118,13 @@ function Main({ user }: { user: User }) {
     setCssMotion(viaView ? null : next)
   }
 
+  // Üstteki katmanı kapatır (detay → kart → hesap alt sayfası): sağa çekerek geri dönüş ve Android geri tuşu aynısını yapar
+  const closeTop = () => {
+    if (detailId) setDetailId(null)
+    else if (cardId) setCardId(null)
+    else setAccountPage(null)
+  }
+
   // Detay sayfasında sağa çekerek geri dönüş (iPhone gibi): altta önceki sekme görünür. Bırakınca geri dönüş animasyonsuz yapılır,
   // çünkü sayfa zaten parmakla kaydırılıp kapatıldı (src/lib/useSwipeBack.ts).
   const detailPage = useRef<HTMLElement>(null)
@@ -129,11 +136,49 @@ function Main({ user }: { user: User }) {
     onBack: () =>
       flushSync(() => {
         setCssMotion(null)
-        if (detailId) setDetailId(null)
-        else if (cardId) setCardId(null)
-        else setAccountPage(null)
+        closeTop()
       }),
   })
+
+  // Android geri tuşu: açık katmanlar tarayıcı geçmişiyle eşleşir. Açılan her katman bir kayıt ekler, kapanan her katman bir geri adımı
+  // atar (kaydırma ve geri düğmesi de böyle kapanır). Geri tuşu üstteki katmanı kapatır. Sekmeler ve alttan açılan paneller kayıt eklemez.
+  const layerCount = (detailId ? 1 : 0) + (cardId ? 1 : 0) + (accountPage ? 1 : 0)
+  const historyDepth = useRef(0)
+  useLayoutEffect(() => {
+    const have = historyDepth.current
+    if (layerCount === have) return
+    try {
+      if (layerCount > have) for (let n = have + 1; n <= layerCount; n++) history.pushState({ monthwise: n }, '')
+      else history.go(layerCount - have)
+      historyDepth.current = layerCount
+    } catch {
+      // Geçmiş kullanılamazsa geri tuşu uygulamadan çıkar; uygulamanın kendisi çalışmaya devam eder
+    }
+  })
+  // Olay dinleyicisi tek sefer bağlanır; her çizimden sonra en güncel işlevleri okur
+  const latest = useRef({ go, closeTop })
+  useLayoutEffect(() => {
+    latest.current = { go, closeTop }
+  })
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const target = (e.state as { monthwise?: number } | null)?.monthwise ?? 0
+      // Geçmiş zaten bu kadarsa (kendi geri adımımızın ardından gelen olay) bir şey yapılmaz: kapanış iki kez olmaz
+      if (target >= historyDepth.current) return
+      historyDepth.current = target
+      latest.current.go('pop', latest.current.closeTop)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+  // Sayfa açık bir detayla yenilenince tarayıcıda kalan eski kayıt sıfırlanır (yoksa geri tuşu boş bir adım atardı)
+  useEffect(() => {
+    try {
+      if ((history.state as { monthwise?: number } | null)?.monthwise) history.replaceState(null, '')
+    } catch {
+      // geçmiş kullanılamıyorsa atlanır
+    }
+  }, [])
 
   // Açık detayın aboneliği ya da kartı silinince (düzenle → sil) önceki sayfaya dönülür: yoksa sayfa boş kalıyordu
   useEffect(() => {
