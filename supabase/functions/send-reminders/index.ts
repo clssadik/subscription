@@ -115,6 +115,8 @@ const dayLabel = (day: Day) =>
 /** Kart kısaca: "Garanti BBVA •• 4821" */
 const cardLabel = (card: CardRow) => `${card.bank_name} •• ${card.last4}`
 const when = (diff: number) => (diff === 0 ? 'bugün' : diff === 1 ? 'yarın' : diff === 7 ? '1 hafta sonra' : `${diff} gün sonra`)
+/** En çok `max` karakter (kod noktası); uzunsa sonu "…" ile kesilir */
+const clip = (s: string, max: number) => ([...s].length > max ? [...s].slice(0, max - 1).join('') + '…' : s)
 
 // ---------- Veri ----------
 
@@ -317,7 +319,9 @@ async function deliver(userId: string, devices: PushRow[], msg: Message, today: 
     return 0
   }
   const results: PushResult[] = []
-  for (const device of devices) results.push(await push(device, { title: msg.title, body: msg.body, tag: msg.key, url: '/' }))
+  // Son sınır: başlık ve metin hiçbir koşulda çok uzun olmasın (Web Push yük sınırı)
+  const payload = { title: clip(msg.title, 100), body: clip(msg.body, 200), tag: msg.key, url: '/' }
+  for (const device of devices) results.push(await push(device, payload))
   const accepted = results.filter((r) => r === 'ok').length
   // Hiçbir telefona ulaşmadı ve geçici bir hata vardı: kaydı sil ki bir sonraki turda yeniden denensin.
   // Süresi dolmuş adresler (410) yeniden denemeyi gerektirmez; kayıt kalır.
@@ -342,8 +346,9 @@ async function runReminders() {
   // Bir okuma bile başarısızsa hiçbir şey gönderilmez: yoksa bildirimi kapalı kullanıcılara ya da ödenmiş faturalara hatırlatma gider
   const pushRows = rowsOf<PushRow>(pushRes, 'push_subscriptions')
   const settingsRows = rowsOf<{ user_id: string; notify: unknown }>(settingsRes, 'user_settings')
-  const subRows = rowsOf<SubRow>(subsRes, 'subscriptions')
-  const cardRows = rowsOf<CardRow>(cardsRes, 'cards')
+  // Ad ve banka adı kullanıcıdan geliyor: bildirim kısa kalsın diye 60 karakterle sınırlanır
+  const subRows = rowsOf<SubRow>(subsRes, 'subscriptions').map((s) => ({ ...s, name: clip(s.name, 60) }))
+  const cardRows = rowsOf<CardRow>(cardsRes, 'cards').map((c) => ({ ...c, bank_name: clip(c.bank_name, 60) }))
   const payRows = rowsOf<{ user_id: string; ref_id: string; due_date: string }>(paymentsRes, 'payments')
   const sentRows = rowsOf<{ user_id: string; key: string }>(sentRes, 'notification_log')
 
