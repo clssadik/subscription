@@ -27,7 +27,7 @@ import { haptic } from '@/lib/haptics'
 import { isInstalled } from '@/lib/install'
 import { forgetDevice, usePush } from '@/lib/push'
 import { randomCards, randomSubscriptions } from '@/lib/seed'
-import { initials, useSettings } from '@/lib/settings'
+import { clearSettingsCache, initials, useSettings } from '@/lib/settings'
 import { play, useSoundEnabled } from '@/lib/sound'
 import { clearCache, useStore } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
@@ -91,11 +91,7 @@ export function AccountScreen({ user, open }: { user: User; open: (page: Account
     // Bu telefonun bildirim adresi hesaptan silinir; oturum açıkken yapılmalı
     await forgetDevice()
     clearCache(user.id)
-    try {
-      localStorage.removeItem(`abonelik-takip:settings:${user.id}`)
-    } catch {
-      // depolama kapalıysa yapacak bir şey yok
-    }
+    clearSettingsCache(user.id)
     await supabase.auth.signOut()
   }
 
