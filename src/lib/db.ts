@@ -98,7 +98,7 @@ function check<T>(res: Res<T>): T {
 // Veritabanı tek istekte en çok 1000 satır verir (Data API sınırı); daha fazlası sayfa sayfa okunur
 const PAGE = 1000
 
-/** Bütün satırları sayfa sayfa okur. Sıra tam olmalı (sonu eşit olmayan bir sütunla bitmeli), yoksa sayfalar kayar. */
+/** Bütün satırları sayfa sayfa okur. Sıralama her satırı tek başına belirlemeli (sona id eklenir); yoksa sayfa sınırında satır kaçabilir. */
 async function readAll(page: (from: number, to: number) => PromiseLike<Res<Row[]>>): Promise<Row[]> {
   const rows: Row[] = []
   for (let from = 0; ; from += PAGE) {
