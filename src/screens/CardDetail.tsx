@@ -9,10 +9,11 @@ import { Money } from '@/components/Money'
 import { PaidNote } from '@/components/PaidNote'
 import { RoundButton } from '@/components/ScreenHeader'
 import { canMarkPaid, daysUntil, dueLabel, hasDue, monthlyCost, nextCardCycle, overdueCardCycles, paymentThisMonth, statementOfDue, toKey, type CardCycle } from '@/lib/dates'
-import { luminance } from '@/lib/color'
+import { contrastRatio } from '@/lib/color'
 import { formatDate, formatMoney } from '@/lib/format'
 import { serviceColor } from '@/lib/services'
 import { useStore } from '@/lib/store'
+import { useTheme } from '@/lib/theme'
 import type { Subscription } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { BankMark } from '@/components/BankMark'
@@ -20,6 +21,7 @@ import type { Nav } from '@/App'
 
 export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: () => void }) {
   const { state, dispatch } = useStore()
+  const surfaces = useSurfaces()
   const card = state.cards.find((c) => c.id === id)
   if (!card) return null
 
@@ -125,7 +127,7 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
                 <HoldButton onOpen={() => nav.openSubscription(s.id)} className="pressable flex w-full items-center gap-3 rounded-[18px] bg-surface px-3 py-2.5 text-left">
                   <Logo serviceKey={s.serviceKey} name={s.name} size={30} />
                   <span className="flex-1 truncate font-medium">{s.name}</span>
-                  {!cycle && s.currency === 'TRY' && <span aria-hidden className="size-2.5 shrink-0 rounded-[3px]" style={{ background: arcColor(s) }} />}
+                  {!cycle && s.currency === 'TRY' && <span aria-hidden className="size-2.5 shrink-0 rounded-[3px]" style={{ background: arcColor(s, surfaces) }} />}
                   <span className="num text-[15px]">
                     {formatMoney(s.amount, s.currency)}
                     {s.cycle === 'yearly' && <span className="text-[11px] text-subtle">/yıl</span>}
@@ -140,10 +142,24 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
   )
 }
 
-/** Yaydaki dilim rengi: servisin rengi; siyah markalar (GitHub, Notion) koyu zeminde kaybolmasın diye yazı renginde */
-function arcColor(s: Subscription) {
-  const c = serviceColor(s.serviceKey, s.name)
-  return luminance(c) < 0.2 ? 'var(--ink)' : c
+/** Açık ve koyu temada yayların üstünde durduğu zeminler: sayfa, kart, iz */
+const SURFACES = {
+  light: ['#F1ECE2', '#FFFFFF', '#E2DBCD'],
+  dark: ['#000000', '#141414', '#262626'],
+} as const
+
+function useSurfaces() {
+  return SURFACES[useTheme().resolved]
+}
+
+/** Renk zeminlerden birinde kaybolursa (siyah GitHub koyu temada, sarı Paycell açıkta) yazı rengi; değilse rengin kendisi. Stroke için style ile verilir. */
+function strokeOn(color: string, surfaces: readonly string[]) {
+  return surfaces.some((z) => contrastRatio(color, z) < 1.6) ? 'var(--ink)' : color
+}
+
+/** Yaydaki dilim rengi: servisin rengi */
+function arcColor(s: Subscription, surfaces: readonly string[]) {
+  return strokeOn(serviceColor(s.serviceKey, s.name), surfaces)
 }
 
 /**
@@ -151,6 +167,7 @@ function arcColor(s: Subscription) {
  * Ortada aylık toplam. Yabancı para birimleri kur bilinmediği için yayda yok (Anasayfa'daki şerit gibi).
  */
 function ShareArc({ subscriptions, total }: { subscriptions: Subscription[]; total: number }) {
+  const surfaces = useSurfaces()
   const W = 276
   const R = 112
   const cx = W / 2
@@ -159,7 +176,7 @@ function ShareArc({ subscriptions, total }: { subscriptions: Subscription[]; tot
   const point = (p: number) => `${cx - R * Math.cos(Math.PI * p)} ${cy - R * Math.sin(Math.PI * p)}`
   const arc = (from: number, to: number) => `M ${point(from)} A ${R} ${R} 0 0 1 ${point(to)}`
 
-  const items = subscriptions.filter((s) => s.currency === 'TRY').map((s) => ({ id: s.id, value: monthlyCost(s), color: arcColor(s) }))
+  const items = subscriptions.filter((s) => s.currency === 'TRY').map((s) => ({ id: s.id, value: monthlyCost(s), color: arcColor(s, surfaces) }))
   const sum = items.reduce((t, i) => t + i.value, 0)
   // Her dilimin başı = kendinden öncekilerin payları toplamı; aralarda küçük boşluk
   const slices = items.map((i, n) => {
@@ -171,8 +188,9 @@ function ShareArc({ subscriptions, total }: { subscriptions: Subscription[]; tot
   return (
     <div className="relative mx-auto mt-3 w-[86%]">
       <svg viewBox={`0 0 ${W} 150`} className="w-full" role="img" aria-label={`Bu karttan aylık ${formatMoney(total)}, ${items.length} abonelik`}>
-        {slices.length === 0 && <path d={arc(0, 1)} fill="none" stroke="var(--line)" strokeWidth={22} />}
-        {slices.map((sl) => sl.to > sl.from && <path key={sl.id} d={arc(sl.from, sl.to)} fill="none" stroke={sl.color} strokeWidth={22} />)}
+        {/* Stroke style ile: iOS Safari'de var() sunum özniteliğinde (stroke="var(..)") güvenilir değil */}
+        {slices.length === 0 && <path d={arc(0, 1)} fill="none" style={{ stroke: 'var(--line)' }} strokeWidth={22} />}
+        {slices.map((sl) => sl.to > sl.from && <path key={sl.id} d={arc(sl.from, sl.to)} fill="none" style={{ stroke: sl.color }} strokeWidth={22} />)}
       </svg>
       <div className="absolute inset-x-0 bottom-1.5 text-center">
         {items.length > 0 ? (
@@ -196,6 +214,7 @@ function ShareArc({ subscriptions, total }: { subscriptions: Subscription[]; tot
  * Dolu kısım banka renginde; uçtaki sarı nokta bugünü gösterir.
  */
 function Gauge({ color, due, previousDue }: { color: string; due: Date | null; previousDue: Date | null }) {
+  const surfaces = useSurfaces()
   const W = 276
   const R = 112
   const cx = W / 2
@@ -212,8 +231,8 @@ function Gauge({ color, due, previousDue }: { color: string; due: Date | null; p
   return (
     <div className="relative mx-auto mt-3 w-[86%]">
       <svg viewBox={`0 0 ${W} 150`} className="w-full" role="img" aria-label={due ? `Son ödemeye ${left} gün kaldı` : 'Banka kartı'}>
-        <path d={arc(1)} fill="none" stroke="var(--line)" strokeWidth={22} />
-        {progress > 0.01 && <path d={arc(progress)} fill="none" stroke={color} strokeWidth={22} />}
+        <path d={arc(1)} fill="none" style={{ stroke: 'var(--line)' }} strokeWidth={22} />
+        {progress > 0.01 && <path d={arc(progress)} fill="none" style={{ stroke: strokeOn(color, surfaces) }} strokeWidth={22} />}
         {due && <circle cx={end.x} cy={end.y} r={9} className="fill-bh-yellow" />}
       </svg>
       <div className="absolute inset-x-0 bottom-1.5 text-center">

@@ -6,7 +6,7 @@ import { HoldButton } from '@/components/HoldButton'
 import { BankBrand } from '@/components/BankMark'
 import { Segmented } from '@/components/FormBits'
 import { PinnedLayout } from '@/components/PinnedLayout'
-import { luminance } from '@/lib/color'
+import { contrastInk, contrastRatio } from '@/lib/color'
 import { daysUntil, dueLabel, dueThisMonth, hasDue, nextCardCycle, overdueCardCycles, paidThisMonth } from '@/lib/dates'
 import { formatDate } from '@/lib/format'
 import { useStore } from '@/lib/store'
@@ -142,10 +142,12 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
 
 /** Kart satırı: bankanın renginde, orijinal logo ve son 4 hane; kredi kartında sağda sıradaki hesap kesimi */
 function CardRow({ card, statement, onClick }: { card: CreditCard; statement?: Date; onClick: () => void }) {
+  // Yazı ve logo rengi zemine göre: sarı Paycell'de koyu, siyah Papara'da açık
+  const ink = contrastInk(card.color)
   return (
-    <HoldButton onOpen={onClick} className="pressable flex min-h-14 w-full items-center gap-3 rounded-[18px] px-3.5 py-2 text-left text-white" style={{ background: card.color }}>
+    <HoldButton onOpen={onClick} className={cn('pressable flex min-h-14 w-full items-center gap-3 rounded-[18px] px-3.5 py-2 text-left', edgeRing(card.color))} style={{ background: card.color, color: ink }}>
       <span className="flex min-w-0 flex-1 items-center gap-2.5">
-        <BankBrand bankName={card.bankName} className="h-4 max-w-[120px]" />
+        <BankBrand bankName={card.bankName} className="h-4 max-w-[120px]" ink={ink} />
         <span className="num shrink-0 text-[15px] opacity-90">•• {card.last4}</span>
       </span>
       {statement && (
@@ -156,6 +158,13 @@ function CardRow({ card, statement, onClick }: { card: CreditCard; statement?: D
       )}
     </HoldButton>
   )
+}
+
+/** Zemine çok yakın renkli satıra ince kenar: koyu temada siyah (Papara), açık temada açık sarı (Paycell) kaybolmasın */
+function edgeRing(color: string) {
+  if (contrastRatio(color, '#000000') < 1.6) return 'dark:ring-1 dark:ring-white/20'
+  if (contrastRatio(color, '#F1ECE2') < 1.6) return 'ring-1 ring-black/10'
+  return undefined
 }
 
 /** Afişin şekil yerleri (kartın içinde 142×180 yuvarlak köşeli siyah kutu). İlk yer daire: en yakın son ödeme oraya gelir ve sarı halka alır. */
@@ -175,7 +184,7 @@ function Poster({ cards }: { cards: CreditCard[] }) {
     <div aria-hidden className="relative my-2 mr-2 rounded-[20px] bg-[#141414]">
       {POSTER.map((shape, i) => (
         // Siyah kartlar (Papara) siyah panelde kaybolmasın: ince açık kenar
-        <span key={i} className={cn('absolute', shape, cards[i] && luminance(cards[i].color) < 0.12 && 'ring-1 ring-white/30')} style={{ background: cards[i]?.color ?? '#262626' }} />
+        <span key={i} className={cn('absolute', shape, cards[i] && contrastRatio(cards[i].color, '#141414') < 1.6 && 'ring-1 ring-white/30')} style={{ background: cards[i]?.color ?? '#262626' }} />
       ))}
       {cards.length > 0 && <span className="absolute top-3.5 left-3.5 size-14 rounded-full ring-[3px] ring-bh-yellow" />}
     </div>
