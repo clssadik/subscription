@@ -1,5 +1,6 @@
 import { siAmericanexpress, siMastercard, siVisa } from 'simple-icons'
 import { colorFromName } from './color'
+import { fold } from './text'
 import type { CardNetwork } from './types'
 
 // Bilinen Türk bankaları ve marka renkleri. Kartın rengi, yazılan banka adından kendiliğinden gelir.
@@ -46,7 +47,7 @@ export const BANKS: { key: string; name: string; color: string }[] = [
   { key: 'payoneer', name: 'Payoneer', color: '#FF4800' },
 ]
 
-const norm = (s: string) => s.toLocaleLowerCase('tr').replace(/[^a-z0-9çğıöşü]/g, '')
+const norm = fold
 
 /** "Garanti", "garanti bonus", "Yapı Kredi World" gibi yazımları bilinen bankayla eşleştirir */
 function matchBank(name: string) {

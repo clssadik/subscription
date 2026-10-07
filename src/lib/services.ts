@@ -91,6 +91,7 @@ import {
   type SimpleIcon,
 } from 'simple-icons'
 import { colorFromName } from './color'
+import { fold } from './text'
 
 // Hazır servis listesi. Logo iki yerden gelir:
 // 1) simple-icons paketi (uygulamanın içine gömülü, internetsiz çalışır)
@@ -301,7 +302,8 @@ export function logoFor(serviceKey: string | null, name: string): LogoSource {
   }
   return {
     type: 'letter',
-    letter: (name.trim()[0] ?? '?').toLocaleUpperCase('tr'),
+    // Array.from: emoji ile başlayan adda yarım karakter kalmasın
+    letter: (Array.from(name.trim())[0] ?? '?').toLocaleUpperCase('tr'),
     color: service?.color ?? colorFromName(name),
   }
 }
@@ -325,7 +327,8 @@ export function matchService(name: string) {
   return SERVICES.find((s) => normalize(s.name) === n || s.key === n)
 }
 
+/** Arama ve eşleştirme için sade yazım: "NETFLİX" ve "ıcloud" → "netflix", "icloud" */
 export function normalize(s: string) {
-  return s.toLocaleLowerCase('tr').replace(/[^a-z0-9çğıöşü]/g, '')
+  return fold(s)
 }
 
