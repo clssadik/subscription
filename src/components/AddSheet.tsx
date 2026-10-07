@@ -1,6 +1,6 @@
 import { format } from 'date-fns'
 import { CreditCardIcon, RepeatIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { haptic } from '@/lib/haptics'
 import { play } from '@/lib/sound'
@@ -56,7 +56,8 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
     <Drawer open={!!target} onOpenChange={(o) => !o && close()} disablePreventScroll={false}>
       <DrawerContent ref={glideWithKeyboard} data-keep-page className="max-h-[94svh] rounded-t-[30px] border-0 bg-page data-[vaul-drawer-direction=bottom]:max-h-[94svh]">
         {/* Kayan alan: min-h-0 ile panel kısalınca (klavye açılınca) o da kısalır ve içerik aşağı yukarı kaydırılabilir */}
-        <div className="mx-auto min-h-0 w-full max-w-md overflow-y-auto overscroll-contain px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        {/* Kapanırken (hedef yokken) içerik dokunulmaz: kapanma sırasındaki Kaydet ya da sil dokunuşu bir daha çalışmaz */}
+        <div inert={!target} className="mx-auto min-h-0 w-full max-w-md overflow-y-auto overscroll-contain px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <DrawerTitle className="num pt-3 pb-1 text-center text-lg font-medium">
             {editing ? (kind === 'card' ? 'Kartı düzenle' : 'Aboneliği düzenle') : 'Yeni ekle'}
           </DrawerTitle>
@@ -241,6 +242,11 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
   const newCard = cardId === NEW_CARD
   const [card, setCard] = useState<NewCard>({ bankName: '', last4: '', kind: 'credit', statementDay: null })
   const [error, setError] = useState('')
+  // Kayıt kimlikleri formla birlikte bir kez üretilir: Kaydet iki kez çalışsa da aynı abonelik ve kart üzerine yazılır
+  const [draftId] = useState(() => newId())
+  const [cardDraftId] = useState(() => newId())
+  // Kayıt başladıktan sonra ikinci bir Kaydet dokunuşu yok sayılır (kapanma sırasında da)
+  const submitted = useRef(false)
   // Hata: mesajla birlikte hafif titreşim
   const fail = (message: string) => {
     haptic()
@@ -249,23 +255,25 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
+    if (submitted.current) return
     const value = parseAmount(amount)
     if (!name.trim()) return fail('Abonelik adı girin.')
     if (hasCardNumber(name)) return fail('Abonelik adına kart numarası yazılmaz.')
     if (!isValidAmount(value)) return fail('Tutar sayı olmalı, ör. 229,99.')
     if (!renewalDate) return fail('Yenilenme tarihi seçin.')
+    const problem = newCard ? cardProblem(card) : ''
+    if (problem) return fail(problem)
+    submitted.current = true
     let linkedCard = cardId || null
     if (newCard) {
-      const problem = cardProblem(card)
-      if (problem) return fail(problem)
-      const saved = buildCard(card)
+      const saved = buildCard(card, cardDraftId)
       dispatch({ type: 'card/save', card: saved })
       linkedCard = saved.id
     }
     // Elle yazılan ad listedeki bir servise denk geliyorsa logosunu bağla
     const key = getService(serviceKey)?.name === name.trim() ? serviceKey : (matchService(name)?.key ?? null)
     const subscription: Subscription = {
-      id: sub?.id ?? newId(),
+      id: sub?.id ?? draftId,
       name: name.trim(),
       amount: value,
       currency,
@@ -371,9 +379,9 @@ function colorFor(bankName: string, existing?: CreditCard) {
   return bankColor(bankName) ?? (existing && existing.bankName === bankName.trim() ? existing.color : cardColor(bankName))
 }
 
-function buildCard(c: NewCard, existing?: CreditCard): CreditCard {
+function buildCard(c: NewCard, id: string, existing?: CreditCard): CreditCard {
   return {
-    id: existing?.id ?? newId(),
+    id: existing?.id ?? id,
     bankName: fullBankName(c.bankName),
     last4: c.last4,
     kind: c.kind,
@@ -449,6 +457,9 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
     statementDay: card?.statementDay ?? null,
   })
   const [error, setError] = useState('')
+  // Yeni kartın kimliği formla birlikte bir kez üretilir (bkz. SubscriptionFields)
+  const [draftId] = useState(() => newId())
+  const submitted = useRef(false)
   // Hata: mesajla birlikte hafif titreşim
   const fail = (message: string) => {
     haptic()
@@ -457,9 +468,11 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
+    if (submitted.current) return
     const problem = cardProblem(value)
     if (problem) return fail(problem)
-    dispatch({ type: 'card/save', card: buildCard(value, card) })
+    submitted.current = true
+    dispatch({ type: 'card/save', card: buildCard(value, draftId, card) })
     haptic()
     play('save')
     toast.success(card ? 'Kart güncellendi' : 'Kart eklendi')
