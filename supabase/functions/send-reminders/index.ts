@@ -260,17 +260,45 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Map
 /** TTL: 12 saat içinde ulaşmayan hatırlatma düşer (ertesi gün eski bildirim gelmesin). timeout: takılan adres turu durdurmasın. */
 const PUSH_OPTIONS = { TTL: 43200, timeout: 10000 }
 
-async function push(sub: PushRow, payload: Record<string, unknown>) {
+/** Tek telefona gönderimin sonucu: ulaştı, adres artık geçersiz (kaldırıldı) ya da geçici hata */
+type PushResult = 'ok' | 'gone' | 'error'
+
+async function push(sub: PushRow, payload: Record<string, unknown>): Promise<PushResult> {
   try {
     await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(payload), PUSH_OPTIONS)
-    return true
+    return 'ok'
   } catch (e) {
     const status = (e as { statusCode?: number }).statusCode
     // Telefon izni geri aldıysa ya da uygulama silindiyse adres artık geçersiz
-    if (status === 404 || status === 410) await db.from('push_subscriptions').delete().eq('id', sub.id)
-    else console.error('push failed', status, (e as Error).message)
-    return false
+    if (status === 404 || status === 410) {
+      const { error } = await db.from('push_subscriptions').delete().eq('id', sub.id)
+      if (error) console.error('push_subscriptions delete failed', sub.id, error.message)
+      return 'gone'
+    }
+    console.error('push failed', status, (e as Error).message)
+    return 'error'
   }
+}
+
+/** Bir hatırlatmayı kullanıcının bütün telefonlarına gönderir. Dönen: ulaşan telefon sayısı. */
+async function deliver(userId: string, devices: PushRow[], msg: Message, today: Day) {
+  const claim = { user_id: userId, key: msg.key, sent_on: toKey(today) }
+  // Önce kaydet: iki çağrı üst üste gelirse aynı bildirim iki kez gitmesin (primary key ikinciyi reddeder)
+  const { error } = await db.from('notification_log').insert(claim)
+  if (error) {
+    if (error.code !== '23505') console.error('notification_log insert failed', userId, msg.key, error.message)
+    return 0
+  }
+  const results: PushResult[] = []
+  for (const device of devices) results.push(await push(device, { title: msg.title, body: msg.body, tag: msg.key, url: '/' }))
+  const accepted = results.filter((r) => r === 'ok').length
+  // Hiçbir telefona ulaşmadı ve geçici bir hata vardı: kaydı sil ki bir sonraki turda yeniden denensin.
+  // Süresi dolmuş adresler (410) yeniden denemeyi gerektirmez; kayıt kalır.
+  if (accepted === 0 && results.includes('error')) {
+    const { error: releaseError } = await db.from('notification_log').delete().eq('user_id', userId).eq('key', msg.key).eq('sent_on', claim.sent_on)
+    if (releaseError) console.error('notification_log release failed', userId, msg.key, releaseError.message)
+  }
+  return accepted
 }
 
 async function runReminders() {
@@ -316,12 +344,7 @@ async function runReminders() {
       if (now.minutes < Math.min(h * 60 + m, LAST_RUN_MINUTES)) continue
       const messages = messagesFor(notify, subsBy.get(userId) ?? [], cardsBy.get(userId) ?? [], paidBy.get(userId) ?? new Map<string, Day[]>(), now)
         .filter((msg) => !sent.has(`${userId}|${msg.key}`))
-      for (const msg of messages) {
-        // Önce kaydet: iki çağrı üst üste gelirse aynı bildirim iki kez gitmesin
-        const { error } = await db.from('notification_log').insert({ user_id: userId, key: msg.key, sent_on: toKey(now.today) })
-        if (error) continue
-        for (const device of devices) if (await push(device, { title: msg.title, body: msg.body, tag: msg.key, url: '/' })) total++
-      }
+      for (const msg of messages) total += await deliver(userId, devices, msg, now.today)
     } catch (e) {
       console.error('reminders failed for user', userId, (e as Error).message)
     }
