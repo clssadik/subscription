@@ -95,19 +95,32 @@ function check<T>(res: Res<T>): T {
   return res.data as T
 }
 
+// Veritabanı tek istekte en çok 1000 satır verir (Data API sınırı); daha fazlası sayfa sayfa okunur
+const PAGE = 1000
+
+/** Bütün satırları sayfa sayfa okur. Sıra tam olmalı (sonu eşit olmayan bir sütunla bitmeli), yoksa sayfalar kayar. */
+async function readAll(page: (from: number, to: number) => PromiseLike<Res<Row[]>>): Promise<Row[]> {
+  const rows: Row[] = []
+  for (let from = 0; ; from += PAGE) {
+    const batch = check(await page(from, from + PAGE - 1))
+    rows.push(...batch)
+    if (batch.length < PAGE) return rows
+  }
+}
+
 /** Kullanıcının bütün verilerini veritabanından okur. */
 export async function loadAll(): Promise<State> {
   const [cards, subs, payments, logos] = await Promise.all([
-    supabase.from('cards').select('*').order('created_at'),
-    supabase.from('subscriptions').select('*').order('created_at'),
-    supabase.from('payments').select('*'),
-    supabase.from('missing_logos').select('name, first_seen'),
+    readAll((from, to) => supabase.from('cards').select('*').order('created_at').order('id').range(from, to)),
+    readAll((from, to) => supabase.from('subscriptions').select('*').order('created_at').order('id').range(from, to)),
+    readAll((from, to) => supabase.from('payments').select('*').order('due_date').order('id').range(from, to)),
+    readAll((from, to) => supabase.from('missing_logos').select('name, first_seen').order('name').range(from, to)),
   ])
   return {
-    cards: check<Row[]>(cards).map(cardFromRow),
-    subscriptions: check<Row[]>(subs).map(subFromRow),
-    payments: check<Row[]>(payments).map(paymentFromRow),
-    missingLogos: check<Row[]>(logos).map((r) => ({ name: r.name as string, firstSeen: r.first_seen as string })),
+    cards: cards.map(cardFromRow),
+    subscriptions: subs.map(subFromRow),
+    payments: payments.map(paymentFromRow),
+    missingLogos: logos.map((r) => ({ name: r.name as string, firstSeen: r.first_seen as string })),
   }
 }
 
