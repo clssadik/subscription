@@ -384,8 +384,27 @@ async function runReminders() {
   return total
 }
 
+/** Cron isteği: CRON_SECRET tanımlı ve boş olmayan olmalı, başlık birebir tutmalı */
+function authorized(req: Request) {
+  const secret = Deno.env.get('CRON_SECRET') ?? ''
+  if (!secret) {
+    console.error('CRON_SECRET is not set: every request is rejected')
+    return false
+  }
+  return safeEqual(req.headers.get('x-cron-secret') ?? '', secret)
+}
+
+/** Sabit sürede karşılaştırma: yanlış olsa bile bütün baytlar okunur, süre gizli değer hakkında bilgi vermez */
+function safeEqual(a: string, b: string) {
+  const x = new TextEncoder().encode(a)
+  const y = new TextEncoder().encode(b)
+  let diff = x.length ^ y.length
+  for (let i = 0; i < Math.max(x.length, y.length); i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0)
+  return diff === 0
+}
+
 Deno.serve(async (req) => {
-  if (req.headers.get('x-cron-secret') !== Deno.env.get('CRON_SECRET')) return Response.json({ error: 'unauthorized' }, { status: 401 })
+  if (!authorized(req)) return Response.json({ error: 'unauthorized' }, { status: 401 })
   try {
     return Response.json({ sent: await runReminders() })
   } catch (e) {
