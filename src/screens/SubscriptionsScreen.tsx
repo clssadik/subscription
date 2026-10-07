@@ -57,7 +57,7 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
       <SwipeRow
         key={s.id}
         onTap={() => nav.openSubscription(s.id)}
-        onDelete={() => undoable(`${s.name} silindi`, () => dispatch({ type: 'subscription/delete', id: s.id }))}
+        onDelete={() => undoable(`${s.name} silindi`, () => dispatch({ type: 'subscription/delete', id: s.id }), [s.id])}
       >
         <div className="flex items-center gap-3 py-1.5 pr-3 pl-1.5">
           {/* Takvim yaprağı gibi gün kutusu: açık temada zemin renginde, koyu temada soluk mavi; bugün sarı */}

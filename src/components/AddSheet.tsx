@@ -338,7 +338,7 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
           className="min-h-11 text-bh-red"
           onClick={() => {
             onDone()
-            undoable(`${sub.name} silindi`, () => dispatch({ type: 'subscription/delete', id: sub.id }))
+            undoable(`${sub.name} silindi`, () => dispatch({ type: 'subscription/delete', id: sub.id }), [sub.id])
           }}
         >
           Aboneliği sil
@@ -467,7 +467,7 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
           className="min-h-11 text-bh-red"
           onClick={() => {
             onDone()
-            undoable(`${card.bankName} •• ${card.last4} silindi`, () => dispatch({ type: 'card/delete', id: card.id }))
+            undoable(`${card.bankName} •• ${card.last4} silindi`, () => dispatch({ type: 'card/delete', id: card.id }), [card.id])
           }}
         >
           Kartı sil

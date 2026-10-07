@@ -30,7 +30,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
 
   // Sola kaydırıp "Kaldır": ödendi işareti kalkar, ödeme yeniden bekleyen olur. Mesajdaki "Geri al" geri getirir.
   const unmark = (p: (typeof payments)[number], name: string) =>
-    undoable(`${name} ödemesi kaldırıldı`, () => dispatch({ type: 'payment/toggle', kind: p.kind, refId: p.refId, dueDate: p.dueDate }))
+    undoable(`${name} ödemesi kaldırıldı`, () => dispatch({ type: 'payment/toggle', kind: p.kind, refId: p.refId, dueDate: p.dueDate }), [p.id])
 
   // Son 6 ayda ödendi işaretlenen abonelik tutarları, para birimi bazında. Kart ekstreleri tutarsız tutulduğu için dahil değil.
   const thisMonth = startOfMonth(new Date())

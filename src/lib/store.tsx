@@ -27,6 +27,8 @@ type Action =
   | { type: 'subscription/save'; subscription: Subscription }
   | { type: 'subscription/delete'; id: string }
   | { type: 'payment/toggle'; kind: Payment['kind']; refId: string; dueDate: string; amount?: number; currency?: Payment['currency'] }
+  /** Geri al: ids'teki silinmiş kayıtları before'dan geri koyar, aradaki diğer değişikliklere dokunmaz */
+  | { type: 'undo/restore'; before: State; ids: string[] }
   | { type: 'state/restore'; state: State }
   | { type: 'state/load'; state: State }
 
@@ -41,6 +43,40 @@ function noteMissingLogo(list: MissingLogo[], sub: Subscription): MissingLogo[] 
   const n = normalize(sub.name)
   if (list.some((m) => normalize(m.name) === n)) return list
   return [...list, { name: sub.name, firstSeen: format(new Date(), 'yyyy-MM-dd') }]
+}
+
+/** Geri al: ids'teki silinmiş kayıtları yedekten geri koyar. Listede zaten olanlara ve aradaki diğer değişikliklere dokunmaz. */
+function restoreDeleted(state: State, before: State, ids: string[]): State {
+  const want = new Set(ids)
+  // Yedekte olup şu an listede olmayanlar
+  const missing = <T extends { id: string }>(now: T[], old: T[]) => {
+    const have = new Set(now.map((x) => x.id))
+    return old.filter((x) => want.has(x.id) && !have.has(x.id))
+  }
+  const cardsBack = missing(state.cards, before.cards)
+  const cards = [...state.cards, ...cardsBack]
+  const cardIds = new Set(cards.map((c) => c.id))
+  const backIds = new Set(cardsBack.map((c) => c.id))
+  // Kart geri geldiyse, silinince kartsız kalan abonelikler yeniden o karta bağlanır
+  const relink = (s: Subscription) => {
+    if (s.cardId) return s
+    const was = before.subscriptions.find((x) => x.id === s.id)?.cardId
+    return was && backIds.has(was) ? { ...s, cardId: was } : s
+  }
+  // Silinen abonelik geri gelirken kartı artık yoksa kartsız gelir (veritabanında olmayan karta bağlanamaz)
+  const subsBack = missing(state.subscriptions, before.subscriptions).map((s) =>
+    s.cardId && !cardIds.has(s.cardId) ? { ...s, cardId: null } : s,
+  )
+  // Aynı ödeme (aynı kayıt ve tarih) zaten işaretliyse ikinci kez eklenmez; veritabanında tekil
+  const paymentsBack = missing(state.payments, before.payments).filter(
+    (p) => !state.payments.some((q) => q.refId === p.refId && q.dueDate === p.dueDate),
+  )
+  return {
+    ...state,
+    cards,
+    subscriptions: [...state.subscriptions.map(relink), ...subsBack],
+    payments: [...state.payments, ...paymentsBack],
+  }
 }
 
 function reducer(state: State, action: Action): State {
@@ -83,6 +119,8 @@ function reducer(state: State, action: Action): State {
       }
       return { ...state, payments: [...state.payments, payment] }
     }
+    case 'undo/restore':
+      return restoreDeleted(state, action.before, action.ids)
     case 'state/restore':
     case 'state/load':
       return action.state
