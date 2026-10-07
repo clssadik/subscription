@@ -54,10 +54,10 @@ export function AddSheet({ target, onClose }: { target: SheetTarget; onClose: ()
     // disablePreventScroll={false}: vaul iPhone'da kayan alan uçtayken esnemeyi bilerek kapatıyor (usePreventScroll); bu onu kapatır.
     // Aynı şey vaul'un "odaklanınca sayfa kaymasın" hilesini de kapattığı için yerine bizimki çalışır (data-keep-page, src/lib/keyboard.ts).
     <Drawer open={!!target} onOpenChange={(o) => !o && close()} disablePreventScroll={false}>
-      <DrawerContent ref={glideWithKeyboard} data-keep-page className="max-h-[94svh] rounded-t-[30px] border-0 bg-page data-[vaul-drawer-direction=bottom]:max-h-[94svh]">
+      <DrawerContent data-keep-page className="max-h-[94svh] rounded-t-[30px] border-0 bg-page data-[vaul-drawer-direction=bottom]:max-h-[94svh]">
         {/* Kayan alan: min-h-0 ile panel kısalınca (klavye açılınca) o da kısalır ve içerik aşağı yukarı kaydırılabilir */}
         {/* Kapanırken (hedef yokken) içerik dokunulmaz: kapanma sırasındaki Kaydet ya da sil dokunuşu bir daha çalışmaz */}
-        <div inert={!target} className="mx-auto min-h-0 w-full max-w-md overflow-y-auto overscroll-contain px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <div ref={glideWithKeyboard} inert={!target} className="mx-auto min-h-0 w-full max-w-md overflow-y-auto overscroll-contain px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <DrawerTitle className="num pt-3 pb-1 text-center text-lg font-medium">
             {editing ? (kind === 'card' ? 'Kartı düzenle' : 'Aboneliği düzenle') : 'Yeni ekle'}
           </DrawerTitle>
@@ -131,13 +131,11 @@ const KEYBOARD_EASE = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
  * Kayma "translate" ile: formu her karede yeniden yerleştirmez (boyu canlandırmak takılıyordu), vaul'un transform'una karışmaz.
  * Panel aşağı inerken altta kalan boşluğu vaul'un panelin altındaki uzantısı (::after) kapatır.
  */
-// vaul ref'i her çizimde yeniden bağlıyor ve eski bağlantının temizliğini çağırmıyor: her panel bir kez kurulur,
-// yoksa birikip aynı değişikliğe birden çok kayma başlatıyor ve panel zıplıyordu
-const gliding = new WeakSet<Element>()
-
-function glideWithKeyboard(el: HTMLDivElement | null) {
-  if (!el || gliding.has(el)) return
-  gliding.add(el)
+// Ref kaydırılan kapsayıcıya doğrudan bağlı, böylece React kapsayıcı DOM'dan çıkınca döndüğümüz söküm işlevini çağırır.
+// Panelin ref'i vaul'un ref zincirinden geçseydi söküm işlevi kaybolur ve gözlemciler panel kapandıktan sonra da kalırdı.
+function glideWithKeyboard(scroller: HTMLDivElement | null) {
+  const el = scroller?.closest<HTMLDivElement>('[data-vaul-drawer]')
+  if (!el) return
   const vv = window.visualViewport
   // Panelin üst kenarının yeri, dönüşümlerden (açılış, sürükleme) bağımsız: alt boşluk + boy
   const reach = () => (parseFloat(el.style.bottom) || 0) + el.offsetHeight
@@ -206,9 +204,16 @@ function glideWithKeyboard(el: HTMLDivElement | null) {
     el.style.bottom = '0px'
     el.style.height = `${restingHeight}px`
   }
-  // Panel kapanıp DOM'dan çıkınca gözlemciler ve dinleyiciler onunla birlikte gider
   el.addEventListener('focusin', onFocusIn)
   el.addEventListener('focusout', onFocusOut)
+  // Kapsayıcı DOM'dan çıkınca her şey sökülür: gözlemciler, dinleyiciler ve kapanma sırasındaki zamanlayıcı
+  return () => {
+    endClosing()
+    observer.disconnect()
+    sizes.disconnect()
+    el.removeEventListener('focusin', onFocusIn)
+    el.removeEventListener('focusout', onFocusOut)
+  }
 }
 
 function KindButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
