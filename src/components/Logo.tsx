@@ -1,4 +1,4 @@
-import { luminance } from '@/lib/color'
+import { contrastInk, contrastRatio, luminance } from '@/lib/color'
 import { logoFor } from '@/lib/services'
 import { cn } from '@/lib/utils'
 
@@ -21,11 +21,18 @@ export function Logo({ serviceKey, name, size = 34, className, color, tile = tru
   const style = { width: size, height: size, borderRadius: Math.round(size * 0.24) }
 
   if (logo.type === 'letter') {
+    // Neredeyse siyah marka (Midjourney, DAZN) koyu sayfada kaybolur: o zaman kutu, icon kutuları gibi temanın logo renklerinde olur
+    const nearBlack = contrastRatio(logo.color, '#000000') < 1.5
     return (
       <div
         aria-hidden
         className={cn('flex shrink-0 items-center justify-center font-label font-semibold', className)}
-        style={{ ...style, background: logo.color, color: luminance(logo.color) > 0.6 ? '#141414' : '#fff', fontSize: inner }}
+        style={{
+          ...style,
+          background: nearBlack ? 'var(--logo-tile)' : logo.color,
+          color: nearBlack ? 'var(--logo-ink)' : contrastInk(logo.color),
+          fontSize: inner,
+        }}
       >
         {logo.letter}
       </div>
