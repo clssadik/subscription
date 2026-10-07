@@ -1,7 +1,11 @@
+import type { CSSProperties } from 'react'
 import { contrastInk, contrastRatio, luminance } from '@/lib/color'
 import { logoFor } from '@/lib/services'
 import { cn } from '@/lib/utils'
 
+// Logo kutusunun iki temadaki rengi (index.css'teki --logo-tile ile aynı)
+const LIGHT_TILE = '#141414'
+const DARK_TILE = '#FFFFFF'
 
 interface Props {
   serviceKey: string | null
@@ -12,6 +16,15 @@ interface Props {
   color?: string
   /** false = kutusuz, sadece logo (zemin rengi çağıran yerde) */
   tile?: boolean
+}
+
+/** Kutudaki marka glifi: markanın rengi o temada kutuya karşı 3:1'e ulaşıyorsa o, ulaşmıyorsa kutunun mürekkebi (--logo-ink).
+ *  Kutu temaya göre değiştiği için iki renk ayrı hesaplanır; index.css'teki .logo-glyph hangisinin görüneceğini seçer. */
+function glyphVars(brand: string) {
+  return {
+    '--glyph-light': contrastRatio(brand, LIGHT_TILE) >= 3 ? brand : 'var(--logo-ink)',
+    '--glyph-dark': contrastRatio(brand, DARK_TILE) >= 3 ? brand : 'var(--logo-ink)',
+  } as CSSProperties
 }
 
 /** Servis logosu: kutu içinde markanın kendi renginde (kutu açık temada siyah, koyu temada beyaz). Logo yoksa renkli harf. */
@@ -46,7 +59,13 @@ export function Logo({ serviceKey, name, size = 34, className, color, tile = tru
           {tile && logo.onLight && <img src={logo.onLight} alt="" className="hidden dark:block" style={{ width: inner, height: inner }} />}
         </>
       ) : (
-        <svg viewBox="0 0 24 24" width={inner} height={inner} style={{ fill: color ?? (luminance(logo.color) < 0.2 ? (tile ? 'var(--logo-ink)' : '#fff') : logo.color) }}>
+        <svg
+          viewBox="0 0 24 24"
+          width={inner}
+          height={inner}
+          className="logo-glyph"
+          style={color ? { fill: color } : tile ? glyphVars(logo.color) : { fill: luminance(logo.color) < 0.2 ? '#fff' : logo.color }}
+        >
           <path d={logo.path} />
         </svg>
       )}

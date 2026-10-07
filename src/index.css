@@ -197,6 +197,9 @@ a[href]:focus-visible,
 /* Logo kutusu: açık temada siyah, koyu temada beyaz. --logo-ink = kutudaki siyah/beyaz logoların rengi */
 :root { --logo-tile: #141414; --logo-ink: #FFFFFF; }
 :root.dark { --logo-tile: #FFFFFF; --logo-ink: #141414; }
+/* Kutudaki marka glifinin rengi: Logo.tsx iki tema için ayrı verir (--glyph-light / --glyph-dark) */
+.logo-glyph { fill: var(--glyph-light); }
+.dark .logo-glyph { fill: var(--glyph-dark); }
 
 /* Anasayfa'daki üst bloğun küçülmesi: --p 0 (açık) → 1 (küçük); bloktaki boylar ve yazı boyutları buna bağlı (src/screens/HomeScreen.tsx).
    Destekleyen tarayıcıda --p'yi listenin kaydırması sürer: kaydırmayla aynı karede hesaplanır, parmağın gerisinde kalmaz.
