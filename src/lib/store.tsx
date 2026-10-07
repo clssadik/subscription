@@ -1,8 +1,8 @@
 import { format, parseISO } from 'date-fns'
-import { createContext, useContext, useEffect, useReducer, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { bankColor } from './banks'
-import { loadAll, pushChanges } from './db'
+import { DbError, diffState, hasChanges, loadAll, pushChanges, type ListChanges } from './db'
 import { DEMO_ID } from './demo'
 import { findPayment, type PeriodKind } from './dates'
 import { hasLogo, matchService, normalize } from './services'
@@ -10,8 +10,11 @@ import type { CreditCard, MissingLogo, Payment, Subscription } from './types'
 
 // Veriler Supabase'de, kullanıcının hesabında duruyor. Ekran her değişikliği hemen gösterir,
 // arkada da farkı veritabanına yazar. Son görülen veriler internetsiz açılış için cihazda saklanır.
+// Gönderilemeyen değişiklikler de cihazda kalır; bağlantı gelince ya da bir sonraki açılışta yeniden denenir.
 
 const cacheKey = (userId: string) => `abonelik-takip:cache:${userId}`
+// Veritabanında onaylanmış son durum. Gönderilecek fark buna göre hesaplanır.
+const baseKey = (userId: string) => `abonelik-takip:base:${userId}`
 const EMPTY: State = { cards: [], subscriptions: [], payments: [], missingLogos: [] }
 
 export interface State {
@@ -167,91 +170,242 @@ function readCache(userId: string): State | null {
   }
 }
 
+function asList<T>(v: T[] | undefined): T[] {
+  return Array.isArray(v) ? v : []
+}
+
+/** Veritabanında onaylanmış son durum. Eski sürümde hiç kaydedilmediyse null. */
+function readBase(userId: string): State | null {
+  try {
+    const raw = localStorage.getItem(baseKey(userId))
+    if (!raw) return null
+    const saved = JSON.parse(raw) as Partial<State>
+    return {
+      cards: asList(saved.cards),
+      subscriptions: asList(saved.subscriptions),
+      payments: asList(saved.payments),
+      missingLogos: asList(saved.missingLogos),
+    }
+  } catch {
+    return null
+  }
+}
+
+/** Cihazdaki kopya yazıldı mı? Yazılamadıysa onaylanmış durum da yazılmaz (bkz. persist). */
+function writeCache(userId: string, state: State): boolean {
+  try {
+    localStorage.setItem(cacheKey(userId), JSON.stringify(state))
+    return true
+  } catch {
+    // depolama doluysa ya da kapalıysa yapacak bir şey yok
+    return false
+  }
+}
+
+function writeBase(userId: string, state: State) {
+  try {
+    localStorage.setItem(baseKey(userId), JSON.stringify(state))
+  } catch {
+    // yazılamazsa eski onaylanmış durum kalır; fark fazla gider ama kayıp olmaz
+  }
+}
+
+/** Önce ekranın son hali, sonra onaylanmış durum yazılır. Arada kesilirse onaylanmamış bir silme gönderilmez. */
+function persist(userId: string, current: State, confirmed: State) {
+  if (writeCache(userId, current)) writeBase(userId, confirmed)
+}
+
 // eslint-disable-next-line react/only-export-components
 export function clearCache(userId: string) {
   try {
     localStorage.removeItem(cacheKey(userId))
+    localStorage.removeItem(baseKey(userId))
   } catch {
     // erişilemiyorsa yapacak bir şey yok
   }
 }
 
-const StoreContext = createContext<{ state: State; dispatch: React.Dispatch<Action>; ready: boolean; refresh: () => Promise<void> } | null>(null)
+/** Farkı bir listeye uygular: silinenler çıkar, değişenler yerine geçer, yeniler sona eklenir. */
+function applyDiff<T>(items: T[], changes: ListChanges<T>, key: (x: T) => string): T[] {
+  const gone = new Set(changes.deletes)
+  const changed = new Map<string, T>(changes.upserts.map((x) => [key(x), x] as const))
+  const kept = items.filter((x) => !gone.has(key(x))).map((x) => changed.get(key(x)) ?? x)
+  const seen = new Set(kept.map(key))
+  return [...kept, ...changes.upserts.filter((x) => !seen.has(key(x)))]
+}
+
+/** Yerel değişiklikler (from → to farkı) veritabanından gelen yeni kopyanın üstüne uygulanır. */
+function rebase(fresh: State, from: State, to: State): State {
+  const changes = diffState(from, to)
+  const cards = applyDiff(fresh.cards, changes.cards, (c) => c.id)
+  // Kartı silinmiş aboneliğin kartı yoktur (veritabanındaki ON DELETE SET NULL ile aynı)
+  const cardIds = new Set(cards.map((c) => c.id))
+  return {
+    cards,
+    subscriptions: applyDiff(fresh.subscriptions, changes.subscriptions, (s) => s.id).map((s) =>
+      s.cardId && !cardIds.has(s.cardId) ? { ...s, cardId: null } : s,
+    ),
+    payments: applyDiff(fresh.payments, changes.payments, (p) => p.id),
+    missingLogos: applyDiff(fresh.missingLogos, changes.missingLogos, (m) => m.name),
+  }
+}
+
+/** Ekran durumu ile veritabanı arasındaki eşitleme. Bileşenden bağımsız: değişiklikleri sırayla gönderir,
+ *  bağlantı yoksa cihazda bekletir ve yeniden dener. */
+function createSync(opts: {
+  userId: string | null
+  remote: boolean
+  state: State
+  base: State
+  show: (state: State) => void
+  ready: () => void
+}) {
+  const { userId, remote } = opts
+  // En son durum: ekrana çizilmesini beklemez, arka plandaki okuma hep son değişiklikleri görür
+  let latest = opts.state
+  // Veritabanında olduğu bilinen son durum
+  let base = opts.base
+  // İlk okuma bitmeden hiçbir şey gönderilmez: veritabanı bilinmeden yazmak başkasının değişikliğinin üstüne yazabilir
+  let loaded = false
+  // Ağ hatası mesajı zaten gösterildi mi; bağlantı gelip bir işlem tutunca sıfırlanır
+  let alerted = false
+  let stopped = false
+  // Sırada bekleyen bir iş varsa yenisi eklenmez; iş başlayınca en son durum okunur
+  let queued = false
+  // Veritabanı işleri sırayla çalışır: okuma ve yazma birbirini ezmez
+  let chain: Promise<void> = Promise.resolve()
+
+  function show(next: State) {
+    latest = next
+    opts.show(next)
+  }
+
+  /** Ağ hatası: aynı sorun için mesaj bir kez gösterilir */
+  function failed(message: string) {
+    if (!alerted) toast.error(message)
+    alerted = true
+  }
+
+  /** Veritabanı işini sıraya koyar */
+  function schedule() {
+    if (!remote || stopped || queued) return
+    queued = true
+    chain = chain
+      .then(() => {
+        queued = false
+        return work()
+      })
+      .catch(() => {})
+  }
+
+  /** Gerekirse veritabanını oku, sonra bekleyen farkı gönder */
+  async function work() {
+    if (stopped) return
+    if (!loaded && !(await reconcile(false))) return
+    if (hasChanges(diffState(base, latest))) await push()
+  }
+
+  /** Veritabanını okur. Gönderilmemiş değişiklikler yeni veriye uygulanır; ekrandan kaybolmazlar. */
+  async function reconcile(replace: boolean): Promise<boolean> {
+    if (!userId || stopped) return false
+    let data: State
+    try {
+      data = await loadAll()
+    } catch {
+      failed('Veriler yüklenemedi. İnternet bağlantısını kontrol edin.')
+      opts.ready()
+      return false
+    }
+    if (stopped) return false
+    const fresh = migrate(data)
+    const next = replace ? fresh : rebase(fresh, base, latest)
+    // Logosu artık olan notlar migrate'te düşer; veritabanındaki hali ham listeden okunur
+    base = { ...fresh, missingLogos: data.missingLogos }
+    loaded = true
+    alerted = false
+    show(next)
+    persist(userId, latest, base)
+    opts.ready()
+    return true
+  }
+
+  /** Bekleyen farkı veritabanına yazar. Başarılıysa onaylanmış durum ilerler. */
+  async function push() {
+    if (!userId || stopped) return
+    const target = latest
+    try {
+      await pushChanges(base, target)
+    } catch (e) {
+      if (e instanceof DbError && e.rejected) {
+        // Sunucu değişikliği kabul etmedi: ekran veritabanındaki gerçek duruma döner
+        toast.error('Değişiklik kaydedilemedi. İnternet bağlantısını kontrol edin.')
+        await reconcile(true)
+      } else {
+        // Bağlantı sorunu: değişiklik ekranda ve cihazda kalır, bağlantı gelince yeniden denenir
+        failed('Değişiklik kaydedilemedi. İnternet bağlantısını kontrol edin.')
+      }
+      return
+    }
+    if (stopped) return
+    alerted = false
+    base = target
+    persist(userId, latest, base)
+  }
+
+  return {
+    /** Ekrandan gelen değişiklik: durum hemen hesaplanır ve cihaza yazılır, sonra gönderilmek üzere sıraya girer */
+    dispatch(action: Action) {
+      show(reducer(latest, action))
+      if (userId) writeCache(userId, latest)
+      schedule()
+    },
+    /** Ekran açılınca çalışır: ilk okuma ve bekleyen değişiklikler. Bağlantı gelince ya da uygulama öne gelince yeniden denenir. */
+    start() {
+      stopped = false
+      schedule()
+      const retry = () => {
+        if (navigator.onLine !== false) schedule()
+      }
+      const onVisible = () => {
+        if (document.visibilityState === 'visible') retry()
+      }
+      window.addEventListener('online', retry)
+      document.addEventListener('visibilitychange', onVisible)
+      return () => {
+        stopped = true
+        window.removeEventListener('online', retry)
+        document.removeEventListener('visibilitychange', onVisible)
+      }
+    },
+  }
+}
+
+const StoreContext = createContext<{ state: State; dispatch: React.Dispatch<Action>; ready: boolean } | null>(null)
 
 /** userId null ise (giriş yok) veriler boş kalır ve hiçbir yere yazılmaz.
  *  Test hesabında veriler sadece cihazda tutulur, Supabase'e gitmez. */
 export function StoreProvider({ userId, children }: { userId: string | null; children: ReactNode }) {
   const remote = !!userId && userId !== DEMO_ID
-  const [cached] = useState(() => (userId ? readCache(userId) : null))
-  const [state, dispatch] = useReducer(reducer, cached ?? EMPTY)
-  const [ready, setReady] = useState(!remote || !!cached)
-  // Veritabanında olduğunu bildiğimiz son durum; yeni durumla farkı gönderilir
-  const server = useRef<State>(cached ?? EMPTY)
-  // Yazmalar sırayla gitsin diye zincir (hızlı iki dokunuş birbirini ezmesin)
-  const queue = useRef<Promise<void>>(Promise.resolve())
-
-  useEffect(() => {
-    if (!remote) return
-    let cancelled = false
-    loadAll()
-      .then((data) => {
-        if (cancelled) return
-        const fresh = migrate(data)
-        // Logosu artık olan notlar migrate'te düşer; bu fark veritabanına silme olarak gider
-        server.current = { ...fresh, missingLogos: data.missingLogos }
-        dispatch({ type: 'state/load', state: fresh })
-        setReady(true)
-      })
-      .catch(() => {
-        if (cancelled) return
-        setReady(true)
-        toast.error('Veriler yüklenemedi. İnternet bağlantısını kontrol edin.')
-      })
-    return () => {
-      cancelled = true
+  // Açılışta önce cihazdaki kopya çizilir (internetsiz açılış). Önceki oturumdan gönderilmemiş değişiklikler de oradadır.
+  const [boot] = useState(() => {
+    const cache = userId ? readCache(userId) : null
+    const base = userId ? readBase(userId) : null
+    return {
+      state: cache ?? (base ? migrate(base) : EMPTY),
+      // Onaylanmış durum eski sürümde kaydedilmediyse kopya onaylanmış sayılır
+      base: base ?? cache ?? EMPTY,
+      restored: !!(cache ?? base),
     }
-  }, [remote])
+  })
+  const [state, setState] = useState<State>(boot.state)
+  const [ready, setReady] = useState(!remote || boot.restored)
+  const [sync] = useState(() =>
+    createSync({ userId, remote, state: boot.state, base: boot.base, show: setState, ready: () => setReady(true) }),
+  )
 
-  useEffect(() => {
-    if (!userId) return
-    try {
-      localStorage.setItem(cacheKey(userId), JSON.stringify(state))
-    } catch {
-      // depolama doluysa veya kapalıysa yapacak bir şey yok
-    }
-    if (!remote || state === server.current) return
-    const before = server.current
-    server.current = state
-    queue.current = queue.current.then(() =>
-      pushChanges(before, state).catch(() => {
-        toast.error('Değişiklik kaydedilemedi. İnternet bağlantısını kontrol edin.')
-        // Ekranı veritabanındaki gerçek durumla eşitle
-        return loadAll().then((data) => {
-          const fresh = migrate(data)
-          server.current = fresh
-          dispatch({ type: 'state/load', state: fresh })
-        }).catch(() => {})
-      }),
-    )
-  }, [state, userId, remote])
+  useEffect(() => sync.start(), [sync])
 
-  /** Aşağı çekip yenileme: girişliyse veritabanından yeniden yükler; yerelde sadece ekranı tazeler (ör. gün değiştiyse) */
-  async function refresh() {
-    if (!remote) {
-      dispatch({ type: 'state/load', state: { ...state } })
-      return
-    }
-    try {
-      const data = await loadAll()
-      const fresh = migrate(data)
-      server.current = { ...fresh, missingLogos: data.missingLogos }
-      dispatch({ type: 'state/load', state: fresh })
-    } catch {
-      toast.error('Veriler yenilenemedi. İnternet bağlantısını kontrol edin.')
-    }
-  }
-
-  return <StoreContext value={{ state, dispatch, ready, refresh }}>{children}</StoreContext>
+  return <StoreContext value={{ state, dispatch: sync.dispatch, ready }}>{children}</StoreContext>
 }
 
 // eslint-disable-next-line react/only-export-components

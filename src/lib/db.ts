@@ -69,8 +69,29 @@ const paymentToRow = (p: Payment): Row => ({
   currency: p.currency ?? null,
 })
 
-function check<T>(res: { data: T | null; error: { message: string } | null }) {
-  if (res.error) throw new Error(res.error.message)
+/** Veritabanı isteği olmadı. rejected: sunucu değişikliği bilerek reddetti (ör. aynı döneme ikinci ödeme).
+ *  Değilse bağlantı ya da geçici bir sorun vardır; değişiklik cihazda kalır ve yeniden denenir. */
+export class DbError extends Error {
+  rejected: boolean
+  constructor(message: string, rejected: boolean) {
+    super(message)
+    this.name = 'DbError'
+    this.rejected = rejected
+  }
+}
+
+type Res<T> = { data: T | null; error: { message: string; code: string } | null; status: number }
+
+// Yetki, zaman aşımı ve hız sınırı cevapları geçici: değişiklik reddedilmiş sayılmaz
+const TRANSIENT = [401, 403, 408, 429]
+
+/** Sunucu hatası Postgres koduyla ve 4xx durumuyla geldiyse değişiklik reddedilmiştir.
+ *  Bağlantı hatasında ne kod var ne durum (0). */
+function check<T>(res: Res<T>): T {
+  if (res.error) {
+    const rejected = !!res.error.code && res.status >= 400 && res.status < 500 && !TRANSIENT.includes(res.status)
+    throw new DbError(res.error.message, rejected)
+  }
   return res.data as T
 }
 
@@ -90,37 +111,72 @@ export async function loadAll(): Promise<State> {
   }
 }
 
-/** İki liste arasındaki fark: eklenen/değişenler ve silinenler. */
-function diff<T>(before: T[], after: T[], key: (x: T) => string) {
-  const old = new Map(before.map((x) => [key(x), x]))
-  const now = new Map(after.map((x) => [key(x), x]))
+/** Bir listedeki fark: eklenen ya da değişenler (yeni değerleriyle) ve silinenlerin kimlikleri */
+export interface ListChanges<T> {
+  upserts: T[]
+  deletes: string[]
+}
+
+export interface StateChanges {
+  cards: ListChanges<CreditCard>
+  subscriptions: ListChanges<Subscription>
+  payments: ListChanges<Payment>
+  missingLogos: ListChanges<MissingLogo>
+}
+
+/** Aynı satır mı? Değerlere bakılır; değeri tanımsız olan alan hiç yokmuş gibi sayılır. */
+function sameRow(a: object, b: object) {
+  const x = a as Record<string, unknown>
+  const y = b as Record<string, unknown>
+  return Object.keys({ ...x, ...y }).every((k) => x[k] === y[k])
+}
+
+/** İki liste arasındaki fark: eklenen/değişenler ve silinenler. Kimliğe göre karşılaştırılır. */
+function diff<T extends object>(before: T[], after: T[], key: (x: T) => string): ListChanges<T> {
+  const old = new Map<string, T>(before.map((x) => [key(x), x] as const))
+  const now = new Set(after.map(key))
   return {
-    upserts: after.filter((x) => old.get(key(x)) !== x),
-    deletes: before.filter((x) => !now.has(key(x))).map(key),
+    upserts: after.filter((x) => {
+      const prev = old.get(key(x))
+      return !prev || !sameRow(prev, x)
+    }),
+    deletes: before.map(key).filter((k) => !now.has(k)),
   }
+}
+
+/** Önceki ve sonraki durum arasındaki fark: veritabanına ne gönderileceği. */
+export function diffState(before: State, after: State): StateChanges {
+  return {
+    cards: diff(before.cards, after.cards, (c) => c.id),
+    subscriptions: diff(before.subscriptions, after.subscriptions, (s) => s.id),
+    payments: diff(before.payments, after.payments, (p) => p.id),
+    missingLogos: diff(before.missingLogos, after.missingLogos, (m) => m.name),
+  }
+}
+
+/** Gönderilecek bir şey var mı? */
+export function hasChanges(changes: StateChanges) {
+  return Object.values(changes).some((l) => l.upserts.length > 0 || l.deletes.length > 0)
 }
 
 /** Önceki ve yeni durum arasındaki farkı veritabanına yazar. */
 export async function pushChanges(before: State, after: State) {
-  const cards = diff(before.cards, after.cards, (c) => c.id)
-  const subs = diff(before.subscriptions, after.subscriptions, (s) => s.id)
-  const payments = diff(before.payments, after.payments, (p) => p.id)
-  const logos = diff<MissingLogo>(before.missingLogos, after.missingLogos, (m) => m.name)
+  const d = diffState(before, after)
 
   // Sıra önemli: abonelik bir karta, ödeme bir aboneliğe bağlı olabilir.
   // Önce silinenler (en bağımlıdan başlayarak), sonra eklenenler (en bağımsızdan başlayarak).
-  if (payments.deletes.length) check(await supabase.from('payments').delete().in('id', payments.deletes))
-  if (subs.deletes.length) check(await supabase.from('subscriptions').delete().in('id', subs.deletes))
-  if (cards.deletes.length) check(await supabase.from('cards').delete().in('id', cards.deletes))
-  if (logos.deletes.length) check(await supabase.from('missing_logos').delete().in('name', logos.deletes))
+  if (d.payments.deletes.length) check(await supabase.from('payments').delete().in('id', d.payments.deletes))
+  if (d.subscriptions.deletes.length) check(await supabase.from('subscriptions').delete().in('id', d.subscriptions.deletes))
+  if (d.cards.deletes.length) check(await supabase.from('cards').delete().in('id', d.cards.deletes))
+  if (d.missingLogos.deletes.length) check(await supabase.from('missing_logos').delete().in('name', d.missingLogos.deletes))
 
-  if (cards.upserts.length) check(await supabase.from('cards').upsert(cards.upserts.map(cardToRow)))
-  if (subs.upserts.length) check(await supabase.from('subscriptions').upsert(subs.upserts.map(subToRow)))
-  if (payments.upserts.length) check(await supabase.from('payments').upsert(payments.upserts.map(paymentToRow)))
-  if (logos.upserts.length)
+  if (d.cards.upserts.length) check(await supabase.from('cards').upsert(d.cards.upserts.map(cardToRow)))
+  if (d.subscriptions.upserts.length) check(await supabase.from('subscriptions').upsert(d.subscriptions.upserts.map(subToRow)))
+  if (d.payments.upserts.length) check(await supabase.from('payments').upsert(d.payments.upserts.map(paymentToRow)))
+  if (d.missingLogos.upserts.length)
     check(
       await supabase
         .from('missing_logos')
-        .upsert(logos.upserts.map((m) => ({ name: m.name, first_seen: m.firstSeen })), { onConflict: 'user_id,name', ignoreDuplicates: true }),
+        .upsert(d.missingLogos.upserts.map((m) => ({ name: m.name, first_seen: m.firstSeen })), { onConflict: 'user_id,name', ignoreDuplicates: true }),
     )
 }
