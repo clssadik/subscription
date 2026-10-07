@@ -12,7 +12,7 @@ import {
   startOfDay,
   startOfMonth,
 } from 'date-fns'
-import type { CreditCard, Payment, Subscription } from './types'
+import type { BillingCycle, CreditCard, Payment, Subscription } from './types'
 
 export const toKey = (d: Date) => format(d, 'yyyy-MM-dd')
 
@@ -71,23 +71,37 @@ export function cardCyclesBetween(card: DueCard, start: Date, end: Date): CardCy
   return out
 }
 
-export function isPaid(payments: Payment[], refId: string, date: Date) {
-  const key = toKey(date)
-  return payments.some((p) => p.refId === refId && p.dueDate === key)
+/** Ödemenin dönemi: kartta kesimin ayı, aylık abonelikte ayı, yıllıkta yılı. */
+export type PeriodKind = 'card' | BillingCycle
+
+/** Dönem anahtarı. Kesim günü ya da yenilenme tarihi sonradan değişse de o dönemin "ödendi" işareti kaybolmaz. */
+export function periodKey(kind: PeriodKind, date: Date) {
+  if (kind === 'card') return format(addDays(date, -10), 'yyyy-MM')
+  return format(date, kind === 'yearly' ? 'yyyy' : 'yyyy-MM')
+}
+
+/** Bu tarihin dönemi için işaretlenmiş ödeme */
+export function findPayment(payments: Payment[], refId: string, date: Date, kind: PeriodKind) {
+  const key = periodKey(kind, date)
+  return payments.find((p) => p.refId === refId && periodKey(kind, parseISO(p.dueDate)) === key)
+}
+
+export function isPaid(payments: Payment[], refId: string, date: Date, kind: PeriodKind) {
+  return !!findPayment(payments, refId, date, kind)
 }
 
 /** Bugünden itibaren henüz "ödendi" işaretlenmemiş ilk yenilenme. */
 export function nextRenewal(sub: Subscription, payments: Payment[] = [], from: Date = new Date()) {
   const today = startOfDay(from)
   const dates = renewalsBetween(sub, today, addYears(today, 3))
-  return dates.find((d) => !isPaid(payments, sub.id, d)) ?? dates[0]
+  return dates.find((d) => !isPaid(payments, sub.id, d, sub.cycle)) ?? dates[0]
 }
 
 /** Bugünden itibaren henüz "ödendi" işaretlenmemiş ilk dönem; bir önceki dönemin son ödemesiyle birlikte */
 export function nextCardCycle(card: DueCard, payments: Payment[] = [], from: Date = new Date()) {
   const today = startOfDay(from)
   const cycles = cardCyclesBetween(card, addMonths(today, -2), addMonths(today, 4))
-  const i = Math.max(0, cycles.findIndex((c) => c.due >= today && !isPaid(payments, card.id, c.due)))
+  const i = Math.max(0, cycles.findIndex((c) => c.due >= today && !isPaid(payments, card.id, c.due, 'card')))
   return { ...cycles[i], previousDue: cycles[i - 1]?.due ?? null }
 }
 
@@ -149,7 +163,7 @@ export function monthItems(
       renewalsBetween(s, start, end).map((date) => ({
         kind: 'subscription' as const,
         date,
-        paid: isPaid(payments, s.id, date),
+        paid: isPaid(payments, s.id, date, s.cycle),
         subscription: s,
       })),
     ),
@@ -157,7 +171,7 @@ export function monthItems(
       cardCyclesBetween(c, start, end).map(({ due: date }) => ({
         kind: 'card' as const,
         date,
-        paid: isPaid(payments, c.id, date),
+        paid: isPaid(payments, c.id, date, 'card'),
         card: c,
       })),
     ),
