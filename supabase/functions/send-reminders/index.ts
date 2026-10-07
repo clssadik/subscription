@@ -150,6 +150,12 @@ function group<T extends { user_id: string }>(rows: T[] | null) {
   return map
 }
 
+/** Sorgunun satırları. Hata varsa istisna: o zaman hiçbir hatırlatma gönderilmez (istek 500 döner). */
+function rowsOf<T>(res: { data: unknown[] | null; error: { message: string } | null }, table: string) {
+  if (res.error) throw new Error(`${table} read failed: ${res.error.message}`)
+  return (res.data ?? []) as T[]
+}
+
 // ---------- Bildirim metinleri ----------
 // Tutar yok. Başlık ne olduğunu, metin ne zaman ve hangi karttan olduğunu söyler; ikisi de tek satıra sığar.
 
@@ -242,7 +248,7 @@ async function push(sub: PushRow, payload: Record<string, unknown>) {
 
 async function runReminders() {
   const now = nowInIstanbul()
-  const [{ data: pushRows }, { data: settings }, { data: subs }, { data: cards }, { data: payments }, { data: sentToday }] = await Promise.all([
+  const [pushRes, settingsRes, subsRes, cardsRes, paymentsRes, sentRes] = await Promise.all([
     db.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth'),
     db.from('user_settings').select('user_id, notify'),
     db.from('subscriptions').select('id, user_id, name, card_id, cycle, renewal_date'),
@@ -251,18 +257,26 @@ async function runReminders() {
     db.from('payments').select('user_id, ref_id, due_date').gte('due_date', toKey(dayOf(parts(now.today).y - 1, 1, 1))),
     db.from('notification_log').select('user_id, key').eq('sent_on', toKey(now.today)),
   ])
-  const phones = group(pushRows as PushRow[])
-  const subsBy = group(subs as SubRow[])
-  const cardsBy = group(cards as CardRow[])
-  const notifyBy = new Map((settings ?? []).map((s) => [s.user_id as string, { ...DEFAULT_NOTIFY, ...(s.notify as Partial<Notify>) }]))
+  // Bir okuma bile başarısızsa hiçbir şey gönderilmez: yoksa bildirimi kapalı kullanıcılara ya da ödenmiş faturalara hatırlatma gider
+  const pushRows = rowsOf<PushRow>(pushRes, 'push_subscriptions')
+  const settingsRows = rowsOf<{ user_id: string; notify: unknown }>(settingsRes, 'user_settings')
+  const subRows = rowsOf<SubRow>(subsRes, 'subscriptions')
+  const cardRows = rowsOf<CardRow>(cardsRes, 'cards')
+  const payRows = rowsOf<{ user_id: string; ref_id: string; due_date: string }>(paymentsRes, 'payments')
+  const sentRows = rowsOf<{ user_id: string; key: string }>(sentRes, 'notification_log')
+
+  const phones = group(pushRows)
+  const subsBy = group(subRows)
+  const cardsBy = group(cardRows)
+  const notifyBy = new Map(settingsRows.map((s): [string, Notify] => [s.user_id, { ...DEFAULT_NOTIFY, ...(s.notify as Partial<Notify>) }]))
   // Kullanıcı → kayıt → ödemelerin vade tarihleri (dönem eşleşmesi messagesFor içinde)
   const paidBy = new Map<string, Map<string, Day[]>>()
-  for (const p of payments ?? []) {
+  for (const p of payRows) {
     const byRef = paidBy.get(p.user_id) ?? new Map<string, Day[]>()
     byRef.set(p.ref_id, [...(byRef.get(p.ref_id) ?? []), fromKey(p.due_date)])
     paidBy.set(p.user_id, byRef)
   }
-  const sent = new Set((sentToday ?? []).map((r) => `${r.user_id}|${r.key}`))
+  const sent = new Set(sentRows.map((r) => `${r.user_id}|${r.key}`))
 
   let total = 0
   for (const [userId, devices] of phones) {
@@ -284,5 +298,11 @@ async function runReminders() {
 
 Deno.serve(async (req) => {
   if (req.headers.get('x-cron-secret') !== Deno.env.get('CRON_SECRET')) return Response.json({ error: 'unauthorized' }, { status: 401 })
-  return Response.json({ sent: await runReminders() })
+  try {
+    return Response.json({ sent: await runReminders() })
+  } catch (e) {
+    // Okuma başarısızsa hiçbir şey gönderilmedi; cron bir sonraki turda yeniden dener
+    console.error('reminders aborted:', (e as Error).message)
+    return Response.json({ error: 'aborted' }, { status: 500 })
+  }
 })
