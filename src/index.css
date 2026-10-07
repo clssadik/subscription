@@ -34,8 +34,6 @@
     --color-raised: var(--raised);
     --color-hero: var(--hero);
     --color-hero-fg: var(--hero-fg);
-    --color-nav: var(--nav);
-    --color-nav-off: var(--nav-off);
 
     /* shadcn bileşenlerinin kullandığı isimler */
     --color-ring: var(--ring);
@@ -76,8 +74,6 @@
     --raised: #FFFFFF;
     --hero: #141414;
     --hero-fg: #F2F2F2;
-    --nav: #141414;
-    --nav-off: #8A8172;
 
     --background: var(--page);
     --foreground: var(--ink);
@@ -111,8 +107,6 @@
     --raised: #2C2C2E;
     --hero: #1F4FB4;
     --hero-fg: #FFFFFF;
-    --nav: #141414;
-    --nav-off: #5C5C5C;
     /* Koyuda açık mavi: #1F4FB4 siyah üstünde 3:1'in altında kalır */
     --focus: #6E9BFF;
     color-scheme: dark;

@@ -24,7 +24,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
           viewTransitionName: "toaster",
         } as React.CSSProperties
       }
-      toastOptions={{ classNames: { toast: "cn-toast" } }}
       {...props}
     />
   )
