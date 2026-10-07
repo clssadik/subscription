@@ -7,7 +7,7 @@ import { BankBrand } from '@/components/BankMark'
 import { Segmented } from '@/components/FormBits'
 import { PinnedLayout } from '@/components/PinnedLayout'
 import { luminance } from '@/lib/color'
-import { daysUntil, dueLabel, dueThisMonth, hasDue, nextCardCycle, nextStatement, overdueCardCycles, paidThisMonth } from '@/lib/dates'
+import { daysUntil, dueLabel, dueThisMonth, hasDue, nextCardCycle, overdueCardCycles, paidThisMonth } from '@/lib/dates'
 import { formatDate } from '@/lib/format'
 import { useStore } from '@/lib/store'
 import type { CreditCard } from '@/lib/types'
@@ -44,11 +44,9 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
   const paidNow = cards.filter((c) => hasDue(c) && paidThisMonth(payments, c.id)).length
   // Afişte gösterilen kartlar: gecikme varsa gecikenler, yoksa sıradaki ya da bu ay ödenecekler
   const posterCards = overdue.length > 0 ? [...new Map(overdue.map((o) => [o.card.id, o.card])).values()] : next ? [next.card] : upcoming.map((u) => u.card)
-  // Liste: kredi kartları (hesap kesimi en yakın olan üstte) ya da banka kartları; üstteki seçiciyle
-  const credit = cards
-    .filter(hasDue)
-    .map((card) => ({ card, statement: nextStatement(card) }))
-    .sort((a, b) => a.statement.getTime() - b.statement.getTime())
+  // Liste: kredi kartları (hesap kesimi en yakın olan üstte) ya da banka kartları; üstteki seçiciyle.
+  // Kesim, kart sayfasındakiyle aynı dönemden (sıradaki ödenmemiş ekstre).
+  const credit = [...dues].sort((a, b) => a.statement.getTime() - b.statement.getTime())
   const debit = cards.filter((c) => !hasDue(c))
   const shown = credit.length === 0 ? 'debit' : debit.length === 0 ? 'credit' : tab
 
