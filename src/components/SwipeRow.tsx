@@ -150,8 +150,9 @@ export function SwipeRow({
           touchAction: 'pan-y',
         }}
         onPointerDown={(e) => {
-          // İkinci parmak ilk parmak bitene kadar yok sayılır (zamanlayıcıları ezip yetim bırakmasın)
-          if (start.current && start.current.id !== e.pointerId) return
+          // İkinci parmak ilk parmak bitene kadar yok sayılır (zamanlayıcıları ezip yetim bırakmasın). Ana parmak ise
+          // önceki parmağın bırakılması kaçmışsa bile yeni basış sayılır: hiçbir parmak yokken ana parmak gelir.
+          if (start.current && start.current.id !== e.pointerId && !e.isPrimary) return
           clearTimeout(pressTimer.current)
           clearTimeout(holdTimer.current)
           start.current = { x: e.clientX, y: e.clientY, base: x, dir: null, id: e.pointerId }

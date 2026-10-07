@@ -288,8 +288,8 @@ export function TearTicket({
           touchAction: 'pan-y',
         }}
         onPointerDown={(e) => {
-          // İkinci parmak ilk parmak bitene kadar yok sayılır
-          if (!canTear || falling || (start.current && start.current.id !== e.pointerId)) return
+          // İkinci parmak ilk parmak bitene kadar yok sayılır (ana parmak ise kaçan bırakmayı yeni basış sayar)
+          if (!canTear || falling || (start.current && start.current.id !== e.pointerId && !e.isPrimary)) return
           cancelAnimationFrame(tween.current)
           setWidth(e.currentTarget.offsetWidth)
           start.current = { x: e.clientX, y: e.clientY, id: e.pointerId, dir: null }
