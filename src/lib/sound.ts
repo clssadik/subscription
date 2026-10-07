@@ -58,7 +58,8 @@ export function play(sound: Sound) {
       if (session) session.type = 'ambient'
       ctx = new AudioContext()
     }
-    if (ctx.state === 'suspended') void ctx.resume()
+    // iPhone arama ya da Siri sonrası bağlamı 'interrupted' bırakabiliyor: çalmıyorsa yeniden başlatılır
+    if (ctx.state !== 'running') void ctx.resume()
     const t = ctx.currentTime + 0.01
     if (sound === 'undo') {
       // Geri alma: onay sesinin tersi, aşağı doğru iki çan

@@ -137,7 +137,12 @@ export function SwipeRow({
       <div
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && onTap?.()}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return
+          // Boşluk sayfayı kaydırmasın
+          e.preventDefault()
+          onTap?.()
+        }}
         className={cn('relative select-none rounded-[18px]', surface)}
         style={{
           transform: removing ? 'translateX(-110%)' : `translateX(${x}px)`,
@@ -169,7 +174,11 @@ export function SwipeRow({
             s.dir = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v'
             release()
             if (s.dir === 'h') {
-              e.currentTarget.setPointerCapture(e.pointerId)
+              try {
+                e.currentTarget.setPointerCapture(e.pointerId)
+              } catch {
+                // parmak zaten kalkmışsa yakalanamaz; hareket yine izlenir
+              }
               setDragging(true)
             }
           }
