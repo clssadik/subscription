@@ -57,11 +57,6 @@ export interface MissingLogo {
 
 export const CURRENCIES: Currency[] = ['TRY', 'USD', 'EUR']
 
-export const CARD_KIND_LABELS: Record<CardKind, string> = {
-  credit: 'Kredi kartı',
-  debit: 'Banka kartı',
-}
-
 export const CYCLE_LABELS: Record<BillingCycle, string> = {
   monthly: 'Aylık',
   yearly: 'Yıllık',
