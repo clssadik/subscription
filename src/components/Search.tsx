@@ -61,7 +61,7 @@ export function SearchSwap({ search, placeholder, children }: { search: Search; 
                 if (e.key === 'Enter') e.currentTarget.blur()
               }}
               placeholder={placeholder}
-              className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-subtle/70 [&::-webkit-search-cancel-button]:hidden"
+              className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-subtle [&::-webkit-search-cancel-button]:hidden"
             />
             {query && (
               <button
