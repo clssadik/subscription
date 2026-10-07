@@ -257,9 +257,12 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Map
   return out
 }
 
+/** TTL: 12 saat içinde ulaşmayan hatırlatma düşer (ertesi gün eski bildirim gelmesin). timeout: takılan adres turu durdurmasın. */
+const PUSH_OPTIONS = { TTL: 43200, timeout: 10000 }
+
 async function push(sub: PushRow, payload: Record<string, unknown>) {
   try {
-    await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(payload))
+    await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(payload), PUSH_OPTIONS)
     return true
   } catch (e) {
     const status = (e as { statusCode?: number }).statusCode
