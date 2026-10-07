@@ -73,32 +73,81 @@ function read(userId: string): Settings {
 /** Hesaptaki ayarlarla mı çalışılıyor (test hesabı ya da Supabase'siz kurulumda hayır) */
 const remote = (userId: string) => isConfigured && userId !== DEMO_ID
 
+// Sunucuya gönderilmemiş alanlar (profil adı, bildirimler). Yalnızca bunlar gönderilir; diğer alanlara dokunulmaz.
+type Field = 'name' | 'notify'
+const dirty = new Map<string, Set<Field>>()
+// Her yerel değişiklikte artar: gönderim sırasında yeni değişiklik olduysa bekleyen alan silinmez
+const version = new Map<string, number>()
 // Art arda değişiklikler (ör. saat seçerken) tek seferde gönderilsin
 const pending = new Map<string, number>()
-function push(userId: string, value: Settings) {
-  window.clearTimeout(pending.get(userId))
-  pending.set(
-    userId,
-    window.setTimeout(async () => {
-      pending.delete(userId)
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert({ user_id: userId, name: value.name, notify: value.notify, updated_at: new Date().toISOString() })
-      // Gönderilemezse cihazdaki kopya kalır; bir sonraki değişiklikte yine denenir
-      if (error) console.warn('Ayarlar kaydedilemedi:', error.message)
-    }, 600),
-  )
+// Aynı hesabın gönderimleri sırayla gider: sonuncusu en son değeri taşır
+const chain = new Map<string, Promise<void>>()
+// Hesaptaki ayarlar her açılışta bir kez okunur. synced: okuma bitti (ad zorunluluğu buna bakar: yeni telefonda ad
+// sunucudan gelmeden "adı yok" sanılıp ad ekranı bir an çıkmasın). Okunmadan hiçbir şey gönderilmez.
+const loaded = new Set<string>()
+const synced = new Set<string>()
+// Ekranda açık olan hesaplar: bağlantı gelince okuma ya da gönderme yeniden denenir
+const watched = new Set<string>()
+
+/** Değişen alanları bekleyenlere ekler */
+function markDirty(userId: string, prev: Settings, next: Settings) {
+  const fields = new Set(dirty.get(userId))
+  if (prev.name !== next.name) fields.add('name')
+  if (JSON.stringify(prev.notify) !== JSON.stringify(next.notify)) fields.add('notify')
+  if (fields.size === 0) return
+  dirty.set(userId, fields)
+  version.set(userId, (version.get(userId) ?? 0) + 1)
 }
 
 function write(userId: string, value: Settings, sync = true) {
-  if (sync && remote(userId)) push(userId, value)
+  const remoteWrite = sync && remote(userId)
+  if (remoteWrite) markDirty(userId, read(userId), value)
   cache.set(userId, value)
   try {
     localStorage.setItem(key(userId), JSON.stringify(value))
   } catch {
     // depolama kapalıysa sadece bu oturumda geçerli
   }
+  if (remoteWrite) scheduleSend(userId)
   listeners.forEach((l) => l())
+}
+
+/** Değişiklikler art arda gelirse tek gönderim olur. Sunucu okunmadan bir şey gönderilmez: okuma bitince bekleyenler gider. */
+function scheduleSend(userId: string) {
+  if (!synced.has(userId)) return
+  window.clearTimeout(pending.get(userId))
+  pending.set(
+    userId,
+    window.setTimeout(() => {
+      pending.delete(userId)
+      enqueue(userId)
+    }, 600),
+  )
+}
+
+function enqueue(userId: string) {
+  chain.set(
+    userId,
+    (chain.get(userId) ?? Promise.resolve()).then(() => send(userId)).catch(() => {}),
+  )
+}
+
+/** Yalnızca değişen alanları yazar (kayıt yoksa oluşturur). Diğer sütunlara dokunulmaz. */
+async function send(userId: string) {
+  const fields = dirty.get(userId)
+  if (!fields || fields.size === 0 || !synced.has(userId)) return
+  const sent = version.get(userId) ?? 0
+  const current = read(userId)
+  const row: Record<string, unknown> = { user_id: userId, updated_at: new Date().toISOString() }
+  if (fields.has('name')) row.name = current.name
+  if (fields.has('notify')) row.notify = current.notify
+  const { error } = await supabase.from('user_settings').upsert(row)
+  // Gönderilemezse cihazdaki kopya kalır; bağlantı gelince ya da bir sonraki değişiklikte yeniden denenir
+  if (error) {
+    console.warn('Ayarlar kaydedilemedi:', error.message)
+    return
+  }
+  if ((version.get(userId) ?? 0) === sent) dirty.delete(userId)
 }
 
 const subscribe = (l: () => void) => {
@@ -106,27 +155,57 @@ const subscribe = (l: () => void) => {
   return () => listeners.delete(l)
 }
 
-// Hesaptaki ayarlar her açılışta bir kez okunur. synced: okuma bitti (ad zorunluluğu buna bakar: yeni telefonda ad
-// sunucudan gelmeden "adı yok" sanılıp ad ekranı bir an çıkmasın)
-const loaded = new Set<string>()
-const synced = new Set<string>()
+/** Hesaptaki ayarları okur. Okunamazsa bağlantı gelince yeniden denenir. */
 async function loadRemote(userId: string) {
   if (loaded.has(userId)) return
   loaded.add(userId)
   const { data, error } = await supabase.from('user_settings').select('name, notify').eq('user_id', userId).maybeSingle()
+  // Hesap bu arada çıkışla temizlendiyse kopyayı yeniden yazmaz
+  if (!watched.has(userId)) return
   if (error) {
     loaded.delete(userId)
     return
   }
   synced.add(userId)
+  // Sunucu okunmadan yapılan değişiklikler: cihazdaki değerleriyle kalır ve gönderilir; diğer alanlar sunucudan gelir
+  const early = new Set(dirty.get(userId))
   if (data) {
     const notify = (data.notify ?? {}) as Partial<NotifySettings>
-    write(userId, { ...DEFAULT_SETTINGS, name: data.name ?? '', notify: { ...DEFAULT_SETTINGS.notify, ...notify } }, false)
+    const server: Settings = { ...DEFAULT_SETTINGS, name: data.name ?? '', notify: { ...DEFAULT_SETTINGS.notify, ...notify } }
+    const mine = read(userId)
+    write(
+      userId,
+      {
+        ...server,
+        name: early.has('name') ? mine.name : server.name,
+        notify: early.has('notify') ? mine.notify : server.notify,
+      },
+      false,
+    )
   } else {
     // Hesapta henüz yok (ilk giriş): cihazdakini hesaba kaydet
-    push(userId, read(userId))
+    dirty.set(userId, new Set<Field>(['name', 'notify']))
     listeners.forEach((l) => l())
   }
+  if (dirty.get(userId)?.size) enqueue(userId)
+}
+
+/** Bağlantı gelince ya da uygulama öne gelince: okunamayan hesap yeniden okunur, gönderilemeyen değişiklik yeniden gider */
+function retryAll() {
+  for (const userId of watched) {
+    if (!synced.has(userId)) void loadRemote(userId)
+    else if (dirty.get(userId)?.size) enqueue(userId)
+  }
+}
+
+let listening = false
+function listenForRetry() {
+  if (listening) return
+  listening = true
+  window.addEventListener('online', retryAll)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') retryAll()
+  })
 }
 
 /** Hesaptaki ayarlar okundu mu (test hesabında hep evet) */
@@ -138,7 +217,10 @@ export function useSettingsSynced(userId: string) {
 export function useSettings(userId: string) {
   const settings = useSyncExternalStore(subscribe, () => read(userId))
   useEffect(() => {
-    if (remote(userId)) void loadRemote(userId)
+    if (!remote(userId)) return
+    watched.add(userId)
+    listenForRetry()
+    void loadRemote(userId)
   }, [userId])
   const update = (patch: Partial<Settings>) => write(userId, { ...read(userId), ...patch })
   const updateNotify = (patch: Partial<NotifySettings>) => {
@@ -146,6 +228,24 @@ export function useSettings(userId: string) {
     write(userId, { ...current, notify: { ...current.notify, ...patch } })
   }
   return { settings, update, updateNotify }
+}
+
+/** Çıkışta bu hesabın ayar kopyasını siler; bekleyen gönderimler ve okuma da iptal edilir. */
+export function clearSettingsCache(userId: string) {
+  window.clearTimeout(pending.get(userId))
+  pending.delete(userId)
+  watched.delete(userId)
+  loaded.delete(userId)
+  synced.delete(userId)
+  dirty.delete(userId)
+  version.delete(userId)
+  cache.delete(userId)
+  try {
+    localStorage.removeItem(key(userId))
+  } catch {
+    // erişilemiyorsa yapacak bir şey yok
+  }
+  listeners.forEach((l) => l())
 }
 
 /** "1 gün önce", "Ödeme günü", "3 ve 1 gün önce" */
