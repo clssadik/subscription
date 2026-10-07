@@ -54,9 +54,11 @@ export function Logo({ serviceKey, name, size = 34, className, color, tile = tru
   return (
     <div aria-hidden className={cn('flex shrink-0 items-center justify-center', tile && 'bg-[var(--logo-tile)]', className)} style={style}>
       {logo.type === 'image' ? (
+        // Koyu kopya (on-light) açık zeminde kullanılır: kutu koyu temada beyaz, kutusuz logo açık temada beyaz yüzeyde.
+        // Kutusuz logoda bu yüzden açık temada koyu kopya, koyu temada orijinal görünür.
         <>
-          <img src={logo.url} alt="" className={cn(tile && logo.onLight && 'dark:hidden')} style={{ width: inner, height: inner }} />
-          {tile && logo.onLight && <img src={logo.onLight} alt="" className="hidden dark:block" style={{ width: inner, height: inner }} />}
+          <img src={tile ? logo.url : (logo.onLight ?? logo.url)} alt="" className={cn(logo.onLight && 'dark:hidden')} style={{ width: inner, height: inner }} />
+          {logo.onLight && <img src={tile ? logo.onLight : logo.url} alt="" className="hidden dark:block" style={{ width: inner, height: inner }} />}
         </>
       ) : (
         <svg
