@@ -267,6 +267,8 @@ function createSync(opts: {
   let base = opts.base
   // İlk okuma bitmeden hiçbir şey gönderilmez: veritabanı bilinmeden yazmak başkasının değişikliğinin üstüne yazabilir
   let loaded = false
+  // Sunucunun reddettiği yazmanın durumu. Doluyken önce okuma yapılır; gönderim, reddedilen yazma ekrandan çıkana kadar durur
+  let rejectedFrom: State | null = null
   // Ağ hatası mesajı zaten gösterildi mi; bağlantı gelip bir işlem tutunca sıfırlanır
   let alerted = false
   let stopped = false
@@ -301,12 +303,13 @@ function createSync(opts: {
   /** Gerekirse veritabanını oku, sonra bekleyen farkı gönder */
   async function work() {
     if (stopped) return
-    if (!loaded && !(await reconcile(false))) return
+    if ((!loaded || rejectedFrom) && !(await reconcile())) return
     if (hasChanges(diffState(base, latest))) await push()
   }
 
-  /** Veritabanını okur. Gönderilmemiş değişiklikler yeni veriye uygulanır; ekrandan kaybolmazlar. */
-  async function reconcile(replace: boolean): Promise<boolean> {
+  /** Veritabanını okur. Gönderilmemiş değişiklikler yeni veriye uygulanır; ekrandan kaybolmazlar.
+   *  Sunucunun reddettiği yazma (rejectedFrom) bu farkın dışında kalır: onu sunucu zaten kabul etmedi. */
+  async function reconcile(): Promise<boolean> {
     if (!userId || stopped) return false
     let data: State
     try {
@@ -318,9 +321,10 @@ function createSync(opts: {
     }
     if (stopped) return false
     const fresh = migrate(data)
-    const next = replace ? fresh : rebase(fresh, base, latest)
+    const next = rebase(fresh, rejectedFrom ?? base, latest)
     // Logosu artık olan notlar migrate'te düşer; veritabanındaki hali ham listeden okunur
     base = { ...fresh, missingLogos: data.missingLogos }
+    rejectedFrom = null
     loaded = true
     alerted = false
     show(next)
@@ -337,9 +341,10 @@ function createSync(opts: {
       await pushChanges(base, target)
     } catch (e) {
       if (e instanceof DbError && e.rejected) {
-        // Sunucu değişikliği kabul etmedi: ekran veritabanındaki gerçek duruma döner
+        // Sunucu değişikliği kabul etmedi: o yazma ekrandan çıkar, bu sırada yapılan yeni değişiklikler kalır
         toast.error('Değişiklik kaydedilemedi. İnternet bağlantısını kontrol edin.')
-        await reconcile(true)
+        rejectedFrom = target
+        await reconcile()
       } else {
         // Bağlantı sorunu: değişiklik ekranda ve cihazda kalır, bağlantı gelince yeniden denenir
         failed('Değişiklik kaydedilemedi. İnternet bağlantısını kontrol edin.')
