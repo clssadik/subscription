@@ -278,6 +278,8 @@ function createSync(opts: {
   let stopped = false
   // Sırada bekleyen bir iş varsa yenisi eklenmez; iş başlayınca en son durum okunur
   let queued = false
+  // Öne gelince ya da bağlantı gelince istenen yenileme (bekleyen değişiklik yoksa veritabanı yeniden okunur)
+  let refreshWanted = false
   // Veritabanı işleri sırayla çalışır: okuma ve yazma birbirini ezmez
   let chain: Promise<void> = Promise.resolve()
 
@@ -292,23 +294,31 @@ function createSync(opts: {
     alerted = true
   }
 
-  /** Veritabanı işini sıraya koyar */
-  function schedule() {
-    if (!remote || stopped || queued) return
+  /** Veritabanı işini sıraya koyar. refresh: bekleyen değişiklik yoksa veritabanı yeniden okunsun (öne gelince) */
+  function schedule(refresh = false) {
+    if (!remote || stopped) return
+    if (refresh) refreshWanted = true
+    if (queued) return
     queued = true
     chain = chain
       .then(() => {
         queued = false
-        return work()
+        const wanted = refreshWanted
+        refreshWanted = false
+        return work(wanted)
       })
       .catch(() => {})
   }
 
-  /** Gerekirse veritabanını oku, sonra bekleyen farkı gönder */
-  async function work() {
+  function hasPending() {
+    return hasChanges(diffState(base, latest))
+  }
+
+  /** Gerekirse veritabanını oku, sonra bekleyen farkı gönder. Yenileme istendiyse ve bekleyen yoksa okunur. */
+  async function work(refresh: boolean) {
     if (stopped) return
-    if ((!loaded || rejectedFrom) && !(await reconcile())) return
-    if (hasChanges(diffState(base, latest))) await push()
+    if ((!loaded || rejectedFrom || (refresh && !hasPending())) && !(await reconcile())) return
+    if (hasPending()) await push()
   }
 
   /** Veritabanını okur. Gönderilmemiş değişiklikler yeni veriye uygulanır; ekrandan kaybolmazlar.
@@ -372,8 +382,9 @@ function createSync(opts: {
     start() {
       stopped = false
       schedule()
+      // Bağlantı gelince ya da uygulama öne gelince: bekleyenler gider, bekleyen yoksa veritabanı yeniden okunur
       const retry = () => {
-        if (navigator.onLine !== false) schedule()
+        if (navigator.onLine !== false) schedule(true)
       }
       const onVisible = () => {
         if (document.visibilityState === 'visible') retry()
