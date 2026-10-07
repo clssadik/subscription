@@ -186,7 +186,7 @@ a[href]:focus-visible,
     text-transform: uppercase;
   }
   .pressable {
-    transition: transform 120ms ease-out, opacity 120ms ease-out;
+    transition: transform 120ms ease-out, opacity 120ms ease-out, color 120ms ease-out, background-color 120ms ease-out, border-color 120ms ease-out;
   }
   .pressable:active {
     transform: scale(0.97);
@@ -390,7 +390,7 @@ main[data-settings] { --surface: #FFFFFF; --line: #D8D8DC; --subtle: #666670; --
 .skeleton { background: var(--surface); animation: skeleton 1.4s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .screen-fade, .screen-push, .screen-pop, .check-pop, .skeleton { animation: none; }
+  .screen-fade, .screen-push, .screen-pop, .check-pop, .skeleton, .hold-nudge, .code-caret, .animate-in { animation: none; }
 }
 
 /* Liquid glass: alt menüdeki buzlu cam. Arkadan geçen içerik bulanık görünür, kenarda ince ışık parlaması. */
