@@ -260,10 +260,38 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Map
 /** TTL: 12 saat içinde ulaşmayan hatırlatma düşer (ertesi gün eski bildirim gelmesin). timeout: takılan adres turu durdurmasın. */
 const PUSH_OPTIONS = { TTL: 43200, timeout: 10000 }
 
-/** Tek telefona gönderimin sonucu: ulaştı, adres artık geçersiz (kaldırıldı) ya da geçici hata */
-type PushResult = 'ok' | 'gone' | 'error'
+/** Tek telefona gönderimin sonucu: ulaştı, adres artık geçersiz (kaldırıldı), atlandı (bilinmeyen sunucu) ya da geçici hata */
+type PushResult = 'ok' | 'gone' | 'skipped' | 'error'
+
+/** Adres yalnızca bilinen Web Push sunucularına (Chrome/Android, Safari/iPhone, Firefox, Edge/Windows) ve https ile kabul edilir */
+function isKnownPushEndpoint(endpoint: string) {
+  try {
+    const url = new URL(endpoint)
+    const host = url.hostname
+    const known =
+      host === 'fcm.googleapis.com' ||
+      host === 'push.services.mozilla.com' ||
+      host === 'updates.push.services.mozilla.com' ||
+      host.endsWith('.push.apple.com') ||
+      host.endsWith('.notify.windows.com')
+    return url.protocol === 'https:' && url.port === '' && known
+  } catch {
+    return false
+  }
+}
 
 async function push(sub: PushRow, payload: Record<string, unknown>): Promise<PushResult> {
+  if (!isKnownPushEndpoint(sub.endpoint)) {
+    // Sunucu adresi kullanıcı verisinden geliyor; tanınmayan adrese istek atılmaz (sadece sunucu adı loglanır, adresin tamamı değil)
+    let host = 'invalid url'
+    try {
+      host = new URL(sub.endpoint).host
+    } catch {
+      // geçersiz adres
+    }
+    console.warn('push skipped, unknown endpoint host:', sub.id, host)
+    return 'skipped'
+  }
   try {
     await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(payload), PUSH_OPTIONS)
     return 'ok'
