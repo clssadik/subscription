@@ -375,7 +375,8 @@ function createSync(opts: {
     /** Ekrandan gelen değişiklik: durum hemen hesaplanır ve cihaza yazılır, sonra gönderilmek üzere sıraya girer */
     dispatch(action: Action) {
       show(reducer(latest, action))
-      if (userId) writeCache(userId, latest)
+      // Çıkış yapılmışsa (durduruldu) cihazdaki kopya yeniden yazılmaz
+      if (userId && !stopped) writeCache(userId, latest)
       schedule()
     },
     /** Ekran açılınca çalışır: ilk okuma ve bekleyen değişiklikler. Bağlantı gelince ya da uygulama öne gelince yeniden denenir. */
