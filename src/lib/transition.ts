@@ -19,10 +19,12 @@ export function transition(motion: Motion, update: () => void) {
   // Sayfa arka plandayken ya da arka arkaya basınca geçiş atlanır; güncelleme yine yapılır, hata sayılmasın
   const ignore = () => {}
   t.ready.catch(ignore)
-  // Geçiş hatayla bitse bile kilit kalkmalı (yoksa hiçbir hareket kaydırmaz)
+  // Geçiş hatayla bitse bile kilit kalkmalı (yoksa hiçbir hareket kaydırmaz). Üstüne yeni bir geçiş binmişse
+  // (eski geçiş sonradan bitti) yeni geçişin kilidine dokunulmaz.
   const settle = () => {
+    if (running !== t) return
+    running = null
     busyUntil = performance.now() + SETTLE_MS
-    if (running === t) running = null
   }
   t.finished.then(() => {
     settle()
