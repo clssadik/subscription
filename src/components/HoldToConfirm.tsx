@@ -30,9 +30,28 @@ export function HoldToConfirm({ children, onConfirm, className }: { children: Re
     },
     [],
   )
+  // Uygulama arka plana geçince ya da pencere odağını kaybedince bırakılış gelmeyebilir: basılı tutma iptal edilir
+  useEffect(() => {
+    const cancel = () => {
+      if (active.current === null) return
+      active.current = null
+      window.clearTimeout(timer.current)
+      setHolding(false)
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') cancel()
+    }
+    window.addEventListener('blur', cancel)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('blur', cancel)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [])
 
-  const begin = (id: number) => {
-    if (active.current !== null) return
+  // Ana parmak (ya da tuş), bırakılması kaçmış eski basışın yerini alır ve sayaç baştan başlar; ikinci parmak yok sayılır
+  const begin = (id: number, primary: boolean) => {
+    if (active.current !== null && active.current !== id && !primary) return false
     active.current = id
     startedAt.current = performance.now()
     window.clearTimeout(timer.current)
@@ -42,6 +61,7 @@ export function HoldToConfirm({ children, onConfirm, className }: { children: Re
       setHolding(false)
       onConfirm()
     }, HOLD)
+    return true
   }
   const end = (id: number) => {
     if (active.current !== id) return
@@ -61,13 +81,23 @@ export function HoldToConfirm({ children, onConfirm, className }: { children: Re
   return (
     <button
       type="button"
-      onPointerDown={(e) => begin(e.pointerId)}
+      onPointerDown={(e) => {
+        if (!begin(e.pointerId, e.isPrimary)) return
+        // Basılı tutan parmak düğmeye yakalanır: dışarı çıksa da bırakılışı bu düğmeye gelir
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId)
+        } catch {
+          // parmak zaten kalkmışsa yakalanamaz; bırakılış yine onPointerUp ile gelir
+        }
+      }}
       onPointerUp={(e) => end(e.pointerId)}
       onPointerLeave={(e) => end(e.pointerId)}
       onPointerCancel={(e) => end(e.pointerId)}
+      // Yakalama kalkınca (bırakılış ya da iptal) basılı tutma biter
+      onLostPointerCapture={(e) => end(e.pointerId)}
       onContextMenu={(e) => e.preventDefault()}
       // Klavyeyle: Enter basılı tutulunca da aynı
-      onKeyDown={(e) => !e.repeat && (e.key === 'Enter' || e.key === ' ') && begin(KEYBOARD)}
+      onKeyDown={(e) => !e.repeat && (e.key === 'Enter' || e.key === ' ') && begin(KEYBOARD, true)}
       onKeyUp={() => end(KEYBOARD)}
       className={cn('relative overflow-hidden select-none', className)}
     >
