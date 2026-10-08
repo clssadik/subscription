@@ -15,6 +15,8 @@ const SUMMARY_OPTIONS: { value: NotifySettings['summary']; label: string }[] = [
   { value: 'weekly', label: 'Haftalık' },
   { value: 'monthly', label: 'Aylık' },
 ]
+// Sunucu 15 dakikada bir bakar; günün son turu 23:45'tir (supabase/functions/send-reminders)
+const LAST_TIME = '23:45'
 
 /** Bildirim ayarları ve bu telefonun bildirim izni. Gönderen: supabase/functions/send-reminders (her 15 dakikada). */
 export function NotificationSettings({ userId, onBack }: { userId: string; onBack: () => void }) {
@@ -22,6 +24,8 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
   const { settings, updateNotify } = useSettings(userId)
   const n = settings.notify
   const off = !n.enabled
+  // Eski kayıtta 23:45'ten sonrası kalmış olabilir; sunucu o hatırlatmayı zaten 23:45'te gönderir
+  const time = n.time > LAST_TIME ? LAST_TIME : n.time
 
   const setOverride = (id: string, value: string) => {
     haptic()
@@ -51,16 +55,19 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
           <CheckList multiple options={DAY_OPTIONS} value={n.cardDays} onChange={(cardDays) => updateNotify({ cardDays })} disabled={off} />
         </Group>
 
-        <Group title="Saat" footer="Bütün bildirimler bu saatte gelir.">
+        <Group title="Saat" footer="Bildirimler 15 dakikalık aralıklarla gelir.">
           <Row
             label="Bildirim saati"
-            value={n.time}
+            value={time}
             select={
               <input
                 type="time"
                 aria-label="Bildirim saati"
-                value={n.time}
-                onChange={(e) => e.target.value && updateNotify({ time: e.target.value })}
+                value={time}
+                max={LAST_TIME}
+                step={900}
+                // 23:45'ten sonrası seçilemez: en geç saate çekilir
+                onChange={(e) => e.target.value && updateNotify({ time: e.target.value > LAST_TIME ? LAST_TIME : e.target.value })}
                 className="absolute inset-0 text-base opacity-0"
               />
             }
