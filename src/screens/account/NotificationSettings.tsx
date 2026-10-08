@@ -45,8 +45,8 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
         <Row label="Bildirimler" trailing={<Switch label="Bildirimler" checked={n.enabled} onChange={(enabled) => updateNotify({ enabled })} />} />
       </Group>
 
-      {/* Hatırlatmalar kapalıyken ayarlar soluk ve dokunulamaz */}
-      <div className={cn('transition-opacity', off && 'pointer-events-none opacity-40')} aria-disabled={off}>
+      {/* Hatırlatmalar kapalıyken ayarlar soluk ve dokunulamaz: inert ile klavye ve ekran okuyucu da ulaşamaz */}
+      <div className={cn('transition-opacity', off && 'pointer-events-none opacity-40')} inert={off}>
         <Group title="Abonelik yenilenmesi">
           <CheckList multiple options={DAY_OPTIONS} value={n.subscriptionDays} onChange={(subscriptionDays) => updateNotify({ subscriptionDays })} disabled={off} />
         </Group>
