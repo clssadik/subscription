@@ -34,17 +34,17 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
   const onCard = state.subscriptions.filter((s) => s.cardId === card.id).sort((a, b) => monthlyCost(b) - monthlyCost(a))
   const monthlyTry = onCard.filter((s) => s.currency === 'TRY').reduce((sum, s) => sum + monthlyCost(s), 0)
 
-  // Ekstrenin ödeme kaydını açar ya da kaldırır (son ödeme gününe göre tutulur)
-  function toggleDue(day: Date) {
-    dispatch({ type: 'payment/toggle', kind: 'card', refId: card!.id, dueDate: toKey(day) })
+  // Ekstrenin ödeme kaydını açar ya da kaldırır (son ödeme gününe göre tutulur). Yön açıkça verilir: geri alma tekrar işaretlemesin
+  function setDue(day: Date, paid: boolean) {
+    dispatch({ type: 'payment/toggle', kind: 'card', refId: card!.id, dueDate: toKey(day), paid })
   }
 
   function markPaid(c: CardCycle) {
     haptic()
     play('paid')
-    toggleDue(c.due)
+    setDue(c.due, true)
     toast(`${card!.bankName} ${formatDate(c.statement, 'LLLL')} ekstresi ödendi`, {
-      action: { label: 'Geri al', onClick: () => toggleDue(c.due) },
+      action: { label: 'Geri al', onClick: () => setDue(c.due, false) },
     })
   }
 
@@ -55,7 +55,7 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
   function undoPaid(day: Date) {
     haptic()
     play('undo')
-    toggleDue(day)
+    setDue(day, false)
   }
 
   return (
