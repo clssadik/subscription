@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { reloadWhenIdle } from './reload'
 
 // Tema tercihi bu cihazda saklanır. "auto" = telefonun ayarını izle.
 // Sayfa açılırken ilk uygulama index.html'deki küçük betikte yapılır (yanıp sönme olmasın diye).
@@ -31,7 +32,8 @@ let applied: boolean | null = null
 function apply() {
   const dark = isDark()
   if (standalone && applied !== null && applied !== dark) {
-    location.reload()
+    // Yazı yazılırken ya da açık bir panelde hemen yenilenmez: taslak bitince yenilenir (src/lib/reload.ts)
+    reloadWhenIdle()
     return
   }
   applied = dark
