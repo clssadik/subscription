@@ -322,9 +322,10 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
   return (
     <form onSubmit={submit} className="mt-4 flex flex-1 flex-col gap-3">
       <FieldGroup>
-        <Field label="Ad" htmlFor="s-name">
+        <Field label="Ad">
           <SuggestInput
-            id="s-name"
+            id="s-title"
+            label="Ad"
             value={name}
             onChange={setName}
             placeholder="Netflix"
@@ -441,9 +442,10 @@ function CardInputs({ value, onChange, idPrefix, existing }: { value: NewCard; o
         options={[{ value: 'credit', label: 'Kredi kartı' }, { value: 'debit', label: 'Banka kartı' }]}
       />
       <FieldGroup>
-        <Field label="Banka adı" htmlFor={`${idPrefix}-bank`}>
+        <Field label="Banka adı">
           <SuggestInput
             id={`${idPrefix}-bank`}
+            label="Banka adı"
             value={value.bankName}
             onChange={(bankName) => set({ bankName })}
             placeholder="Garanti BBVA"
@@ -453,8 +455,22 @@ function CardInputs({ value, onChange, idPrefix, existing }: { value: NewCard; o
           />
           {value.bankName.trim() && <span aria-hidden className="size-4 shrink-0 rounded-full" style={{ background: colorFor(value.bankName, existing) }} />}
         </Field>
-        <Field label="Son 4 hane" htmlFor={`${idPrefix}-last4`}>
-          <input id={`${idPrefix}-last4`} className={cn(inputClass, 'num tracking-widest')} inputMode="numeric" autoComplete="off" value={value.last4} onChange={(e) => set({ last4: last4Of(e.target.value) })} placeholder="1234" />
+        <Field label="Son 4 hane">
+          <input
+            // Kimlikte "last", etikette "Son" geçince iPhone soyad alanı sanıp kart formunda "Kişiyi Otomatik Doldur" çubuğu çıkarıyordu:
+            // ad alanlarındaki gibi arama türü, adında "search", etikete bağlı değil (bkz. SuggestInput)
+            id={`${idPrefix}-digits`}
+            name={`${idPrefix}-digits-search`}
+            type="search"
+            aria-label="Son 4 hane"
+            className={cn(inputClass, 'num tracking-widest appearance-none [&::-webkit-search-cancel-button]:hidden')}
+            inputMode="numeric"
+            autoComplete="off"
+            autoCorrect="off"
+            value={value.last4}
+            onChange={(e) => set({ last4: last4Of(e.target.value) })}
+            placeholder="1234"
+          />
         </Field>
         {/* Banka kartında kesim yok: satır yumuşakça kapanır / açılır. Kapalıyken odaklanılmaz (inert) */}
         <div
@@ -538,6 +554,7 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
  */
 function SuggestInput<T extends { key: string; name: string }>({
   id,
+  label,
   value,
   onChange,
   placeholder,
@@ -546,6 +563,8 @@ function SuggestInput<T extends { key: string; name: string }>({
   onPick,
 }: {
   id: string
+  /** Alanın adı (ekran okuyucu). Görünen etiket alana bağlanmaz: iPhone "Ad" etiketinden kişi formu sanıyordu */
+  label: string
   value: string
   onChange: (v: string) => void
   placeholder: string
@@ -569,7 +588,7 @@ function SuggestInput<T extends { key: string; name: string }>({
       <input
         ref={inputRef}
         id={id}
-        className={inputClass}
+        className={cn(inputClass, 'appearance-none [&::-webkit-search-cancel-button]:hidden')}
         value={value}
         onChange={(e) => {
           onChange(e.target.value)
@@ -579,7 +598,15 @@ function SuggestInput<T extends { key: string; name: string }>({
         onBlur={leave}
         placeholder={placeholder}
         maxLength={maxLength}
+        // iPhone ad gibi görünen alanda klavyenin üstüne "Kişiyi Otomatik Doldur" çubuğu koyuyor (autoComplete="off"u yok sayıyor).
+        // Arama alanı, adında "search" geçmesi ve etiketin bağlı olmaması onu bundan vazgeçirir; öneri listesi zaten bizim.
+        // Silme çarpısı gizli: görünüm düz yazı alanıyla aynı (bkz. Search.tsx).
+        aria-label={label}
+        name={`${id}-search`}
+        type="search"
+        enterKeyHint="next"
         autoComplete="off"
+        autoCorrect="off"
       />
       {focused && hints.length > 0 && (
         <ul
