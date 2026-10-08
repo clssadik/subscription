@@ -55,6 +55,9 @@ const msUntilMidnight = () => {
 
 export default function App() {
   const user = useUser()
+  // Ad ve bildirim ekranları açıkken arkadaki uygulama inert olur (dokunulmaz, odaklanılmaz). Ekranlar açık olduğunu kendisi bildirir.
+  const [nameGate, setNameGate] = useState(false)
+  const [notifyGate, setNotifyGate] = useState(false)
   // Telefonda tarayıcıdan açıldıysa önce ana ekrana ekleme rehberi
   const [gate, setGate] = useState(shouldShowInstallGate)
   if (gate)
@@ -68,20 +71,24 @@ export default function App() {
         }
       />
     )
+  const gated = nameGate || notifyGate
   return (
     <>
       {/* Giriş yapılmamışken sadece karşılama / giriş ekranları (alt menü yok) */}
       {user === null && <AuthFlow />}
+      {/* Ekran açıkken uygulama dokunulmaz ve odaklanılmaz; ekranlar bunun üstünde kalır */}
       {user && (
-        // key: hesap değişince veriler sıfırdan yüklensin
-        <StoreProvider key={user.id} userId={user.id}>
-          <Main user={user} />
-        </StoreProvider>
+        <div inert={gated} aria-hidden={gated || undefined}>
+          {/* key: hesap değişince veriler sıfırdan yüklensin */}
+          <StoreProvider key={user.id} userId={user.id}>
+            <Main user={user} />
+          </StoreProvider>
+        </div>
       )}
-      {/* İlk girişte bir kez bildirim izni (sadece ana ekran uygulamasında, izin henüz sorulmadıysa) */}
-      {user && <PermissionGate />}
+      {/* İlk girişte bir kez bildirim izni (sadece ana ekran uygulamasında, izin henüz sorulmadıysa). Ad ekranı açıksa altında kalır */}
+      {user && <PermissionGate covered={nameGate} onOpenChange={setNotifyGate} />}
       {/* Ad zorunlu: adı olmayan herkes önce adını girer (bildirim izninin de üstünde, ilk o görünür) */}
-      {user && <NameGate userId={user.id} />}
+      {user && <NameGate userId={user.id} onOpenChange={setNameGate} />}
       <Toaster position="top-center" />
     </>
   )

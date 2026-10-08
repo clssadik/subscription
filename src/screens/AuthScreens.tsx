@@ -1,5 +1,5 @@
 import { ArrowRightIcon, ChevronLeftIcon } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { siApple, siGoogle } from 'simple-icons'
 import { toast } from 'sonner'
 import { Brand } from '@/components/Brand'
@@ -381,13 +381,20 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
  * Giriş yaptıktan sonra ad zorunlu: adı olmayan herkes (yeni ya da eski hesap) önce adını girer, atlanamaz.
  * Hesaptaki ayarlar okunmadan gösterilmez (yeni telefonda ad sunucudan birkaç an sonra geliyor).
  * Giriş ekranlarıyla aynı düzen; klavye açılınca sayfa kaymaz (data-keep-page, src/lib/keyboard.ts).
+ * onOpenChange: açık olup olmadığını App'e bildirir; arkadaki uygulama o sırada inert olur (src/App.tsx).
  */
-export function NameGate({ userId }: { userId: string }) {
+export function NameGate({ userId, onOpenChange }: { userId: string; onOpenChange: (open: boolean) => void }) {
   const { settings, update } = useSettings(userId)
   const synced = useSettingsSynced(userId)
   const [name, setName] = useState('')
   const [error, setError] = useState('')
-  if (!synced || settings.name.trim()) return null
+  const open = synced && !settings.name.trim()
+
+  useLayoutEffect(() => {
+    onOpenChange(open)
+    return () => onOpenChange(false)
+  }, [open, onOpenChange])
+  if (!open) return null
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -411,6 +418,7 @@ export function NameGate({ userId }: { userId: string }) {
             <label htmlFor="profile-name" className="sr-only">Ad soyad</label>
             <input
               id="profile-name"
+              autoFocus
               value={name}
               onChange={(e) => {
                 setName(e.target.value)
