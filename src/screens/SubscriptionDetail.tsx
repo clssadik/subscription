@@ -71,7 +71,7 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
         {/* Ödeme kartı (fiş): tutar en büyük şey. Bu dönemin ödemesi işaretlenebiliyorsa koçan sağa çekilip koparılır = ödendi. */}
         <TearTicket
           canTear={canMarkPaid(next)}
-          hint={daysUntil(next) <= 0 ? 'Kesip ödendi işaretle' : `${formatDate(next, 'd MMMM')} ödemesini kesip işaretle`}
+          hint={daysUntil(next) <= 0 ? 'Kesip ödendi olarak işaretleyin' : `${formatDate(next, 'd MMMM')} ödemesini kesip işaretleyin`}
           onTear={markPaid}
           restore={restored}
           // Gelecek ayların ödemesi o ay gelmeden işaretlenemez: koçanda nedeni yazar (bu ay ödendiyse alttaki not yeter)
