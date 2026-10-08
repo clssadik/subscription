@@ -162,6 +162,14 @@ a[href]:focus-visible,
   outline-offset: 2px;
 }
 
+/* Ayar satırındaki görünmez açılır liste ya da saat alanı odaklanınca satırın kendisi halkalanır (SettingsList → Row).
+   Halka satırın içinden çizilir: grup kenarında (overflow-hidden) kırpılmasın diye. */
+.settings-group > label:has(> select:focus-visible),
+.settings-group > label:has(> input:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
 @layer utilities {
   /* Rakamlar: Space Grotesk. Varsayılan orta kalınlık; .num-bold sadece önemli tutarlar için */
   .num {
