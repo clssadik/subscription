@@ -513,7 +513,7 @@ function CardFields({ id, preset, onDone }: { id?: string; preset: NonNullable<S
 
 /**
  * Öneri listeli yazı alanı: yazarken adı yazılanla başlayanlar alanın altında açılan bir listede çıkar (iPhone menüsü gibi).
- * Liste alttaki alanların üstüne biner, formu büyütmez. Dokununca ad dolar; alandan çıkınca liste kapanır.
+ * Liste alttaki alanların üstüne biner, formu büyütmez. Dokununca ad dolar; alanın ya da listenin dışına çıkınca liste kapanır.
  */
 function SuggestInput<T extends { key: string; name: string }>({
   id,
@@ -533,11 +533,20 @@ function SuggestInput<T extends { key: string; name: string }>({
   onPick: (item: T) => void
 }) {
   const [focused, setFocused] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+  // Liste yalnızca odak ne alanda ne listede kalınca kapanır: Tab ile öneriye geçilince açık kalır
+  const leave = (e: React.FocusEvent) => {
+    const next = e.relatedTarget
+    if (next && (next === inputRef.current || listRef.current?.contains(next))) return
+    setFocused(false)
+  }
   const q = normalize(value)
   const hints = !q || items.some((i) => normalize(i.name) === q) ? [] : items.filter((i) => normalize(i.name).startsWith(q)).slice(0, 6)
   return (
     <>
       <input
+        ref={inputRef}
         id={id}
         className={inputClass}
         value={value}
@@ -546,15 +555,17 @@ function SuggestInput<T extends { key: string; name: string }>({
           setFocused(true)
         }}
         onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        onBlur={leave}
         placeholder={placeholder}
         maxLength={maxLength}
         autoComplete="off"
       />
       {focused && hints.length > 0 && (
         <ul
+          ref={listRef}
           // Alttan açılan sayfa bu dokunuşu sürükleme sanmasın
           data-vaul-no-drag
+          onBlur={leave}
           className="absolute top-[calc(100%+10px)] -left-2 z-30 w-[min(15rem,calc(100%+1rem))] overflow-hidden rounded-[14px] bg-surface py-1 shadow-[0_10px_30px_rgb(0_0_0/0.18),0_0_0_0.5px_rgb(0_0_0/0.08)] dark:bg-[#262626] dark:shadow-[0_10px_30px_rgb(0_0_0/0.6),0_0_0_0.5px_rgb(255_255_255/0.12)]"
         >
           {hints.map((i) => (
@@ -575,7 +586,7 @@ function SuggestInput<T extends { key: string; name: string }>({
                   onPick(i)
                   setFocused(false)
                 }}
-                className="w-full px-3.5 py-2.5 text-left text-base active:bg-line"
+                className="w-full px-3.5 py-2.5 text-left text-base active:bg-line focus-visible:bg-line"
               >
                 {i.name}
               </button>
