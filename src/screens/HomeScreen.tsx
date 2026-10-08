@@ -304,9 +304,15 @@ export function HomeScreen({ nav }: { nav: Nav }) {
                 <ul className="grid gap-1.5">{overdue.map(row)}</ul>
               </>
             )}
-            {/* Bu ayın bütün ödemeleri; soldaki yuvarlak "ödendi" işareti */}
-            <h2 className="label mt-3 mb-2 px-1 text-subtle">{formatDate(new Date(), 'LLLL')} ödemeleri</h2>
-            <ul className="grid gap-1.5">{items.map(row)}</ul>
+            {/* Bu ayın bütün ödemeleri; soldaki yuvarlak "ödendi" işareti. Ay boşsa başlık yazılmaz */}
+            {items.length > 0 ? (
+              <>
+                <h2 className="label mt-3 mb-2 px-1 text-subtle">{formatDate(new Date(), 'LLLL')} ödemeleri</h2>
+                <ul className="grid gap-1.5">{items.map(row)}</ul>
+              </>
+            ) : (
+              overdue.length === 0 && <p className="rounded-[18px] bg-surface px-3.5 py-3 text-sm text-subtle">Henüz ödeme yok.</p>
+            )}
         </div>
       </div>
     </div>
