@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useSyncExternalStore } from 'react'
 import { isInstalled, isIOS } from './install'
 import { isConfigured, supabase } from './supabase'
 
@@ -103,8 +103,22 @@ async function subscribeAndSave(reg: ServiceWorkerRegistration) {
   await save(sub)
 }
 
-// Son bilinen durum: sayfa tekrar açılınca beklemeden doğru hâli çizilir (yoksa önce boş kutu, sonra içerik gelip sayfa kayıyordu)
+// Son bilinen durum: sayfa tekrar açılınca beklemeden doğru hâli çizilir (yoksa önce boş kutu, sonra içerik gelip sayfa kayıyordu).
+// Durum tek yerde tutulur ve değişince bütün ekranlara bildirilir: Hesap satırı ile Bildirimler sayfası aynı durumu gösterir.
 let last: PushState | null = null
+const listeners = new Set<() => void>()
+
+function setState(s: PushState) {
+  last = s
+  listeners.forEach((fn) => fn())
+}
+
+function subscribeState(fn: () => void) {
+  listeners.add(fn)
+  return () => {
+    listeners.delete(fn)
+  }
+}
 
 /** Beklemeden bilinebilen durum. İzin verilmişse aboneliğin hâlâ durduğu varsayılır; current() bir an sonra doğrular. */
 function quick(): PushState {
@@ -124,7 +138,7 @@ async function current(): Promise<PushState> {
   const reg = await swReady()
   if (!reg) return 'unsupported'
   try {
-    // Adres her açılışta yeniden kaydedilir (telefon adresi değiştirebiliyor, hesap değişmiş olabilir).
+    // Adres her açılışta ve uygulama öne gelince yeniden kaydedilir (telefon adresi değiştirebiliyor, hesap değişmiş olabilir).
     // İzin zaten verilmiş; abonelik yoksa soru sorulmadan yeniden kurulur
     await subscribeAndSave(reg)
     return 'on'
@@ -137,21 +151,34 @@ async function current(): Promise<PushState> {
   }
 }
 
+// Aynı anda iki kontrol çalışmasın: sürmekte olan kontrol bitene kadar yeni istek onun sonucunu bekler
+let checking: Promise<void> | null = null
+
+/** Durumu yeniden kontrol eder (adresi de yeniden kaydeder) ve bütün ekranlara bildirir */
+function refresh(): Promise<void> {
+  if (!checking) {
+    checking = current()
+      .then(setState, () => setState('unsupported'))
+      .finally(() => {
+        checking = null
+      })
+  }
+  return checking
+}
+
 /** Bu telefonun bildirim durumu; enable izin ister ve kaydeder (dokunuşun içinde çağrılmalı) */
 export function usePush() {
-  const [state, setRaw] = useState<PushState>(quick)
-  const setState = useCallback((s: PushState) => {
-    last = s
-    setRaw(s)
-  }, [])
+  const state = useSyncExternalStore(subscribeState, quick)
 
   useEffect(() => {
-    let alive = true
-    current().then((s) => alive && setState(s), () => alive && setState('unsupported'))
-    return () => {
-      alive = false
+    // iPhone Ayarlar'dan izin değişmiş olabilir: uygulama öne gelince yeniden bakılır
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void refresh()
     }
-  }, [setState])
+    void refresh()
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
 
   const enable = useCallback(async () => {
     const permission = await Notification.requestPermission()
@@ -167,7 +194,7 @@ export function usePush() {
     // Kaydedilemezse hata dışarı çıkar (ekrandaki uyarı gösterir); durum "açık" olmaz
     await subscribeAndSave(reg)
     setState('on')
-  }, [setState])
+  }, [])
 
   return { state, enable }
 }
