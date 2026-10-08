@@ -33,6 +33,21 @@ function clearAccount(userId: string) {
   clearSettingsCache(userId)
 }
 
+// Her hesabın bu cihazdaki kopyalarının anahtar önekleri (kopya: önek + kullanıcı kimliği)
+const ACCOUNT_KEYS = ['abonelik-takip:cache:', 'abonelik-takip:base:', 'abonelik-takip:settings:']
+
+/** Oturum yokken cihazda kalmış hesap kopyalarını siler. Hangi hesap olduğu bilinmiyorsa (açılışta süresi dolmuş oturum) hepsi silinir.
+ *  Test hesabının kopyası kalır. */
+function clearLeftovers() {
+  try {
+    for (const key of Object.keys(localStorage)) {
+      if (ACCOUNT_KEYS.some((prefix) => key.startsWith(prefix) && key !== prefix + DEMO_ID)) localStorage.removeItem(key)
+    }
+  } catch {
+    // depolama kapalıysa yapacak bir şey yok
+  }
+}
+
 /** Giriş yapmış kullanıcı; yoksa null, oturum henüz okunmadıysa undefined. */
 export function useUser() {
   const [user, setUser] = useState<User | null | undefined>(() =>
@@ -47,13 +62,22 @@ export function useUser() {
       else setUser(next)
     }
     if (!isConfigured) return onDemoAuth(() => apply(isDemoSignedIn() ? demoUser : null))
-    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null))
+    supabase.auth.getSession().then(({ data, error }) => {
+      apply(data.session?.user ?? null)
+      // Hiç oturum kaydı yoksa (hata da yoksa) cihazdaki kalıntılar silinir. Hata varsa oturum yine kayıtlıdır (ör. çevrimdışı açılış): dokunulmaz
+      if (!data.session && !error) {
+        clearLeftovers()
+        void forgetDevice()
+      }
+    })
     // Son oturum açık kalan hesap: oturum zorla kapanırsa (süresi doldu, başka sekmede çıkıldı) onun cihazdaki kopyası silinir
     let lastId: string | null = null
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) lastId = session.user.id
-      else if (event === 'SIGNED_OUT' && lastId) {
-        clearAccount(lastId)
+      else if (event === 'SIGNED_OUT') {
+        // Hesap bilinmiyorsa (açılışta süresi dolmuş oturum) bu cihazdaki bütün hesap kopyaları silinir
+        if (lastId) clearAccount(lastId)
+        else clearLeftovers()
         void forgetDevice()
         lastId = null
       }
