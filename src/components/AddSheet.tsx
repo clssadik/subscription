@@ -136,19 +136,41 @@ const KEYBOARD_EASE = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
 // Panelin ref'i vaul'un ref zincirinden geçseydi söküm işlevi kaybolur ve gözlemciler panel kapandıktan sonra da kalırdı.
 function glideWithKeyboard(scroller: HTMLDivElement | null) {
   const el = scroller?.closest<HTMLDivElement>('[data-vaul-drawer]')
-  if (!el) return
+  if (!scroller || !el) return
+  const box = scroller
   const vv = window.visualViewport
   // Panelin üst kenarının yeri, dönüşümlerden (açılış, sürükleme) bağımsız: alt boşluk + boy
   const reach = () => (parseFloat(el.style.bottom) || 0) + el.offsetHeight
   const keyboardOpen = () => !!vv && vv.height < window.innerHeight - 50
   // Şu an ekranda göründüğü kaydırma (süren kaymanın o anki yeri)
   const currentShift = () => parseFloat(getComputedStyle(el).translate.split(' ')[1] ?? '0') || 0
+  // Kesmenin kaldırıldığı kaymanın sırası: yalnızca en son kayma kesmeyi geri koyar (yeni kayma eskisini iptal edince karışmasın)
+  let unclipped = 0
   /** Panel o an göründüğü yerden (fromY kadar kaymış) gerçek yerine kayar */
   const glideFrom = (fromY: number) => {
     for (const a of el.getAnimations()) if (a.id === 'keyboard-glide') a.cancel()
+    const turn = ++unclipped
+    box.style.overflowY = ''
+    el.style.caretColor = ''
     if (Math.abs(fromY) < 2) return
     const glide = el.animate([{ translate: `0 ${fromY}px` }, { translate: '0 0' }], { duration: KEYBOARD_MS, easing: KEYBOARD_EASE })
     glide.id = 'keyboard-glide'
+    // Klavye açılırken vaul paneli hemen kısaltıyor: kayma boyunca formun altı (Kart, Kaydet) kesilip yerinde boş şerit kalıyordu
+    // (2026-10-08 ekran kaydı). Kayma süresince içerik kesilmez; panelin altından taşıp yükselen klavyenin arkasına girer.
+    // İmleç de bu sürede gizli: iPhone onu ayrı çiziyor, panelle birlikte kaymıyor, ayrı hareket ediyormuş gibi görünüyordu.
+    if (el.offsetHeight < restingHeight - 1) {
+      box.style.overflowY = 'visible'
+      el.style.caretColor = 'transparent'
+      const done = () => {
+        if (turn !== unclipped) return
+        box.style.overflowY = ''
+        el.style.caretColor = ''
+      }
+      glide.addEventListener('finish', done)
+      glide.addEventListener('cancel', done)
+      // Olay kaçarsa (sayfa arka plandaysa animasyon olayları gecikir) kesme yine geri gelir
+      window.setTimeout(done, KEYBOARD_MS + 50)
+    }
   }
 
   let size = `${el.style.height}|${el.style.bottom}`
