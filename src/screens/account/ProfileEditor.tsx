@@ -1,9 +1,11 @@
 import type { User } from '@supabase/supabase-js'
 import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { Group, Row, SubPageHeader } from '@/components/SettingsList'
 import { inputClass } from '@/components/FormBits'
 import { formatDate } from '@/lib/format'
 import { initials, useSettings } from '@/lib/settings'
+import { hasCardNumber } from '@/lib/text'
 
 /**
  * Profil: ad yazılırken taslakta durur, dışarı dokununca ya da Enter'a basınca kaydedilir.
@@ -18,8 +20,9 @@ export function ProfileEditor({ user, onBack }: { user: User; onBack: () => void
 
   function commit() {
     const value = name.trim().replace(/\s+/g, ' ').slice(0, 40)
-    // Ad ekranıyla aynı kural: en az 2 harf. Kısa ya da boş ad kaydedilmez, kayıtlı ad geri gelir.
-    if (value.length >= 2 && value !== settings.name) update({ name: value })
+    // Ad ekranıyla aynı kural: en az 2 harf, kart numarası yok. Uymayan ad kaydedilmez, kayıtlı ad geri gelir.
+    if (hasCardNumber(value)) toast.error('Ada kart numarası yazılmaz.')
+    else if (value.length >= 2 && value !== settings.name) update({ name: value })
     setDraft(null)
   }
 

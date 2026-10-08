@@ -13,6 +13,7 @@ import { haptic } from '@/lib/haptics'
 import { holdKeyboard } from '@/lib/keyboard'
 import { useSettings, useSettingsSynced } from '@/lib/settings'
 import { isConfigured, supabase } from '@/lib/supabase'
+import { hasCardNumber } from '@/lib/text'
 import { transition } from '@/lib/transition'
 import { cn } from '@/lib/utils'
 
@@ -412,6 +413,7 @@ export function NameGate({ userId, onOpenChange }: { userId: string; onOpenChang
     e.preventDefault()
     const value = name.trim().replace(/\s+/g, ' ')
     if (value.length < 2) return setError('Ad soyad girin.')
+    if (hasCardNumber(value)) return setError('Ada kart numarası yazılmaz.')
     haptic()
     document.querySelector<HTMLInputElement>('#profile-name')?.blur()
     transition('fade', () => update({ name: value.slice(0, 40) }))

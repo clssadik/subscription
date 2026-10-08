@@ -10,6 +10,7 @@ import { BANKS, bankColor, bankName as fullBankName, cardColor } from '@/lib/ban
 import { isValidAmount, parseAmount } from '@/lib/format'
 import { SERVICES, getService, matchService, normalize } from '@/lib/services'
 import { newId, useStore } from '@/lib/store'
+import { hasCardNumber } from '@/lib/text'
 import { useUndoable } from '@/lib/undo'
 import { CURRENCIES, type BillingCycle, type CardKind, type CreditCard, type Currency, type Subscription } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -370,8 +371,6 @@ const NEW_CARD = '__new'
 /** Kart formunun alanları (kart ekleme ve abonelik eklerken yeni kart) */
 type NewCard = { bankName: string; last4: string; kind: CardKind; statementDay: number | null }
 
-/** Kart numarası gibi: altı ya da daha çok hane. Ad alanlarına tam kart numarası yazılıp kaydedilmesin. */
-const hasCardNumber = (text: string) => text.replace(/\D/g, '').length >= 6
 
 function cardProblem(c: NewCard) {
   if (!c.bankName.trim()) return 'Banka adı girin.'

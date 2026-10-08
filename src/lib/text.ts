@@ -1,5 +1,8 @@
 // Arama ve eşleştirme için yazım farklarını siler: "İş Bankası" ve "is bankasi" aynı sonucu verir.
 
+/** Kart numarası gibi: altı ya da daha çok hane. Ad alanlarına tam kart numarası yazılıp kaydedilmesin (veritabanı da reddeder). */
+export const hasCardNumber = (text: string) => text.replace(/\D/g, '').length >= 6
+
 // Türkçe küçük harflerin Latin karşılıkları
 const TR_LATIN: Record<string, string> = { ı: 'i', ş: 's', ğ: 'g', ü: 'u', ö: 'o', ç: 'c' }
 
