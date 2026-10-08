@@ -64,13 +64,14 @@ export function CardsScreen({ nav, onSelect }: { nav: Nav; onSelect: (id: string
               <div className="flex min-w-0 flex-col py-4 pl-[18px]">
                 {overdue.length > 0 ? (
                   <>
+                    {/* Afiş her temada beyaz: kırmızı koyu ton (#D9381E koyu temada beyaz üstünde 4:1 kalıyordu) */}
                     <div className="label text-subtle dark:text-[#141414]/60">Son ödemesi geçen</div>
                     <div className="mt-0.5 flex items-baseline gap-2">
-                      <span className="num num-bold text-[96px] leading-[0.9] text-bh-red">{formatDate(overdue[0].due, 'd')}</span>
+                      <span className="num num-bold text-[96px] leading-[0.9] text-[#B02D18]">{formatDate(overdue[0].due, 'd')}</span>
                       <span className="text-lg font-medium">{formatDate(overdue[0].due, 'MMMM')}</span>
                     </div>
                     <div className="mt-auto pr-2 text-xs leading-snug">
-                      <span className="num-bold text-bh-red">
+                      <span className="num-bold text-[#B02D18]">
                         {dueLabel(overdue[0].due)}
                         {overdue.length > 1 && ` · ${overdue.length} ekstre`}
                       </span>
