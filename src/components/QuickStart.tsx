@@ -91,6 +91,7 @@ export function SubscriptionQuickStart({ nav }: { nav: Nav }) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Servis ara"
           aria-label="Servis ara"
+          maxLength={60}
           className="w-full bg-transparent text-base text-ink outline-none placeholder:text-subtle"
         />
       </label>
