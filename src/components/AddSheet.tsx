@@ -435,9 +435,10 @@ function CardInputs({ value, onChange, idPrefix, existing }: { value: NewCard; o
         <Field label="Son 4 hane" htmlFor={`${idPrefix}-last4`}>
           <input id={`${idPrefix}-last4`} className={cn(inputClass, 'num tracking-widest')} inputMode="numeric" autoComplete="off" value={value.last4} onChange={(e) => set({ last4: last4Of(e.target.value) })} placeholder="1234" />
         </Field>
-        {/* Banka kartında kesim yok: satır yumuşakça kapanır / açılır */}
+        {/* Banka kartında kesim yok: satır yumuşakça kapanır / açılır. Kapalıyken odaklanılmaz (inert) */}
         <div
           aria-hidden={value.kind !== 'credit'}
+          inert={value.kind !== 'credit'}
           data-collapsed={value.kind !== 'credit' || undefined}
           className={cn(
             'grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]',
