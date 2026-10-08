@@ -200,7 +200,7 @@ function ShareArc({ subscriptions, total }: { subscriptions: Subscription[]; tot
 
   return (
     <div className="relative mx-auto mt-3 w-[86%]">
-      <svg viewBox={`0 0 ${W} 150`} className="w-full" role="img" aria-label={`Bu karttan aylık ${formatMoney(total)}, ${items.length} abonelik`}>
+      <svg viewBox={`0 0 ${W} 150`} className="w-full" role="img" aria-label={`Bu karttan aylık ${formatMoney(total)}, ${subscriptions.length} abonelik`}>
         {/* Stroke style ile: iOS Safari'de var() sunum özniteliğinde (stroke="var(..)") güvenilir değil */}
         {slices.length === 0 && <path d={arc(0, 1)} fill="none" style={{ stroke: 'var(--line)' }} strokeWidth={22} />}
         {slices.map((sl) => <path key={sl.id} d={arc(sl.from, sl.to)} fill="none" style={{ stroke: sl.color }} strokeWidth={22} />)}
@@ -214,7 +214,8 @@ function ShareArc({ subscriptions, total }: { subscriptions: Subscription[]; tot
         ) : (
           <>
             <span className="font-label text-2xl font-medium">Banka kartı</span>
-            <div className="mt-0.5 text-xs text-subtle">henüz abonelik yok</div>
+            {/* Yayda TL dilim yok: abonelik varsa sayısını ve toplamın yalnızca TL olduğunu yaz */}
+            <div className="mt-0.5 text-xs text-subtle">{subscriptions.length === 0 ? 'henüz abonelik yok' : `${subscriptions.length} abonelik · yalnızca TL toplanır`}</div>
           </>
         )}
       </div>
