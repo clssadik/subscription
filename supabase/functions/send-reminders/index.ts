@@ -120,7 +120,7 @@ const clip = (s: string, max: number) => ([...s].length > max ? [...s].slice(0, 
 
 // ---------- Veri ----------
 
-type SubRow = { id: string; user_id: string; name: string; card_id: string | null; cycle: 'monthly' | 'yearly'; renewal_date: string }
+type SubRow = { id: string; user_id: string; name: string; card_id: string | null; on_bill: boolean | null; cycle: 'monthly' | 'yearly'; renewal_date: string }
 type CardRow = { id: string; user_id: string; bank_name: string; last4: string; kind: 'credit' | 'debit'; statement_day: number | null }
 /** Bir ödeme: vade günü ve abonelikte türü (eski kayıtlarda yok) */
 type PaidRow = { day: Day; cycle: 'monthly' | 'yearly' | null }
@@ -202,14 +202,14 @@ function rowsOf<T>(res: ReadResult, table: string) {
 // Tutar yok. Başlık ne olduğunu, metin ne zaman ve hangi karttan olduğunu söyler; ikisi de tek satıra sığar.
 
 const text = {
-  /** "Netflix yarın yenileniyor" / "8 Ekim · Garanti BBVA •• 4821" (kart yoksa "8 Ekim Çarşamba") */
+  /** "Netflix yarın yenileniyor" / "8 Ekim · Garanti BBVA •• 4821" (faturadaysa "8 Ekim · Fatura", ödeme yoksa "8 Ekim Çarşamba") */
   subDue: (sub: SubRow, card: CardRow | undefined, date: Day, diff: number) => ({
     title: `${sub.name} ${when(diff)} yenileniyor`,
-    body: card ? `${dateLabel(date)} · ${cardLabel(card)}` : dayLabel(date),
+    body: sub.on_bill ? `${dateLabel(date)} · Fatura` : card ? `${dateLabel(date)} · ${cardLabel(card)}` : dayLabel(date),
   }),
   subLate: (sub: SubRow, card: CardRow | undefined) => ({
     title: `${sub.name} ödemesi işaretlenmedi`,
-    body: card ? `Dün yenilendi · ${cardLabel(card)}` : 'Dün yenilendi',
+    body: sub.on_bill ? 'Dün yenilendi · Fatura' : card ? `Dün yenilendi · ${cardLabel(card)}` : 'Dün yenilendi',
   }),
   statement: (card: CardRow, due: Day) => ({ title: `${card.bank_name} ekstresi kesildi`, body: `•• ${card.last4} · son ödeme ${dayLabel(due)}` }),
   cardDue: (card: CardRow, due: Day, diff: number) => ({ title: `${card.bank_name} son ödemesi ${when(diff)}`, body: `•• ${card.last4} · ${dayLabel(due)}` }),
@@ -359,7 +359,7 @@ async function runReminders() {
   const [pushRes, settingsRes, subsRes, cardsRes, paymentsRes, sentRes] = await Promise.all([
     readAll((a, b) => db.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth').order('id').range(a, b)),
     readAll((a, b) => db.from('user_settings').select('user_id, notify').order('user_id').range(a, b)),
-    readAll((a, b) => db.from('subscriptions').select('id, user_id, name, card_id, cycle, renewal_date').order('id').range(a, b)),
+    readAll((a, b) => db.from('subscriptions').select('id, user_id, name, card_id, on_bill, cycle, renewal_date').order('id').range(a, b)),
     readAll((a, b) => db.from('cards').select('id, user_id, bank_name, last4, kind, statement_day').order('id').range(a, b)),
     // Dönem eşleşmesi için geriye dönük: yıllık bir ödeme aydan eski olabilir, bu yüzden bir önceki yılın başından çekilir
     readAll((a, b) =>

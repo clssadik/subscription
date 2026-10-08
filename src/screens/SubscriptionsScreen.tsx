@@ -27,8 +27,9 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
   const { q } = search
 
   const cardLabel = (s: Subscription) => {
+    if (s.onBill) return 'Fatura'
     const c = cards.find((c) => c.id === s.cardId)
-    return c ? `${c.bankName} •• ${c.last4}` : 'kart seçilmedi'
+    return c ? `${c.bankName} •• ${c.last4}` : 'ödeme seçilmedi'
   }
 
   const rows = subscriptions

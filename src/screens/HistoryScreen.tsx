@@ -32,7 +32,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
   const matches = (p: (typeof payments)[number]) => {
     if (p.kind === 'card') return startsWord(cards.find((x) => x.id === p.refId)?.bankName, q)
     const s = subscriptions.find((x) => x.id === p.refId)
-    return startsWord(s?.name, q) || startsWord(cards.find((c) => c.id === s?.cardId)?.bankName, q)
+    return startsWord(s?.name, q) || startsWord(s?.onBill ? 'Fatura' : cards.find((c) => c.id === s?.cardId)?.bankName, q)
   }
 
   // Sola kaydırıp "Kaldır": ödendi işareti kalkar, ödeme yeniden bekleyen olur. Mesajdaki "Geri al" geri getirir.
@@ -150,7 +150,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
                           <Logo serviceKey={s?.serviceKey ?? null} name={s?.name ?? '?'} size={30} />
                           <span className="min-w-0 flex-1">
                             <span className="block truncate font-medium">{s?.name ?? 'Silinmiş abonelik'}</span>
-                            <span className="block text-[11px] text-subtle">{date}{card ? ` · ${card.bankName}` : ''}</span>
+                            <span className="block text-[11px] text-subtle">{date}{s?.onBill ? ' · Fatura' : card ? ` · ${card.bankName}` : ''}</span>
                           </span>
                           <span className="num text-[15px]">{p.amount != null ? formatMoney(p.amount, currencyOf(p)) : ''}</span>
                         </div>

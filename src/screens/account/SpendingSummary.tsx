@@ -30,7 +30,8 @@ export function SpendingSummary({ onBack }: { onBack: () => void }) {
     .map((c) => ({ card: c, monthly: tl.filter((s) => s.cardId === c.id).reduce((sum, s) => sum + monthlyCost(s), 0) }))
     .filter((x) => x.monthly > 0)
     .sort((a, b) => b.monthly - a.monthly)
-  const noCard = tl.filter((s) => !s.cardId).reduce((sum, s) => sum + monthlyCost(s), 0)
+  const onBill = tl.filter((s) => s.onBill).reduce((sum, s) => sum + monthlyCost(s), 0)
+  const noCard = tl.filter((s) => !s.cardId && !s.onBill).reduce((sum, s) => sum + monthlyCost(s), 0)
 
   return (
     <>
@@ -68,9 +69,9 @@ export function SpendingSummary({ onBack }: { onBack: () => void }) {
             ))}
           </Group>
 
-          {/* TL abonelik varsa her zaman: kartı seçilmemişler de "Kart seçilmemiş" satırında görünsün */}
+          {/* TL abonelik varsa her zaman: faturaya yansıyanlar "Fatura", ödemesi seçilmemişler "Ödeme seçilmemiş" satırında görünsün */}
           {tl.length > 0 && (
-            <Group title="Kartlara göre (TL)">
+            <Group title="Ödemeye göre (TL)">
               {byCard.map(({ card, monthly }) => (
                 <div key={card.id} className="px-3.5 py-3">
                   <div className="flex items-center justify-between text-[15px]">
@@ -82,7 +83,8 @@ export function SpendingSummary({ onBack }: { onBack: () => void }) {
                   </div>
                 </div>
               ))}
-              {noCard > 0 && <Row label="Kart seçilmemiş" value={<span className="num">{formatMoney(noCard)}</span>} />}
+              {onBill > 0 && <Row label="Fatura" value={<span className="num">{formatMoney(onBill)}</span>} />}
+              {noCard > 0 && <Row label="Ödeme seçilmemiş" value={<span className="num">{formatMoney(noCard)}</span>} />}
             </Group>
           )}
         </>

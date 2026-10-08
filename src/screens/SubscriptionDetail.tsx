@@ -88,7 +88,7 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
           }
           stub={
             <div className="flex justify-between gap-3 text-[11px] opacity-75">
-              <span className="truncate">{card ? `${card.bankName} •• ${card.last4}` : 'kart seçilmedi'}</span>
+              <span className="truncate">{sub.onBill ? 'Fatura' : card ? `${card.bankName} •• ${card.last4}` : 'ödeme seçilmedi'}</span>
               <span className="shrink-0">
                 {CYCLE_LABELS[sub.cycle]} · {sub.cycle === 'monthly' ? `her ayın ${dayOf(anchor.getDate())}` : `her yıl ${formatDate(anchor, 'd MMMM')}`}
               </span>

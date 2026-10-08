@@ -37,6 +37,7 @@ const subFromRow = (r: Row): Subscription => ({
   cycle: r.cycle as Subscription['cycle'],
   renewalDate: r.renewal_date as string,
   cardId: (r.card_id as string) ?? null,
+  onBill: r.on_bill === true,
   serviceKey: (r.service_key as string) ?? null,
 })
 const subToRow = (s: Subscription): Row => ({
@@ -46,7 +47,8 @@ const subToRow = (s: Subscription): Row => ({
   currency: s.currency,
   cycle: s.cycle,
   renewal_date: s.renewalDate,
-  card_id: s.cardId,
+  card_id: s.onBill ? null : s.cardId,
+  on_bill: !!s.onBill,
   service_key: s.serviceKey,
 })
 

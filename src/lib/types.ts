@@ -31,6 +31,8 @@ export interface Subscription {
   renewalDate: string
   /** Hangi karttan çekildiği; kart silinirse null olur */
   cardId: string | null
+  /** Telefon faturasına yansıyor (operatör faturası). Doğruysa kart bağlı değildir. Eski kayıtlarda yok: false sayılır */
+  onBill?: boolean
   /** Hazır servis listesindeki anahtarı (logo ve renk için); listede yoksa null */
   serviceKey: string | null
 }

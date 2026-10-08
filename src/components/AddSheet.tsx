@@ -265,7 +265,8 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
   const [currency, setCurrency] = useState<Currency>(sub?.currency ?? 'TRY')
   const [cycle, setCycle] = useState<BillingCycle>(sub?.cycle ?? 'monthly')
   const [renewalDate, setRenewalDate] = useState(() => sub?.renewalDate ?? format(new Date(), 'yyyy-MM-dd'))
-  const [cardId, setCardId] = useState(sub?.cardId ?? '')
+  // Ödeme: kart kimliği, telefon faturası (ON_BILL) ya da seçilmedi ('')
+  const [cardId, setCardId] = useState(sub?.onBill ? ON_BILL : (sub?.cardId ?? ''))
   // "Yeni kart ekle" seçilince kartın bilgileri bu formda girilir; kaydedince kart da oluşur ve aboneliğe bağlanır
   const newCard = cardId === NEW_CARD
   const [card, setCard] = useState<NewCard>({ bankName: '', last4: '', kind: 'credit', statementDay: null })
@@ -294,7 +295,8 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
     const problem = newCard ? cardProblem(card) : ''
     if (problem) return fail(problem)
     submitted.current = true
-    let linkedCard = cardId || null
+    const onBill = cardId === ON_BILL
+    let linkedCard = onBill ? null : cardId || null
     if (newCard) {
       const saved = buildCard(card, cardDraftId)
       dispatch({ type: 'card/save', card: saved })
@@ -310,6 +312,7 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
       cycle,
       renewalDate,
       cardId: linkedCard,
+      onBill,
       serviceKey: key,
     }
     dispatch({ type: 'subscription/save', subscription })
@@ -355,10 +358,12 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
         <Field label="Yenilenme" htmlFor="s-date">
           <input id="s-date" type="date" className={inputClass} value={renewalDate} onChange={(e) => setRenewalDate(e.target.value)} />
         </Field>
-        <Field label="Kart" htmlFor="s-card">
+        <Field label="Ödeme" htmlFor="s-card">
           <select id="s-card" className={cn(selectClass, 'w-full font-normal text-ink dark:text-ink')} value={cardId} onChange={(e) => setCardId(e.target.value)}>
-            <option value="">Kart seçilmedi</option>
+            <option value="">Seçilmedi</option>
             {state.cards.map((c) => <option key={c.id} value={c.id}>{c.bankName} •• {c.last4}</option>)}
+            {/* Operatör faturasıyla ödenen (hattan çekilen) abonelikler */}
+            <option value={ON_BILL}>Fatura</option>
             <option value={NEW_CARD}>+ Yeni kart ekle</option>
           </select>
         </Field>
@@ -390,6 +395,7 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
 }
 
 const NEW_CARD = '__new'
+const ON_BILL = '__bill'
 
 /** Kart formunun alanları (kart ekleme ve abonelik eklerken yeni kart) */
 type NewCard = { bankName: string; last4: string; kind: CardKind; statementDay: number | null }
