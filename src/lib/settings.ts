@@ -60,8 +60,13 @@ function read(userId: string): Settings {
   try {
     const raw = localStorage.getItem(key(userId))
     if (raw) {
-      const saved = JSON.parse(raw) as Partial<Settings>
+      const { unsent, ...saved } = JSON.parse(raw) as Partial<Settings> & { unsent?: unknown }
       value = { ...DEFAULT_SETTINGS, ...saved, notify: { ...DEFAULT_SETTINGS.notify, ...saved.notify } }
+      // Sunucuya gönderilmemiş değişiklikler geri yüklenir (eski kayıtlarda yok: sunucudaki değer geçerli)
+      if (Array.isArray(unsent)) {
+        const fields = unsent.filter((f): f is Field => FIELDS.includes(f))
+        if (fields.length) dirty.set(userId, new Set([...(dirty.get(userId) ?? []), ...fields]))
+      }
     }
   } catch {
     // okunamıyorsa varsayılanlar
@@ -74,7 +79,9 @@ function read(userId: string): Settings {
 const remote = (userId: string) => isConfigured && userId !== DEMO_ID
 
 // Sunucuya gönderilmemiş alanlar (profil adı, bildirimler). Yalnızca bunlar gönderilir; diğer alanlara dokunulmaz.
+// Cihazdaki kopyada da tutulur (unsent): uygulama kapanıp açılınca değişiklik kaybolmasın.
 type Field = 'name' | 'notify'
+const FIELDS: Field[] = ['name', 'notify']
 const dirty = new Map<string, Set<Field>>()
 // Her yerel değişiklikte artar: gönderim sırasında yeni değişiklik olduysa bekleyen alan silinmez
 const version = new Map<string, number>()
@@ -99,15 +106,30 @@ function markDirty(userId: string, prev: Settings, next: Settings) {
   version.set(userId, (version.get(userId) ?? 0) + 1)
 }
 
-function write(userId: string, value: Settings, sync = true) {
-  const remoteWrite = sync && remote(userId)
-  if (remoteWrite) markDirty(userId, read(userId), value)
+/** Cihazdaki kopyayı yazar; sunucuya gönderilmemiş alanlar aynı kayda işaretli yazılır (unsent) */
+function save(userId: string, value: Settings) {
   cache.set(userId, value)
+  const unsent = [...(dirty.get(userId) ?? [])]
   try {
-    localStorage.setItem(key(userId), JSON.stringify(value))
+    localStorage.setItem(key(userId), JSON.stringify(unsent.length ? { ...value, unsent } : value))
   } catch {
     // depolama kapalıysa sadece bu oturumda geçerli
   }
+}
+
+/** Cihazda bu hesabın kaydı var mı (çıkışta silinir) */
+function hasCopy(userId: string) {
+  try {
+    return localStorage.getItem(key(userId)) !== null
+  } catch {
+    return false
+  }
+}
+
+function write(userId: string, value: Settings, sync = true) {
+  const remoteWrite = sync && remote(userId)
+  if (remoteWrite) markDirty(userId, read(userId), value)
+  save(userId, value)
   if (remoteWrite) scheduleSend(userId)
   listeners.forEach((l) => l())
 }
@@ -148,6 +170,8 @@ async function send(userId: string) {
     return
   }
   if ((version.get(userId) ?? 0) === sent) dirty.delete(userId)
+  // Gönderilenler cihazdaki kayıtta artık işaretli değil. Kayıt yoksa (çıkışta silindi) yeniden yazılmaz.
+  if (hasCopy(userId)) save(userId, read(userId))
 }
 
 const subscribe = (l: () => void) => {
@@ -167,12 +191,13 @@ async function loadRemote(userId: string) {
     return
   }
   synced.add(userId)
-  // Sunucu okunmadan yapılan değişiklikler: cihazdaki değerleriyle kalır ve gönderilir; diğer alanlar sunucudan gelir
+  // Önce cihazdaki kopya okunur (sunucu okunmadan yapılan, cihazda işaretli değişiklikler oradan gelir).
+  // Bu değişiklikler cihazdaki değerleriyle kalır ve gönderilir; diğer alanlar sunucudan gelir
+  const mine = read(userId)
   const early = new Set(dirty.get(userId))
   if (data) {
     const notify = (data.notify ?? {}) as Partial<NotifySettings>
     const server: Settings = { ...DEFAULT_SETTINGS, name: data.name ?? '', notify: { ...DEFAULT_SETTINGS.notify, ...notify } }
-    const mine = read(userId)
     write(
       userId,
       {
