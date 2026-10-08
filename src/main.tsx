@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { keepPageInPlace } from '@/lib/keyboard'
+import { reloadWhenIdle } from '@/lib/reload'
 import { guardDocumentScroll } from '@/lib/transition'
 
 createRoot(document.getElementById('root')!).render(
@@ -46,29 +47,18 @@ for (const type of ['copy', 'cut', 'contextmenu'] as const) {
   })
 }
 
-// Servis çalışanı (vite.config.ts: autoUpdate). Yeni sürüm gelince sayfa kendiliğinden yenilenir; yazı yazılırken
-// yenilenmesin diye bir alan odaktaysa yenileme, alan bırakılınca ya da uygulama tekrar öne gelince yapılır.
-let reloadWaiting = false
-const editing = () => inField(document.activeElement)
-const reloadIfIdle = () => {
-  if (reloadWaiting && !editing()) window.location.reload()
-}
+// Servis çalışanı (vite.config.ts: autoUpdate). Yeni sürüm gelince sayfa kendiliğinden yenilenir; yazı yazılırken ya da
+// açık bir panelde taslak silinmesin diye yenileme, taslak bitince yapılır (src/lib/reload.ts).
 registerSW({
   immediate: true,
   onNeedReload() {
-    if (editing()) reloadWaiting = true
-    else window.location.reload()
+    reloadWhenIdle()
   },
   onRegisteredSW(_url, registration) {
     // Uygulama günlerce açık kalabiliyor; öne gelince yeni sürüm var mı diye bakılır
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState !== 'visible') return
       registration?.update().catch(() => {})
-      reloadIfIdle()
     })
   },
-})
-// Odak bir alandan çıkınca bekleyen yenileme yapılır (odak taşınması bir an sonra bakılır)
-document.addEventListener('focusout', () => {
-  setTimeout(reloadIfIdle)
 })
