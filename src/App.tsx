@@ -171,10 +171,13 @@ function Main({ user }: { user: User }) {
   // çünkü sayfa zaten parmakla kaydırılıp kapatıldı (src/lib/useSwipeBack.ts).
   const detailPage = useRef<HTMLElement>(null)
   const inDetail = ready && !!(detailId || cardId || accountPage)
+  // Abonelik bir kartın üstünde açıksa altta o kart durur (kart sekmesinin listesi değil)
+  const underCardId = ready && detailId && cardId ? cardId : null
+  const underCard = useRef<HTMLElement>(null)
   useSwipeBack(detailPage, {
     enabled: inDetail,
     key: screen,
-    under: () => document.querySelector<HTMLElement>(`main[data-tab="${tab}"]`),
+    under: () => (underCardId ? underCard.current : document.querySelector<HTMLElement>(`main[data-tab="${tab}"]`)),
     onBack: () =>
       flushSync(() => {
         setCssMotion(null)
@@ -277,6 +280,19 @@ function Main({ user }: { user: User }) {
             </main>
           )
         })}
+      {/* Abonelik kartın üstünde açıksa kart sayfası altta gizli bekler: sağa çekince o görünür (src/lib/useSwipeBack.ts). Dokunulmaz. */}
+      {underCardId && (
+        <main
+          ref={underCard}
+          inert
+          aria-hidden
+          className="app-screen mx-auto flex max-w-md flex-col bg-page px-3 pt-[var(--top-gap)] pb-24 pointer-events-none invisible -translate-x-[200vw]"
+        >
+          <ScrollPage>
+            <CardDetail id={underCardId} nav={nav} onBack={() => {}} />
+          </ScrollPage>
+        </main>
+      )}
       {!listShown && (
         <main
           key={ready ? screen : 'loading'}
