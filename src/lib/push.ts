@@ -151,19 +151,24 @@ async function current(): Promise<PushState> {
   }
 }
 
-// Aynı anda iki kontrol çalışmasın: sürmekte olan kontrol bitene kadar yeni istek onun sonucunu bekler
-let checking: Promise<void> | null = null
+// Kontroller sırayla çalışır, aynı adres iki kez aynı anda kaydedilmesin. Sıraya girmiş ama henüz başlamamış bir kontrol varsa
+// yenisi onu bekler. Bir kontrol 15 sn'de bitmezse (ağ takıldı) bırakılır; sıradakiler takılı kalmaz.
+let checks: Promise<void> = Promise.resolve()
+let queued = false
 
 /** Durumu yeniden kontrol eder (adresi de yeniden kaydeder) ve bütün ekranlara bildirir */
 function refresh(): Promise<void> {
-  if (!checking) {
-    checking = current()
-      .then(setState, () => setState('unsupported'))
-      .finally(() => {
-        checking = null
+  if (!queued) {
+    queued = true
+    checks = checks.then(() => {
+      queued = false
+      return within(current(), 15000).then((s) => {
+        // Sonuç alınamadıysa (hata ya da zaman aşımı) durum olduğu gibi kalır
+        if (s) setState(s)
       })
+    })
   }
-  return checking
+  return checks
 }
 
 /** Bu telefonun bildirim durumu; enable izin ister ve kaydeder (dokunuşun içinde çağrılmalı) */
