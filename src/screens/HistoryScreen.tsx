@@ -42,11 +42,12 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
   // Son 6 ayda ödendi işaretlenen abonelik tutarları, para birimi bazında. Kart ekstreleri tutarsız tutulduğu için dahil değil.
   const thisMonth = startOfMonth(new Date())
   const months = Array.from({ length: 6 }, (_, i) => addMonths(thisMonth, i - 5))
-  // Para birimi eklenmeden önce kaydedilen ödemeler TL sayılır
+  // Para birimi eklenmeden önce kaydedilen ödemeler aboneliğin şimdiki birimiyle sayılır (abonelik silinmişse TL)
+  const currencyOf = (p: (typeof payments)[number]) => p.currency ?? subscriptions.find((s) => s.id === p.refId)?.currency ?? 'TRY'
   const paidIn = (m: Date, currency: Currency) => {
     const key = format(m, 'yyyy-MM')
     return payments
-      .filter((p) => p.kind === 'subscription' && (p.currency ?? 'TRY') === currency && p.dueDate.startsWith(key))
+      .filter((p) => p.kind === 'subscription' && currencyOf(p) === currency && p.dueDate.startsWith(key))
       .reduce((s, p) => s + (p.amount ?? 0), 0)
   }
   const sums = months.map((m) => paidIn(m, 'TRY'))
@@ -149,7 +150,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
                             <span className="block truncate font-medium">{s?.name ?? 'Silinmiş abonelik'}</span>
                             <span className="block text-[11px] text-subtle">{date}{card ? ` · ${card.bankName}` : ''}</span>
                           </span>
-                          <span className="num text-[15px]">{p.amount != null ? formatMoney(p.amount, p.currency) : ''}</span>
+                          <span className="num text-[15px]">{p.amount != null ? formatMoney(p.amount, currencyOf(p)) : ''}</span>
                         </div>
                       </SwipeRow>
                     </li>
