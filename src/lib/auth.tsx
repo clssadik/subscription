@@ -2,6 +2,8 @@ import type { User } from '@supabase/supabase-js'
 import { useEffect, useState } from 'react'
 import { DEMO_ID, demoUser, isDemoSignedIn, onDemoAuth } from './demo'
 import { forgetDevice } from './push'
+import { clearSettingsCache } from './settings'
+import { clearCache } from './store'
 import { isConfigured, supabase } from './supabase'
 import { transition } from './transition'
 
@@ -23,16 +25,12 @@ export function releaseSignIn() {
   run?.()
 }
 
-/** Çıkış yapan hesabın bu cihazdaki kopyaları (son veriler, ayarlar) silinir. Test hesabının verisine dokunulmaz. */
-function clearLocalData(userId: string) {
+/** Çıkan hesabın bu cihazdaki kopyaları (son veriler, ayarlar) silinir. Önce eşitleme durur ki yarım kalan bir okuma kopyayı geri yazmasın.
+ *  Test hesabının verisine dokunulmaz. */
+function clearAccount(userId: string) {
   if (userId === DEMO_ID) return
-  for (const prefix of ['abonelik-takip:cache:', 'abonelik-takip:base:', 'abonelik-takip:settings:']) {
-    try {
-      localStorage.removeItem(prefix + userId)
-    } catch {
-      // depolama kapalıysa yapacak bir şey yok
-    }
-  }
+  clearCache(userId)
+  clearSettingsCache(userId)
 }
 
 /** Giriş yapmış kullanıcı; yoksa null, oturum henüz okunmadıysa undefined. */
@@ -55,7 +53,7 @@ export function useUser() {
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) lastId = session.user.id
       else if (event === 'SIGNED_OUT' && lastId) {
-        clearLocalData(lastId)
+        clearAccount(lastId)
         void forgetDevice()
         lastId = null
       }
