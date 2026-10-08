@@ -34,7 +34,7 @@ export function InstallSteps({ className }: { className?: string }) {
           Ana ekrana ekle
         </Step>
         <Step n={3} icon={<span className="font-medium text-bh-blue dark:text-[#6E9BFF]">Ekle</span>}>
-          Ekle ile onayla
+          Ekle ile onaylayın
         </Step>
       </ol>
     )
@@ -56,7 +56,7 @@ export function InstallSteps({ className }: { className?: string }) {
 function Step({ n, icon, children }: { n: number; icon: ReactNode; children: ReactNode }) {
   return (
     <li className="flex min-h-10 items-center gap-3.5 text-[15px]">
-      <span className="num num-bold w-3 shrink-0">{n}</span>
+      <span className="num font-medium w-3 shrink-0">{n}</span>
       <span className="min-w-0 flex-1">{children}</span>
       <span className="flex shrink-0 items-center">{icon}</span>
     </li>
