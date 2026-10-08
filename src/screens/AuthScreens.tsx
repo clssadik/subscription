@@ -346,7 +346,6 @@ function CodeStep({ mode, email, onBack }: { mode: 'signup' | 'login'; email: st
             inputMode="numeric"
             autoComplete="one-time-code"
             autoFocus
-            maxLength={CODE_LENGTH}
             value={code}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
