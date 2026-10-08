@@ -23,7 +23,7 @@ export default defineConfig({
         id: '/',
         name: 'Monthwise',
         short_name: 'Monthwise',
-        description: 'Abonelik ve kredi kartı ödemelerini takip et',
+        description: 'Abonelik ve kredi kartı ödemelerinin takibi',
         lang: 'tr',
         // iPhone sayfa çizilene kadar ekranı bu renkle boyuyor olabilir: koyu gri (#141414) açılışta 2 karelik gri çakma yapıyordu
         // (2026-10-07 ekran kaydında ölçüldü). Koyu temadaki açılış ekranıyla aynı siyah.
