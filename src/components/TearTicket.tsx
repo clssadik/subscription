@@ -334,7 +334,7 @@ export function TearTicket({
 
       {showTip && (
         <div className="mt-2 flex items-center gap-3 rounded-[18px] bg-surface py-2.5 pr-2.5 pl-3.5 text-sm animate-in fade-in slide-in-from-top-1 duration-300">
-          <ScissorsIcon className="size-[18px] shrink-0 -rotate-90 text-bh-blue" />
+          <ScissorsIcon className="size-[18px] shrink-0 -rotate-90 text-bh-blue dark:text-[#6E9BFF]" />
           <p className="flex-1 leading-snug">Ödemeyi işaretlemek için koçanı sağa çekerek koparın.</p>
           {/* Dokunma alanı 44px'e tamamlanır; düğmenin görünüşü aynı kalır (kendi kutusu büyümez, sahte öğe alana yayılır) */}
           <button
