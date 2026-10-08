@@ -135,14 +135,19 @@ export function SwipeRow({
         <ActionIcon className="size-[22px]" strokeWidth={2} />
       </button>
       <div
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key !== 'Enter' && e.key !== ' ') return
-          // Boşluk sayfayı kaydırmasın
-          e.preventDefault()
-          onTap?.()
-        }}
+        // Açılabilen satır düğmedir. onTap yoksa düz içerik: klavye odağı almaz, tuşla bir şey yapmaz
+        role={onTap ? 'button' : undefined}
+        tabIndex={onTap ? 0 : undefined}
+        onKeyDown={
+          onTap
+            ? (e) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return
+                // Boşluk sayfayı kaydırmasın
+                e.preventDefault()
+                onTap?.()
+              }
+            : undefined
+        }
         className={cn('relative select-none rounded-[18px]', surface)}
         style={{
           transform: removing ? 'translateX(-110%)' : `translateX(${x}px)`,
