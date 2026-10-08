@@ -82,10 +82,12 @@ export function periodKey(kind: PeriodKind, date: Date) {
   return format(date, kind === 'yearly' ? 'yyyy' : 'yyyy-MM')
 }
 
-/** Bu tarihin dönemi için işaretlenmiş ödeme */
+/** Bu tarihin dönemi için işaretlenmiş ödeme. Abonelikte ödemenin türü de tutmalı: yıllığa geçince eski aylık ödemeler yıllık yenilemeyi kapatmaz. Türü kaydedilmemiş (eski) ödemeler her türle eşleşir. */
 export function findPayment(payments: Payment[], refId: string, date: Date, kind: PeriodKind) {
   const key = periodKey(kind, date)
-  return payments.find((p) => p.refId === refId && periodKey(kind, parseISO(p.dueDate)) === key)
+  return payments.find(
+    (p) => p.refId === refId && periodKey(kind, parseISO(p.dueDate)) === key && (kind === 'card' || !p.cycle || p.cycle === kind),
+  )
 }
 
 export function isPaid(payments: Payment[], refId: string, date: Date, kind: PeriodKind) {

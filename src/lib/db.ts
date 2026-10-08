@@ -58,6 +58,7 @@ const paymentFromRow = (r: Row): Payment => ({
   paidAt: r.paid_at as string,
   amount: num(r.amount),
   currency: (r.currency as Payment['currency']) ?? undefined,
+  cycle: (r.cycle as Payment['cycle']) ?? undefined,
 })
 const paymentToRow = (p: Payment): Row => ({
   id: p.id,
@@ -67,6 +68,7 @@ const paymentToRow = (p: Payment): Row => ({
   paid_at: p.paidAt,
   amount: p.amount ?? null,
   currency: p.currency ?? null,
+  cycle: p.cycle ?? null,
 })
 
 /** Veritabanı isteği olmadı. rejected: sunucu değişikliği bilerek reddetti (ör. aynı döneme ikinci ödeme).

@@ -129,6 +129,8 @@ function reducer(state: State, action: Action): State {
         paidAt: format(new Date(), 'yyyy-MM-dd'),
         amount: action.amount,
         currency: action.currency,
+        // Abonelik ödemesi o anki türüyle kaydedilir: sonradan tür değişse de bu ödeme kendi döneminde kalır
+        cycle: kind === 'card' ? undefined : kind,
       }
       return { ...state, payments: [...state.payments, payment] }
     }

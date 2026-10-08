@@ -35,7 +35,7 @@ export interface Subscription {
   serviceKey: string | null
 }
 
-/** "Ödendi" kaydı. Abonelikte tutar saklanır; kartta sadece ödendiği bilgisi. */
+/** "Ödendi" kaydı. Abonelikte tutar ve tür saklanır; kartta sadece ödendiği bilgisi. */
 export interface Payment {
   id: string
   kind: 'subscription' | 'card'
@@ -47,6 +47,8 @@ export interface Payment {
   paidAt: string
   amount?: number
   currency?: Currency
+  /** Abonelik ödemesinin türü, ödendiği anki türü. Kartta ve eski kayıtlarda yok. */
+  cycle?: BillingCycle
 }
 
 /** Logosu olmayan bir servis eklendiğinde düşülen not (Supabase gelince oraya gönderilecek) */

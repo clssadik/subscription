@@ -122,6 +122,8 @@ const clip = (s: string, max: number) => ([...s].length > max ? [...s].slice(0, 
 
 type SubRow = { id: string; user_id: string; name: string; card_id: string | null; cycle: 'monthly' | 'yearly'; renewal_date: string }
 type CardRow = { id: string; user_id: string; bank_name: string; last4: string; kind: 'credit' | 'debit'; statement_day: number | null }
+/** Bir ödeme: vade günü ve abonelikte türü (eski kayıtlarda yok) */
+type PaidRow = { day: Day; cycle: 'monthly' | 'yearly' | null }
 type Notify = {
   enabled: boolean
   subscriptionDays: number[]
@@ -225,10 +227,12 @@ const text = {
 }
 
 /** Bir kullanıcının bugün gönderilecek hatırlatmaları */
-function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Map<string, Day[]>, now: ReturnType<typeof nowInIstanbul>): Message[] {
+function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Map<string, PaidRow[]>, now: ReturnType<typeof nowInIstanbul>): Message[] {
   const { today } = now
-  // Ödendi: aynı kayıt için aynı dönemde bir ödeme var mı (kesim ya da yenilenme tarihi sonradan değişse de geçerli)
-  const isPaid = (ref: string, day: Day, kind: PeriodKind) => (paid.get(ref) ?? []).some((d) => periodKey(kind, d) === periodKey(kind, day))
+  // Ödendi: aynı kayıt için aynı dönemde bir ödeme var mı (kesim ya da yenilenme tarihi sonradan değişse de geçerli).
+  // Abonelikte ödemenin türü de tutmalı; türü boş (eski) ödeme her türle eşleşir (bkz. src/lib/dates.ts findPayment)
+  const isPaid = (ref: string, day: Day, kind: PeriodKind) =>
+    (paid.get(ref) ?? []).some((p) => (kind === 'card' || !p.cycle || p.cycle === kind) && periodKey(kind, p.day) === periodKey(kind, day))
   const out: Message[] = []
 
   const cardOf = new Map(cards.map((c) => [c.id, c]))
@@ -359,7 +363,7 @@ async function runReminders() {
     readAll((a, b) => db.from('cards').select('id, user_id, bank_name, last4, kind, statement_day').order('id').range(a, b)),
     // Dönem eşleşmesi için geriye dönük: yıllık bir ödeme aydan eski olabilir, bu yüzden bir önceki yılın başından çekilir
     readAll((a, b) =>
-      db.from('payments').select('user_id, ref_id, due_date').gte('due_date', toKey(dayOf(parts(now.today).y - 1, 1, 1))).order('id').range(a, b),
+      db.from('payments').select('user_id, ref_id, due_date, cycle').gte('due_date', toKey(dayOf(parts(now.today).y - 1, 1, 1))).order('id').range(a, b),
     ),
     readAll((a, b) => db.from('notification_log').select('user_id, key').eq('sent_on', toKey(now.today)).order('user_id').order('key').range(a, b)),
   ])
@@ -369,7 +373,7 @@ async function runReminders() {
   // Ad ve banka adı kullanıcıdan geliyor: bildirim kısa kalsın diye 60 karakterle sınırlanır
   const subRows = rowsOf<SubRow>(subsRes, 'subscriptions').map((s) => ({ ...s, name: clip(s.name ?? '', 60) }))
   const cardRows = rowsOf<CardRow>(cardsRes, 'cards').map((c) => ({ ...c, bank_name: clip(c.bank_name ?? '', 60) }))
-  const payRows = rowsOf<{ user_id: string; ref_id: string; due_date: string }>(paymentsRes, 'payments')
+  const payRows = rowsOf<{ user_id: string; ref_id: string; due_date: string; cycle: PaidRow['cycle'] }>(paymentsRes, 'payments')
   const sentRows = rowsOf<{ user_id: string; key: string }>(sentRes, 'notification_log')
 
   const phones = group(pushRows)
@@ -377,11 +381,11 @@ async function runReminders() {
   const cardsBy = group(cardRows)
   // Ayar satırı yoksa kullanıcı için varsayılanlar geçerli (okuma başarılı olduğu için bu güvenli)
   const notifyBy = new Map(settingsRows.map((s): [string, Notify] => [s.user_id, notifyFrom(s.notify)]))
-  // Kullanıcı → kayıt → ödemelerin vade tarihleri (dönem eşleşmesi messagesFor içinde)
-  const paidBy = new Map<string, Map<string, Day[]>>()
+  // Kullanıcı → kayıt → ödemelerin vade tarihi ve türü (dönem eşleşmesi messagesFor içinde)
+  const paidBy = new Map<string, Map<string, PaidRow[]>>()
   for (const p of payRows) {
-    const byRef = paidBy.get(p.user_id) ?? new Map<string, Day[]>()
-    byRef.set(p.ref_id, [...(byRef.get(p.ref_id) ?? []), fromKey(p.due_date)])
+    const byRef = paidBy.get(p.user_id) ?? new Map<string, PaidRow[]>()
+    byRef.set(p.ref_id, [...(byRef.get(p.ref_id) ?? []), { day: fromKey(p.due_date), cycle: p.cycle }])
     paidBy.set(p.user_id, byRef)
   }
   const sent = new Set(sentRows.map((r) => `${r.user_id}|${r.key}`))
@@ -394,7 +398,7 @@ async function runReminders() {
       if (!notify.enabled) continue
       const [h, m] = notify.time.split(':').map(Number)
       if (now.minutes < Math.min(h * 60 + m, LAST_RUN_MINUTES)) continue
-      const messages = messagesFor(notify, subsBy.get(userId) ?? [], cardsBy.get(userId) ?? [], paidBy.get(userId) ?? new Map<string, Day[]>(), now)
+      const messages = messagesFor(notify, subsBy.get(userId) ?? [], cardsBy.get(userId) ?? [], paidBy.get(userId) ?? new Map<string, PaidRow[]>(), now)
         .filter((msg) => !sent.has(`${userId}|${msg.key}`))
       for (const msg of messages) total += await deliver(userId, devices, msg, now.today)
     } catch (e) {
