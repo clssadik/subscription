@@ -9,12 +9,12 @@ const KEYBOARD = -1
 
 /**
  * Basılı tutunca çalışan düğme (yanlışlıkla dokunmayla olmasın diye): içi soldan sağa dolar, dolunca onConfirm çalışır.
- * Erken bırakınca dolum geri çekilir. Kısa dokunuşta düğme hafifçe sallanır ve "Basılı tut" yazar.
+ * Erken bırakınca dolum geri çekilir. Kısa dokunuşta düğme hafifçe sallanır ve "Basılı tutun" yazar.
  */
 export function HoldToConfirm({ children, onConfirm, className }: { children: ReactNode; onConfirm: () => void; className?: string }) {
   const [holding, setHolding] = useState(false)
   const [nudge, setNudge] = useState(0)
-  // Kısa dokunuştan sonra bir süre "Basılı tut" yazar
+  // Kısa dokunuştan sonra bir süre "Basılı tutun" yazar
   const [hint, setHint] = useState(false)
   const hintTimer = useRef(0)
   const timer = useRef(0)
@@ -125,7 +125,7 @@ export function HoldToConfirm({ children, onConfirm, className }: { children: Re
         style={{ width: holding ? '100%' : '0%', transition: holding ? `width ${HOLD}ms linear` : 'width 200ms ease-out' }}
       />
       {/* key: her kısa dokunuşta sallanma baştan oynar */}
-      <span key={nudge} className={cn('relative block', nudge > 0 && 'hold-nudge')}>{hint && !holding ? 'Basılı tut' : children}</span>
+      <span key={nudge} className={cn('relative block', nudge > 0 && 'hold-nudge')}>{hint && !holding ? 'Basılı tutun' : children}</span>
     </button>
   )
 }
