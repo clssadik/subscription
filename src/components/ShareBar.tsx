@@ -7,7 +7,8 @@ import type { Subscription } from '@/lib/types'
  * Aylık TL maliyetinde her servisin payını kendi renginde gösteren çubuk.
  * background: çubuğun durduğu kartın rengi. Ona çok yakın renkli parçalar (ör. ana sayfadaki mavi kartta adından
  * mavi renk alan bir abonelik) zeminde kaybolmasın diye kartın yazı renginde çizilir.
- * Zemin verilmezse beyaz kart (Abonelikler) varsayılır: orada 3:1 okunmayan açık renkler de yazı renginde çizilir.
+ * Zemin verilmezse beyaz kart (Abonelikler) varsayılır: orada neredeyse görünmeyen açık renkler de yazı renginde çizilir
+ * (kart detayındaki yayla aynı 1,6:1 sınırı; marka renkleri olabildiğince korunur).
  */
 export function ShareBar({ subscriptions, height = 8, background }: { subscriptions: Subscription[]; height?: number; background?: string }) {
   const items = subscriptions
@@ -28,7 +29,7 @@ export function ShareBar({ subscriptions, height = 8, background }: { subscripti
   )
 }
 
-/** Parça zeminde kaybolur mu: verilen zemine çok yakınsa; zemin yoksa beyaz kartta 3:1'e (WCAG grafik öğesi) ulaşmıyorsa */
+/** Parça zeminde kaybolur mu: verilen zemine çok yakınsa; zemin yoksa beyaz kartta 1,6:1'e ulaşmıyorsa (CardDetail strokeOn ile aynı) */
 function vanishesOn(color: string, background?: string) {
-  return background ? colorDistance(color, background) < 80 : contrastRatio(color, '#FFFFFF') < 3
+  return background ? colorDistance(color, background) < 80 : contrastRatio(color, '#FFFFFF') < 1.6
 }
