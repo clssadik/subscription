@@ -266,7 +266,7 @@ function SubscriptionFields({ id, preset, onDone }: { id?: string; preset: NonNu
     if (hasCardNumber(name)) return fail('Abonelik adına kart numarası yazılmaz.')
     // Hızlı başlangıçtan gelen ad alan sınırını aşabilir (maxLength yalnız yazarken işler)
     if (Array.from(name.trim()).length > 60) return fail('Ad en fazla 60 karakter olabilir.')
-    if (!isValidAmount(value)) return fail('Tutar sayı olmalı, ör. 229,99.')
+    if (!isValidAmount(value)) return fail('Tutar sayı olmalı, örn. 229,99.')
     if (!renewalDate) return fail('Yenilenme tarihi seçin.')
     const problem = newCard ? cardProblem(card) : ''
     if (problem) return fail(problem)
