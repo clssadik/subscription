@@ -72,7 +72,7 @@ export function NotificationSettings({ userId, onBack }: { userId: string; onBac
           <Row label="Gecikince tekrar bildir" trailing={<Switch label="Gecikince tekrar bildir" checked={n.overdue} onChange={(overdue) => updateNotify({ overdue })} />} />
         </Group>
 
-        <Group title="Özet" footer={n.summary === 'weekly' ? 'Her pazartesi: o hafta kaç ödeme var, toplam ne kadar.' : n.summary === 'monthly' ? 'Her ayın 1’i: o ay kaç ödeme var, toplam ne kadar.' : undefined}>
+        <Group title="Özet" footer={n.summary === 'weekly' ? 'Her pazartesi: o haftanın ödemeleri.' : n.summary === 'monthly' ? 'Her ayın 1’i: o ayın ödemeleri.' : undefined}>
           <CheckList
             options={SUMMARY_OPTIONS}
             value={[n.summary]}
