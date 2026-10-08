@@ -23,12 +23,16 @@ export function HoldToConfirm({ children, onConfirm, className }: { children: Re
   const active = useRef<number | null>(null)
   // Klavye basılıyken işaretli: tarayıcının o basıştan ürettiği tıklama onay sayılmasın
   const typing = useRef(false)
+  // Ekran okuyucu yolu: ilk etkinleştirme düğmeyi kurar, birkaç saniye içinde ikincisi onaylar (geri alınamayan işler tek dokunuşla olmasın)
+  const [armed, setArmed] = useState(false)
+  const armTimer = useRef(0)
 
   // Ekran kapanınca bekleyen zamanlayıcılar durur: yarıda kalan basılı tutma onConfirm'i çağırmaz
   useEffect(
     () => () => {
       window.clearTimeout(timer.current)
       window.clearTimeout(hintTimer.current)
+      window.clearTimeout(armTimer.current)
     },
     [],
   )
@@ -112,9 +116,18 @@ export function HoldToConfirm({ children, onConfirm, className }: { children: Re
           typing.current = false
         })
       }}
-      // Ekran okuyucuyla etkinleştirme tıklama olarak gelir (detail 0). Parmakla dokunuş ve klavye tıklaması onay sayılmaz.
+      // Ekran okuyucuyla etkinleştirme tıklama olarak gelir (detail 0): ilki kurar, 4 sn içinde ikincisi onaylar.
+      // Parmakla dokunuş ve klavye tıklaması onay sayılmaz.
       onClick={(e) => {
-        if (e.detail === 0 && !typing.current) onConfirm()
+        if (e.detail !== 0 || typing.current) return
+        window.clearTimeout(armTimer.current)
+        if (armed) {
+          setArmed(false)
+          onConfirm()
+          return
+        }
+        setArmed(true)
+        armTimer.current = window.setTimeout(() => setArmed(false), 4000)
       }}
       className={cn('relative overflow-hidden select-none', className)}
     >
@@ -125,7 +138,12 @@ export function HoldToConfirm({ children, onConfirm, className }: { children: Re
         style={{ width: holding ? '100%' : '0%', transition: holding ? `width ${HOLD}ms linear` : 'width 200ms ease-out' }}
       />
       {/* key: her kısa dokunuşta sallanma baştan oynar */}
-      <span key={nudge} className={cn('relative block', nudge > 0 && 'hold-nudge')}>{hint && !holding ? 'Basılı tutun' : children}</span>
+      <span key={nudge} className={cn('relative block', nudge > 0 && 'hold-nudge')}>
+        {armed ? 'Onaylamak için tekrar dokunun' : hint && !holding ? 'Basılı tutun' : children}
+      </span>
+      <span className="sr-only" aria-live="assertive">
+        {armed ? 'Onaylamak için tekrar dokunun.' : ''}
+      </span>
     </button>
   )
 }
