@@ -59,6 +59,8 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
   const current = sums[5]
   const prev = sums[4]
   const max = Math.max(...sums, 1)
+  // Grafik ekran okuyucuya da değerleriyle okunur: ay adı ve tutar
+  const chartText = months.map((m, i) => `${formatDate(m, 'LLLL')} ${formatMoney(sums[i])}`).join(', ')
   const paidThisMonth = foreign.filter((f) => f.sums[5] > 0)
   const paidLastMonth = [
     ...(prev > 0 ? [formatMoney(prev)] : []),
@@ -102,7 +104,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
                   </span>
                 ))}
               </div>
-              <div className="mt-auto flex h-[70px] items-end gap-2" role="img" aria-label="Son 6 ayda ödenen TL abonelik tutarları">
+              <div className="mt-auto flex h-[70px] items-end gap-2" role="img" aria-label={`Son 6 ayda ödenen TL abonelik tutarları: ${chartText}`}>
                 {months.map((m, i) => (
                   <div key={i} className="flex-1 text-center">
                     <div
