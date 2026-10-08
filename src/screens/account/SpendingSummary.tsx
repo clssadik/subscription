@@ -1,9 +1,11 @@
 import { Logo } from '@/components/Logo'
 import { Money } from '@/components/Money'
 import { Group, Row, SubPageHeader } from '@/components/SettingsList'
+import { contrastRatio } from '@/lib/color'
 import { monthlyCost } from '@/lib/dates'
 import { formatMoney } from '@/lib/format'
 import { useStore } from '@/lib/store'
+import { useTheme } from '@/lib/theme'
 import { CURRENCIES } from '@/lib/types'
 
 /**
@@ -12,6 +14,7 @@ import { CURRENCIES } from '@/lib/types'
  */
 export function SpendingSummary({ onBack }: { onBack: () => void }) {
   const { state } = useStore()
+  const page = PAGE[useTheme().resolved]
   const subs = state.subscriptions
   const totals = CURRENCIES.map((currency) => ({
     currency,
@@ -75,7 +78,7 @@ export function SpendingSummary({ onBack }: { onBack: () => void }) {
                     <span className="num">{formatMoney(monthly)}</span>
                   </div>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-page">
-                    <div className="h-full rounded-full" style={{ width: `${Math.max(4, (monthly / tlTotal) * 100)}%`, background: card.color }} />
+                    <div className="h-full rounded-full" style={{ width: `${Math.max(4, (monthly / tlTotal) * 100)}%`, background: barFill(card.color, page) }} />
                   </div>
                 </div>
               ))}
@@ -86,4 +89,12 @@ export function SpendingSummary({ onBack }: { onBack: () => void }) {
       )}
     </>
   )
+}
+
+// Kart çubuğu bu sayfa zemininde durur (koyu temada siyah)
+const PAGE = { light: '#F1ECE2', dark: '#000000' } as const
+
+/** Kart rengi zemine çok yakınsa (koyu temada siyah Papara) yazı rengi; değilse rengin kendisi (CardDetail'deki strokeOn gibi) */
+function barFill(color: string, page: string) {
+  return contrastRatio(color, page) < 1.6 ? 'var(--ink)' : color
 }
