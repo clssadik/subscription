@@ -1,5 +1,5 @@
 /** "#RGB", "#RRGGBB" ya da "RRGGBB" → [r, g, b]; geçersizse siyah */
-export function rgbOf(hex: string): [number, number, number] {
+function rgbOf(hex: string): [number, number, number] {
   let h = hex.trim().replace(/^#/, '')
   if (/^[0-9a-f]{3}$/i.test(h)) h = h.replace(/./g, (c) => c + c)
   if (!/^[0-9a-f]{6}$/i.test(h)) return [0, 0, 0]

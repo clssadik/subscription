@@ -24,7 +24,7 @@ function dayInMonth(year: number, month: number, day: number) {
 }
 
 /** Aboneliğin [start, end] aralığına düşen bütün yenilenme tarihleri. Çapadan önce yenilenme yoktur. */
-export function renewalsBetween(sub: Subscription, start: Date, end: Date) {
+function renewalsBetween(sub: Subscription, start: Date, end: Date) {
   const anchor = parseISO(sub.renewalDate)
   const monthly = sub.cycle === 'monthly'
   const step = monthly ? addMonths : addYears
@@ -46,12 +46,12 @@ export type DueCard = CreditCard & { statementDay: number }
 export const hasDue = (c: CreditCard): c is DueCard => c.kind === 'credit' && c.statementDay != null
 
 /** O ayın hesap kesimi (ay kısaysa, ör. Şubat'ta 30, ayın son günü) */
-export function statementInMonth(card: DueCard, month: Date) {
+function statementInMonth(card: DueCard, month: Date) {
   return dayInMonth(month.getFullYear(), month.getMonth(), card.statementDay)
 }
 
 /** Son ödeme: kesimden tam 10 gün sonra. Hafta sonu ya da tatil olması değiştirmez. */
-export function dueForStatement(statement: Date) {
+function dueForStatement(statement: Date) {
   return addDays(statement, 10)
 }
 
@@ -62,7 +62,7 @@ export interface CardCycle {
 }
 
 /** [start, end] aralığına son ödemesi düşen bütün dönemler. Bir ayda 0, 1 ya da 2 son ödeme olabilir. */
-export function cardCyclesBetween(card: DueCard, start: Date, end: Date): CardCycle[] {
+function cardCyclesBetween(card: DueCard, start: Date, end: Date): CardCycle[] {
   const out: CardCycle[] = []
   // Kesimden 10+ gün sonra ödeme gelir: iki ay öncesinden başlamak yeter
   for (let m = startOfMonth(addMonths(start, -2)); m <= end; m = addMonths(m, 1)) {
@@ -77,7 +77,7 @@ export function cardCyclesBetween(card: DueCard, start: Date, end: Date): CardCy
 export type PeriodKind = 'card' | BillingCycle
 
 /** Dönem anahtarı. Kesim günü ya da yenilenme tarihi sonradan değişse de o dönemin "ödendi" işareti kaybolmaz. */
-export function periodKey(kind: PeriodKind, date: Date) {
+function periodKey(kind: PeriodKind, date: Date) {
   if (kind === 'card') return format(addDays(date, -10), 'yyyy-MM')
   return format(date, kind === 'yearly' ? 'yyyy' : 'yyyy-MM')
 }
@@ -90,7 +90,7 @@ export function findPayment(payments: Payment[], refId: string, date: Date, kind
   )
 }
 
-export function isPaid(payments: Payment[], refId: string, date: Date, kind: PeriodKind) {
+function isPaid(payments: Payment[], refId: string, date: Date, kind: PeriodKind) {
   return !!findPayment(payments, refId, date, kind)
 }
 
