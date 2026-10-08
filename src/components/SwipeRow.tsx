@@ -225,6 +225,12 @@ export function SwipeRow({
       >
         {children}
       </div>
+      {/* Kaydırmadan da silinsin: ekran okuyucu ve klavye için görünmez düğme. Satır kapalıyken; açılınca yukarıdaki düğme görünür */}
+      {x === 0 && (
+        <button type="button" onClick={remove} className="sr-only">
+          {actionLabel}
+        </button>
+      )}
     </div>
   )
 }
