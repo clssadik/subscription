@@ -40,13 +40,26 @@ const PENDING_FOR = 60 * 60 * 1000
 
 type Pending = { email: string; mode: 'signup' | 'login'; at: number }
 
+/** Bekleyen girişi okur. Süresi dolmuş ya da bozuk kayıt silinir ki e-posta cihazda kalmasın. */
 function readPending(): Pending | null {
   try {
-    const p = JSON.parse(localStorage.getItem(PENDING) ?? 'null') as Pending | null
-    return p && typeof p.email === 'string' && Date.now() - p.at < PENDING_FOR ? p : null
+    const raw = localStorage.getItem(PENDING)
+    if (raw === null) return null
+    const p = JSON.parse(raw) as Partial<Pending> | null
+    if (
+      p &&
+      typeof p.email === 'string' &&
+      (p.mode === 'signup' || p.mode === 'login') &&
+      typeof p.at === 'number' &&
+      Date.now() - p.at < PENDING_FOR
+    ) {
+      return { email: p.email, mode: p.mode, at: p.at }
+    }
   } catch {
-    return null
+    // bozuk kayıt aşağıda silinir
   }
+  savePending(null)
+  return null
 }
 
 function savePending(p: Pending | null) {
