@@ -6,6 +6,7 @@ import { clearSettingsCache } from './settings'
 import { clearCache } from './store'
 import { isConfigured, supabase } from './supabase'
 import { transition } from './transition'
+import { clearScrollMemory } from './useScrollMemory'
 
 // Kod doğrulanınca giriş ekranı kısa bir "başarılı" anı gösterir; bu sürede gelen oturum bekletilir,
 // sonra Anasayfa yumuşak bir geçişle açılır (src/screens/AuthScreens.tsx CodeStep).
@@ -55,7 +56,13 @@ export function useUser() {
   )
 
   useEffect(() => {
+    // Ekranda hangi hesap olduğu: değişince ya da çıkılınca önceki hesabın kaydırma yerleri silinir
+    let shownId: string | null = null
     const apply = (next: User | null) => {
+      if ((next?.id ?? null) !== shownId) {
+        shownId = next?.id ?? null
+        clearScrollMemory()
+      }
       if (!next) return setUser(null)
       const run = () => transition('fade', () => setUser(next))
       if (held) pending = run

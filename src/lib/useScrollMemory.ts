@@ -3,6 +3,11 @@ import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react'
 // Her sekmenin kaydırma yeri (uygulama açık kaldıkça). Sekmeye ya da detaydan listeye geri dönünce kalınan yerden devam edilir.
 const saved = new Map<string, number>()
 
+/** Hesap değişince ya da çıkılınca: önceki hesabın kaydırma yerleri yeni hesapta kullanılmaz */
+export function clearScrollMemory() {
+  saved.clear()
+}
+
 /** Açık sekmeye tekrar basınca o sekmenin listesi en başa kayar (iPhone'daki gibi) */
 export const scrollToTop = (key: string) => window.dispatchEvent(new Event(`scroll-top:${key}`))
 
