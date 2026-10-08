@@ -33,20 +33,20 @@ export function InstallSteps({ className }: { className?: string }) {
         <Step n={2} icon={<PlusSquareIcon className="size-5" />}>
           Ana ekrana ekle
         </Step>
-        <Step n={3} icon={<span className="font-medium text-bh-blue">Ekle</span>}>
+        <Step n={3} icon={<span className="font-medium text-bh-blue dark:text-[#6E9BFF]">Ekle</span>}>
           Ekle ile onayla
         </Step>
       </ol>
     )
   return (
     <ol className={cn('grid gap-1', className)}>
-      <Step n={1} icon={<ShareIcon className="size-5 text-bh-blue" />}>
+      <Step n={1} icon={<ShareIcon className="size-5 text-bh-blue dark:text-[#6E9BFF]" />}>
         Alttaki Paylaş <span className="text-subtle">(yoksa önce •••)</span>
       </Step>
       <Step n={2} icon={<PlusSquareIcon className="size-5" />}>
         Ana Ekrana Ekle
       </Step>
-      <Step n={3} icon={<span className="font-medium text-bh-blue">Ekle</span>}>
+      <Step n={3} icon={<span className="font-medium text-bh-blue dark:text-[#6E9BFF]">Ekle</span>}>
         Sağ üstte Ekle
       </Step>
     </ol>
