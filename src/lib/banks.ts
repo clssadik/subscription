@@ -8,7 +8,7 @@ export const BANKS: { key: string; name: string; color: string; aliases?: string
   { key: 'akbank', name: 'Akbank', color: '#C8102E' },
   { key: 'yapikredi', name: 'Yapı Kredi', color: '#004B93' },
   { key: 'isbank', name: 'İş Bankası', color: '#0B4EA2', aliases: ['İşbank', 'Türkiye İş Bankası'] },
-  { key: 'ziraat', name: 'Ziraat Bankası', color: '#E30A17', aliases: ['T.C. Ziraat Bankası'] },
+  { key: 'ziraat', name: 'Ziraat Bankası', color: '#E30A17', aliases: ['T.C. Ziraat Bankası', 'Türkiye Ziraat Bankası'] },
   { key: 'halkbank', name: 'Halkbank', color: '#005DA8', aliases: ['Halk Bankası', 'Türkiye Halk Bankası'] },
   { key: 'vakifbank', name: 'VakıfBank', color: '#2B2A29', aliases: ['Vakıf Bankası', 'Vakıf', 'Türkiye Vakıflar Bankası'] },
   { key: 'qnb', name: 'QNB', color: '#890C58', aliases: ['Finansbank'] },
@@ -64,7 +64,8 @@ function exactBank(joined: string) {
  * Yazılan adı bilinen bankaya bağlar (renk ve logo için). Sırayla dener:
  * 1) Tam ad ya da takma ad
  * 2) Adın kelimeleri yazılanın başındaysa, en uzun olan: "Ziraat Katılım Bankası" → Ziraat Katılım
- * 3) İlk kelime: "Garanti Bonus" → Garanti BBVA
+ * 3) Yazılanın kelimeleri bir adın ya da takma adın başındaysa, en kısa olan: "Türkiye Garanti" → Garanti BBVA
+ * 4) İlk kelime: "Garanti Bonus" → Garanti BBVA
  * Kelimenin parçası eşleşmez: "Paramount" Param'a, "Ingilizce" ING'e bağlanmaz.
  */
 function matchBank(name: string) {
@@ -75,6 +76,9 @@ function matchBank(name: string) {
   if (exact) return exact
   const prefixed = INDEX.flatMap(({ bank, forms }) => forms.filter((f) => isWordPrefix(f, w)).map((f) => ({ bank, len: f.length })))
   if (prefixed.length) return prefixed.sort((a, b) => b.len - a.len)[0].bank
+  // "Türkiye" tek başına en kısa olan Türkiye Finans'a gider; "Türkiye Garanti" gibi kısmi adlar kendi bankasına
+  const starts = INDEX.flatMap(({ bank, forms }) => forms.filter((f) => isWordPrefix(w, f)).map((f) => ({ bank, len: f.length })))
+  if (starts.length) return starts.sort((a, b) => a.len - b.len)[0].bank
   return INDEX.find(({ forms }) => forms[0][0] === w[0])?.bank
 }
 
