@@ -9,7 +9,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
 
 const TZ = 'Europe/Istanbul'
-const APP_URL = 'https://subly-tr.vercel.app'
+const APP_URL = 'https://monthwise-tr.vercel.app'
 /** Cron her 15 dakikada çalışır; günün son turu 23:45. Daha geç seçilen saat 23:45'te gönderilir. */
 const LAST_RUN_MINUTES = 23 * 60 + 45
 
