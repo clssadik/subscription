@@ -21,6 +21,8 @@ export function HoldToConfirm({ children, onConfirm, className }: { children: Re
   const startedAt = useRef(0)
   // Basılı tutan parmak (ya da tuş): aynı anda ikinci parmak yok sayılır
   const active = useRef<number | null>(null)
+  // Klavye basılıyken işaretli: tarayıcının o basıştan ürettiği tıklama onay sayılmasın
+  const typing = useRef(false)
 
   // Ekran kapanınca bekleyen zamanlayıcılar durur: yarıda kalan basılı tutma onConfirm'i çağırmaz
   useEffect(
@@ -33,6 +35,7 @@ export function HoldToConfirm({ children, onConfirm, className }: { children: Re
   // Uygulama arka plana geçince ya da pencere odağını kaybedince bırakılış gelmeyebilir: basılı tutma iptal edilir
   useEffect(() => {
     const cancel = () => {
+      typing.current = false
       if (active.current === null) return
       active.current = null
       window.clearTimeout(timer.current)
@@ -97,8 +100,22 @@ export function HoldToConfirm({ children, onConfirm, className }: { children: Re
       onLostPointerCapture={(e) => end(e.pointerId)}
       onContextMenu={(e) => e.preventDefault()}
       // Klavyeyle: Enter basılı tutulunca da aynı
-      onKeyDown={(e) => !e.repeat && (e.key === 'Enter' || e.key === ' ') && begin(KEYBOARD, true)}
-      onKeyUp={() => end(KEYBOARD)}
+      onKeyDown={(e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return
+        typing.current = true
+        if (!e.repeat) begin(KEYBOARD, true)
+      }}
+      onKeyUp={() => {
+        end(KEYBOARD)
+        // Boşluk tıklaması bırakılınca, Enter tıklaması basınca gelir: bayrak ancak ondan sonra iner
+        window.setTimeout(() => {
+          typing.current = false
+        })
+      }}
+      // Ekran okuyucuyla etkinleştirme tıklama olarak gelir (detail 0). Parmakla dokunuş ve klavye tıklaması onay sayılmaz.
+      onClick={(e) => {
+        if (e.detail === 0 && !typing.current) onConfirm()
+      }}
       className={cn('relative overflow-hidden select-none', className)}
     >
       {/* Dolum: basılı tutarken soldan sağa dolar, bırakınca hızlıca geri çekilir */}
