@@ -403,10 +403,12 @@ function buildCard(c: NewCard, id: string, existing?: CreditCard): CreditCard {
 
 function CardInputs({ value, onChange, idPrefix, existing }: { value: NewCard; onChange: (c: NewCard) => void; idPrefix: string; existing?: CreditCard }) {
   const set = (patch: Partial<NewCard>) => onChange({ ...value, ...patch })
-  // Son 4 hane: yazarken ilk 4 hane kalır; bir seferde birden çok hane gelirse (yapıştırma: "4111 1111 1111 1234") sondaki 4 hane alınır
+  // Son 4 hane: yazarken ilk 4 hane kalır. Bir seferde 8 ya da daha çok yeni hane gelirse (kart numarası yapıştırıldı) sondaki 4 hane alınır;
+  // az hane gelirse ("12" yazılı, "3456" yapıştırıldı) yazılan hane kaybolmasın diye ilk 4 hane kalır
   const last4Of = (typed: string) => {
     const next = typed.replace(/\D/g, '')
-    return next.length - value.last4.length > 1 ? next.slice(-4) : next.slice(0, 4)
+    const added = next.length - value.last4.length
+    return added >= 8 ? next.slice(-4) : next.slice(0, 4)
   }
   return (
     <>
