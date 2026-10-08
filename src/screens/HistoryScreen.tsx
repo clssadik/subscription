@@ -126,7 +126,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
             <span className="flex size-12 items-center justify-center rounded-full bg-bh-green/15 text-bh-green">
               <CheckIcon className="size-6" strokeWidth={2.2} />
             </span>
-            <p className="mt-3 font-medium">Henüz ödeme yok.</p>
+            <p className="mt-3">Henüz ödeme yok.</p>
           </div>
         )}
         {[...groups.entries()].map(([month, list]) => (
