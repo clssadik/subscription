@@ -4,7 +4,7 @@ import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { keepPageInPlace } from '@/lib/keyboard'
+import { hideCaretWhileScrolling, keepPageInPlace } from '@/lib/keyboard'
 import { reloadWhenIdle } from '@/lib/reload'
 import { guardDocumentScroll } from '@/lib/transition'
 
@@ -38,6 +38,8 @@ guardDocumentScroll()
 
 // Klavye açılınca sayfa gereksiz yere yukarı kaymasın (src/lib/keyboard.ts)
 keepPageInPlace()
+// Kaydırırken yazı imleci gizli: iPhone'da kayan alandan kopup ayrı hareket ediyordu
+hideCaretWhileScrolling()
 
 // Kopyalama kapalı: yazı alanları dışında kopyalama, kesme ve sağ tık menüsü engellenir (görünüm: src/index.css)
 const inField = (t: EventTarget | null) => t instanceof HTMLElement && !!t.closest('input, textarea, [contenteditable="true"]')

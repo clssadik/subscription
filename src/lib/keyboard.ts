@@ -146,3 +146,26 @@ export function keepPageInPlace() {
     else if (field.top < box.top + 12) scroller.scrollTop -= box.top + 12 - field.top
   }
 }
+
+/**
+ * Kaydırırken yazı imleci gizlenir. iPhone imleci içerikten ayrı çiziyor: kayan alan (ekleme paneli, Profil, giriş ekranları…)
+ * kaydırılırken imleç yerinde kalıp alandan kopuyor, ayrı hareket ediyormuş gibi görünüyordu. Kaydırma durunca yerinde geri gelir.
+ * Tek dinleyici her kayan alanı yakalar (yakalama aşaması); yazı alanı odakta değilse hiçbir şey yapmaz.
+ */
+export function hideCaretWhileScrolling() {
+  const root = document.documentElement
+  let timer = 0
+  const typing = () => {
+    const el = document.activeElement
+    return el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && !['checkbox', 'radio', 'button', 'submit', 'range', 'color', 'file'].includes(el.type))
+  }
+  const onScroll = () => {
+    if (!typing()) return
+    root.style.caretColor = 'transparent'
+    window.clearTimeout(timer)
+    timer = window.setTimeout(() => (root.style.caretColor = ''), 150)
+  }
+  document.addEventListener('scroll', onScroll, { capture: true, passive: true })
+  // Klavye açıkken sayfanın görünen kısmı da kayabiliyor (iPhone odaktaki alanı göstermek için kaydırıyor)
+  window.visualViewport?.addEventListener('scroll', onScroll, { passive: true })
+}
