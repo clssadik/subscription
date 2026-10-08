@@ -18,10 +18,16 @@ self.addEventListener('push', (event) => {
 })
 
 // Push servisi aboneliği yenilediğinde (ör. anahtar değişince) aynı ayarlarla yeniden abone olunur.
-// Yeni adres sunucuya uygulama açılınca kaydedilir (src/lib/push.ts current()).
+// Yeni adresi hesaba sayfa kaydeder (servis çalışanında oturum bilgisi yok): açık uygulamaya haber verilir, o hemen kaydeder
+// (src/lib/push.ts). Açık pencere yoksa adres bir sonraki açılışta kaydedilir.
 self.addEventListener('pushsubscriptionchange', (event) => {
   const options = (event.oldSubscription && event.oldSubscription.options) || { userVisibleOnly: true }
-  event.waitUntil(self.registration.pushManager.subscribe(options))
+  event.waitUntil(
+    self.registration.pushManager
+      .subscribe(options)
+      .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
+      .then((list) => list.forEach((client) => client.postMessage({ type: 'push-subscription-changed' }))),
+  )
 })
 
 self.addEventListener('notificationclick', (event) => {

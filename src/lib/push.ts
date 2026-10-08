@@ -175,9 +175,17 @@ export function usePush() {
     const onVisible = () => {
       if (document.visibilityState === 'visible') void refresh()
     }
+    // Servis çalışanı yeni bir adres alınca haber verir (public/push-handler.js): adres hemen kaydedilir
+    const onMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'push-subscription-changed') void refresh()
+    }
     void refresh()
     document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
+    navigator.serviceWorker?.addEventListener('message', onMessage)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      navigator.serviceWorker?.removeEventListener('message', onMessage)
+    }
   }, [])
 
   const enable = useCallback(async () => {
