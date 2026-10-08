@@ -103,11 +103,12 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   function toggle(i: MonthItem) {
     haptic()
     const dueDate = formatDate(i.date, 'yyyy-MM-dd')
-    const run = () =>
+    // Yön açıkça verilir (true: ödendi, false: kaldırıldı). "Geri al" ters yönü gönderir; sonradan elle değişmiş bir işareti yeniden çevirmez.
+    const mark = (paid: boolean) =>
       i.kind === 'subscription'
-        ? dispatch({ type: 'payment/toggle', kind: 'subscription', refId: i.subscription.id, dueDate, amount: i.subscription.amount, currency: i.subscription.currency })
-        : dispatch({ type: 'payment/toggle', kind: 'card', refId: i.card.id, dueDate })
-    run()
+        ? dispatch({ type: 'payment/toggle', kind: 'subscription', refId: i.subscription.id, dueDate, amount: i.subscription.amount, currency: i.subscription.currency, paid })
+        : dispatch({ type: 'payment/toggle', kind: 'card', refId: i.card.id, dueDate, paid })
+    mark(!i.paid)
     // Ödendi işaretlenince ses ve kısa onay; işaret kaldırılınca ikisi de yok
     if (!i.paid) play('paid')
     if (!i.paid) toast(`${i.kind === 'subscription' ? i.subscription.name : `${i.card.bankName} ekstresi`} ödendi`, {
@@ -116,7 +117,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
           onClick: () => {
             haptic()
             play('undo')
-            run()
+            mark(false)
           },
         },
       })
