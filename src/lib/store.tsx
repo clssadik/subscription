@@ -365,7 +365,7 @@ function createSync(opts: {
     } catch (e) {
       if (e instanceof DbError && e.rejected) {
         // Sunucu değişikliği kabul etmedi: o yazma ekrandan çıkar, bu sırada yapılan yeni değişiklikler kalır
-        toast.error('Değişiklik kaydedilemedi. İnternet bağlantısını kontrol edin.')
+        toast.error('Değişiklik kaydedilemedi.')
         rejectedFrom = target
         await reconcile()
       } else {
