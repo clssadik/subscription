@@ -121,6 +121,13 @@ function reducer(state: State, action: Action): State {
         return { ...state, payments: state.payments.filter((p) => p.id !== existing.id) }
       }
       if (action.paid === false) return state
+      // Tür değişmiş abonelikte aynı güne eski türle kaydedilmiş ödeme varsa yeni satır eklenmez (veritabanında gün başına
+      // tek ödeme): o ödeme yeni türe geçer
+      const sameDay = state.payments.find((p) => p.refId === action.refId && p.dueDate === action.dueDate)
+      if (sameDay && kind !== 'card') {
+        const moved: Payment = { ...sameDay, cycle: kind, amount: action.amount ?? sameDay.amount, currency: action.currency ?? sameDay.currency }
+        return { ...state, payments: state.payments.map((p) => (p.id === sameDay.id ? moved : p)) }
+      }
       const payment: Payment = {
         id: newId(),
         kind: action.kind,
