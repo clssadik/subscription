@@ -68,7 +68,7 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
               isToday ? 'bg-bh-yellow text-[#141414]' : 'bg-page dark:bg-bh-blue/30 dark:text-white',
             )}
           >
-            <span className="num num-bold text-lg leading-none">{next.getDate()}</span>
+            <span className="num font-medium text-lg leading-none">{next.getDate()}</span>
             <span className={cn('label text-[8px]', !isToday && 'text-subtle dark:text-white/75')}>{formatDate(next, 'MMM').toLocaleUpperCase('tr')}</span>
           </div>
           <Logo serviceKey={s.serviceKey} name={s.name} size={32} />
