@@ -38,6 +38,10 @@ export function useSwipeBack(
     let active = false
     let below: HTMLElement | null = null
     let last = { x: 0, t: 0, v: 0 }
+    // Sürükleme başladıysa true: sökülürken sayfalar ancak o zaman temizlenir (StrictMode'un ilk sökülmesi canlı sayfayı bozmasın)
+    let moved = false
+    // Bırakılınca başlayan kapanışı durdurur; efekt sökülürse onBack bir daha çağrılmaz
+    let abortClose: (() => void) | null = null
     const width = () => window.innerWidth
 
     // Detay sağa x kadar kaymışken iki sayfanın duruşu
@@ -86,6 +90,7 @@ export function useSwipeBack(
           return
         }
         active = true
+        moved = true
         below = latest.current.under()
         try {
           el.setPointerCapture(e.pointerId)
@@ -158,6 +163,14 @@ export function useSwipeBack(
       window.addEventListener('touchstart', early, true)
       window.addEventListener('pointerdown', early, true)
       anim.onfinish = finish
+      // Efekt bu sırada sökülürse kapanış yarım kalır: onBack çağrılmaz, dinleyiciler ve animasyonlar kalkar
+      abortClose = () => {
+        finished = true
+        anim.onfinish = null
+        anim.cancel()
+        window.removeEventListener('touchstart', early, true)
+        window.removeEventListener('pointerdown', early, true)
+      }
     }
     const cancel = (e: PointerEvent) => {
       if (!start || e.pointerId !== start.id) return
@@ -178,6 +191,11 @@ export function useSwipeBack(
       el.removeEventListener('pointermove', move)
       el.removeEventListener('pointerup', up)
       el.removeEventListener('pointercancel', cancel)
+      if (!moved) return
+      // Yarıda kalan sürükleme ya da kapanış: önceki sayfa ve detay eski hâline döner
+      abortClose?.()
+      clear(el)
+      clear(below)
     }
     // key: her yeni detay sayfası yeni bir öğe
   }, [page, enabled, key])
