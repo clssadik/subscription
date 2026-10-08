@@ -167,6 +167,16 @@ function Main({ user }: { user: User }) {
     else setAccountPage(null)
   }
 
+  // Sekmeye geçer (alt menü ve Android geri tuşu). Aynı sekmeye basınca detaydan listeye geri dönülür
+  const switchTab = (t: Tab) =>
+    go(t === tab ? 'pop' : TAB_ORDER.indexOf(t) > TAB_ORDER.indexOf(tab) ? 'tab-right' : 'tab-left', () => {
+      setTab(t)
+      setVisited((v) => (v.includes(t) ? v : [...v, t]))
+      setDetailId(null)
+      setCardId(null)
+      setAccountPage(null)
+    })
+
   // Detay sayfasında sağa çekerek geri dönüş (iPhone gibi): altta önceki sekme görünür. Bırakınca geri dönüş animasyonsuz yapılır,
   // çünkü sayfa zaten parmakla kaydırılıp kapatıldı (src/lib/useSwipeBack.ts).
   const detailPage = useRef<HTMLElement>(null)
@@ -186,8 +196,9 @@ function Main({ user }: { user: User }) {
   })
 
   // Android geri tuşu: açık katmanlar tarayıcı geçmişiyle eşleşir. Açılan her katman bir kayıt ekler, kapanan her katman bir geri adımı
-  // atar (kaydırma ve geri düğmesi de böyle kapanır). Geri tuşu üstteki katmanı kapatır. Sekmeler ve alttan açılan paneller kayıt eklemez.
-  const layerCount = (detailId ? 1 : 0) + (cardId ? 1 : 0) + (accountPage ? 1 : 0)
+  // atar (kaydırma ve geri düğmesi de böyle kapanır). Geri tuşu en üsttekini kapatır: önce alttan açılan panel, sonra detay sayfaları,
+  // en son Anasayfa dışındaki sekme (Anasayfa'ya dönülür). Anasayfa'da geri tuşu uygulamadan çıkar.
+  const layerCount = (tab !== 'home' ? 1 : 0) + (detailId ? 1 : 0) + (cardId ? 1 : 0) + (accountPage ? 1 : 0) + (sheet ? 1 : 0)
   const historyDepth = useRef(0)
   useLayoutEffect(() => {
     const have = historyDepth.current
@@ -201,9 +212,14 @@ function Main({ user }: { user: User }) {
     }
   })
   // Olay dinleyicisi tek sefer bağlanır; her çizimden sonra en güncel işlevleri okur
-  const latest = useRef({ go, closeTop })
+  const back = () => {
+    if (sheet) setSheet(null)
+    else if (detailId || cardId || accountPage) go('pop', closeTop)
+    else if (tab !== 'home') switchTab('home')
+  }
+  const latest = useRef({ back })
   useLayoutEffect(() => {
-    latest.current = { go, closeTop }
+    latest.current = { back }
   })
   useEffect(() => {
     const onPop = (e: PopStateEvent) => {
@@ -211,7 +227,7 @@ function Main({ user }: { user: User }) {
       // Geçmiş zaten bu kadarsa (kendi geri adımımızın ardından gelen olay) bir şey yapılmaz: kapanış iki kez olmaz
       if (target >= historyDepth.current) return
       historyDepth.current = target
-      latest.current.go('pop', latest.current.closeTop)
+      latest.current.back()
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
@@ -338,14 +354,7 @@ function Main({ user }: { user: User }) {
             document.querySelector('[data-screen-active] [data-scroller]')?.scrollTo({ top: 0, behavior: 'smooth' })
             return
           }
-          // Aynı sekmeye basınca detaydan listeye geri dönülür
-          go(t === tab ? 'pop' : TAB_ORDER.indexOf(t) > TAB_ORDER.indexOf(tab) ? 'tab-right' : 'tab-left', () => {
-            setTab(t)
-            setVisited((v) => (v.includes(t) ? v : [...v, t]))
-            setDetailId(null)
-            setCardId(null)
-            setAccountPage(null)
-          })
+          switchTab(t)
         }}
       />
       <AddSheet target={sheet} onClose={() => setSheet(null)} />
