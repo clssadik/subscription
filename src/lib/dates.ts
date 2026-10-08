@@ -94,11 +94,22 @@ export function isPaid(payments: Payment[], refId: string, date: Date, kind: Per
   return !!findPayment(payments, refId, date, kind)
 }
 
-/** Bugünden itibaren henüz "ödendi" işaretlenmemiş ilk yenilenme. Çapa 3 yıldan uzaktaysa pencerede yenilenme yoktur: çapa döner. */
+/** [start, end] içindeki ödenmemiş ilk yenilenme. Hepsi ödendiyse ya da aralıkta yenilenme yoksa ilk yenilenme (ya da çapa) döner. */
+function firstUnpaid(sub: Subscription, payments: Payment[], start: Date, end: Date) {
+  const dates = renewalsBetween(sub, start, end)
+  return dates.find((d) => !isPaid(payments, sub.id, d, sub.cycle)) ?? dates[0] ?? parseISO(sub.renewalDate)
+}
+
+/** Son iki aydan itibaren ödendi işaretlenmemiş ilk yenilenme. Gecikmiş olan önce gelir ve ödenene kadar kalır. Çapa 3 yıldan uzaktaysa pencerede yenilenme yoktur: çapa döner. */
 export function nextRenewal(sub: Subscription, payments: Payment[] = [], from: Date = new Date()) {
   const today = startOfDay(from)
-  const dates = renewalsBetween(sub, today, addYears(today, 3))
-  return dates.find((d) => !isPaid(payments, sub.id, d, sub.cycle)) ?? dates[0] ?? parseISO(sub.renewalDate)
+  return firstUnpaid(sub, payments, addMonths(today, -2), addYears(today, 3))
+}
+
+/** Bugünden itibaren ödendi işaretlenmemiş ilk yenilenme. Gecikmiş olanlar atlanır (ana ekrandaki "Sıradaki" için). */
+export function upcomingRenewal(sub: Subscription, payments: Payment[] = [], from: Date = new Date()) {
+  const today = startOfDay(from)
+  return firstUnpaid(sub, payments, today, addYears(today, 3))
 }
 
 /**
@@ -199,6 +210,25 @@ export function monthItems(
         paid: isPaid(payments, c.id, date, 'card'),
         card: c,
       })),
+    ),
+  ]
+  return items.sort((a, b) => a.date.getTime() - b.date.getTime())
+}
+
+/** Bu aydan önceki, ödendi işaretlenmemiş dönemler (son iki ay), en eskisi başta. Ana ekrandaki "Gecikmiş" listesi. */
+export function overdueItems(cards: CreditCard[], subscriptions: Subscription[], payments: Payment[], from: Date = new Date()): MonthItem[] {
+  const today = startOfDay(from)
+  const thisMonth = startOfMonth(today)
+  const items: MonthItem[] = [
+    ...subscriptions.flatMap((s) =>
+      renewalsBetween(s, addMonths(today, -2), addDays(today, -1))
+        .filter((date) => date < thisMonth && !isPaid(payments, s.id, date, s.cycle))
+        .map((date) => ({ kind: 'subscription' as const, date, paid: false, subscription: s })),
+    ),
+    ...cards.filter(hasDue).flatMap((c) =>
+      overdueCardCycles(c, payments, today)
+        .filter(({ due }) => due < thisMonth)
+        .map(({ due: date }) => ({ kind: 'card' as const, date, paid: false, card: c })),
     ),
   ]
   return items.sort((a, b) => a.date.getTime() - b.date.getTime())

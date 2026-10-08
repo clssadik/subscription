@@ -99,7 +99,7 @@ export function SubscriptionDetail({ id, nav }: { id: string; nav: Nav }) {
 
       <div className="mt-2 grid grid-cols-2 gap-2">
         <div className="flex h-[92px] flex-col rounded-[22px] bg-bh-yellow p-3 text-[#141414]">
-          <span className="label">Sonraki</span>
+          <span className="label">{daysUntil(next) < 0 ? 'Gecikmiş' : 'Sonraki'}</span>
           <span className="num mt-auto text-lg">{formatDate(next, 'd MMMM')}</span>
           <span className="text-[11px]">{dueLabel(next)} · {formatDate(next, 'EEEE')}</span>
         </div>

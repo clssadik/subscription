@@ -36,12 +36,13 @@ export function SubscriptionsScreen({ nav }: { nav: Nav }) {
     .map((s) => ({ s, next: nextRenewal(s, payments) }))
     .sort((a, b) => a.next.getTime() - b.next.getTime())
 
-  // Yaklaşan ödemeye göre üç grup
+  // Yaklaşan ödemeye göre gruplar; gecikenler en üstte
   const today = startOfDay(new Date())
   const weekEnd = endOfWeek(today, { weekStartsOn: 1 })
   const monthEnd = endOfMonth(today)
   const groups = [
-    { title: 'Bu hafta', list: rows.filter((r) => r.next <= weekEnd) },
+    { title: 'Gecikmiş', list: rows.filter((r) => r.next < today) },
+    { title: 'Bu hafta', list: rows.filter((r) => r.next >= today && r.next <= weekEnd) },
     { title: 'Bu ay', list: rows.filter((r) => r.next > weekEnd && r.next <= monthEnd) },
     { title: 'Sonra', list: rows.filter((r) => r.next > monthEnd) },
   ].filter((g) => g.list.length > 0)

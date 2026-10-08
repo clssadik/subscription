@@ -8,7 +8,7 @@ import { HomeQuickStart } from '@/components/QuickStart'
 import { ScrollPage } from '@/components/ScrollPage'
 import { AddButton, DateHeader } from '@/components/ScreenHeader'
 import { ShareBar } from '@/components/ShareBar'
-import { daysUntil, dueLabel, hasDue, monthItems, nextCardDue, nextRenewal, type MonthItem } from '@/lib/dates'
+import { daysUntil, dueLabel, hasDue, monthItems, nextCardDue, overdueItems, upcomingRenewal, type MonthItem } from '@/lib/dates'
 import { formatDate, formatMoney } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { play } from '@/lib/sound'
@@ -76,6 +76,8 @@ export function HomeScreen({ nav }: { nav: Nav }) {
     })
   }
   const items = monthItems(cards, subscriptions, payments)
+  // Önceki aylardan ödenmemiş olanlar (bu ayın listesinin üstünde)
+  const overdue = overdueItems(cards, subscriptions, payments)
   const subItems = items.filter((i) => i.kind === 'subscription')
 
   const totals = CURRENCIES.map((c) => {
@@ -90,7 +92,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
   const others = totals.slice(1).filter((t) => t.total > 0)
 
   const upcoming = subscriptions
-    .map((s) => ({ s, date: nextRenewal(s, payments) }))
+    .map((s) => ({ s, date: upcomingRenewal(s, payments) }))
     .sort((a, b) => a.date.getTime() - b.date.getTime())
   const [first, second] = upcoming
   const nextCard = cards
@@ -118,6 +120,44 @@ export function HomeScreen({ nav }: { nav: Nav }) {
           },
         },
       })
+  }
+
+  // Bir ödeme satırı: "ödendi" işareti, adı (basılı tutulunca açılır) ve tutarı. Bu ayın ve gecikmiş listelerinde aynı.
+  const row = (i: MonthItem) => {
+    const key = `${i.kind}-${i.kind === 'card' ? i.card.id : i.subscription.id}-${i.date.getTime()}`
+    return (
+      <li key={key} className="flex items-center gap-3 rounded-[18px] bg-surface py-2 pr-3 pl-1.5 transition-transform duration-100 has-[button:active]:scale-[0.98]">
+        <button
+          onClick={() => toggle(i)}
+          aria-label={i.paid ? 'Ödenmedi olarak işaretle' : 'Ödendi olarak işaretle'}
+          aria-pressed={i.paid}
+          className="flex size-11 shrink-0 items-center justify-center"
+        >
+          <span className={cn('flex size-6 items-center justify-center rounded-full border-[1.5px] transition-colors', i.paid ? 'check-pop border-bh-green bg-bh-green text-white' : 'border-subtle/50')}>
+            {i.paid && <CheckIcon className="size-4" strokeWidth={2.5} />}
+          </span>
+        </button>
+        {i.kind === 'subscription' ? (
+          <HoldButton onOpen={() => nav.openSubscription(i.subscription.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+            <Logo serviceKey={i.subscription.serviceKey} name={i.subscription.name} size={30} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-medium">{i.subscription.name}</span>
+              <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · {i.paid ? 'ödendi' : dueLabel(i.date)}</span>
+            </span>
+            <span className="num text-[15px]">{formatMoney(i.subscription.amount, i.subscription.currency)}</span>
+          </HoldButton>
+        ) : (
+          <HoldButton onOpen={() => nav.openCard(i.card.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+            <BankMark bankName={i.card.bankName} color={i.card.color} size={30} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-medium">{i.card.bankName}</span>
+              <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · son ödeme · {i.paid ? 'ödendi' : dueLabel(i.date)}</span>
+            </span>
+            <span className="num text-[15px]">•• {i.card.last4}</span>
+          </HoldButton>
+        )}
+      </li>
+    )
   }
 
   if (subscriptions.length === 0 && cards.length === 0) {
@@ -256,46 +296,16 @@ export function HomeScreen({ nav }: { nav: Nav }) {
         {/* Listenin üst boşluğu bloğun açık haldeki yüksekliği kadar */}
         {/* En az kayan alan boyu + 1px: liste kısa olsa da iPhone'daki gibi esner */}
         <div ref={content} className="min-h-[calc(100%+1px)]" style={{ paddingTop: blockHeight }}>
+            {/* Önceki aylardan ödenmemiş olanlar, en eskisi başta; bu ayın listesinin üstünde */}
+            {overdue.length > 0 && (
+              <>
+                <h2 className="label mt-3 mb-2 px-1 text-subtle">Gecikmiş</h2>
+                <ul className="grid gap-1.5">{overdue.map(row)}</ul>
+              </>
+            )}
             {/* Bu ayın bütün ödemeleri; soldaki yuvarlak "ödendi" işareti */}
             <h2 className="label mt-3 mb-2 px-1 text-subtle">{formatDate(new Date(), 'LLLL')} ödemeleri</h2>
-            <ul className="grid gap-1.5">
-              {items.map((i) => {
-                const key = `${i.kind}-${i.kind === 'card' ? i.card.id : i.subscription.id}-${i.date.getTime()}`
-                return (
-                  <li key={key} className="flex items-center gap-3 rounded-[18px] bg-surface py-2 pr-3 pl-1.5 transition-transform duration-100 has-[button:active]:scale-[0.98]">
-                    <button
-                      onClick={() => toggle(i)}
-                      aria-label={i.paid ? 'Ödenmedi olarak işaretle' : 'Ödendi olarak işaretle'}
-                      aria-pressed={i.paid}
-                      className="flex size-11 shrink-0 items-center justify-center"
-                    >
-                      <span className={cn('flex size-6 items-center justify-center rounded-full border-[1.5px] transition-colors', i.paid ? 'check-pop border-bh-green bg-bh-green text-white' : 'border-subtle/50')}>
-                        {i.paid && <CheckIcon className="size-4" strokeWidth={2.5} />}
-                      </span>
-                    </button>
-                    {i.kind === 'subscription' ? (
-                      <HoldButton onOpen={() => nav.openSubscription(i.subscription.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                        <Logo serviceKey={i.subscription.serviceKey} name={i.subscription.name} size={30} />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate font-medium">{i.subscription.name}</span>
-                          <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · {i.paid ? 'ödendi' : dueLabel(i.date)}</span>
-                        </span>
-                        <span className="num text-[15px]">{formatMoney(i.subscription.amount, i.subscription.currency)}</span>
-                      </HoldButton>
-                    ) : (
-                      <HoldButton onOpen={() => nav.openCard(i.card.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                        <BankMark bankName={i.card.bankName} color={i.card.color} size={30} />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate font-medium">{i.card.bankName}</span>
-                          <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · son ödeme · {i.paid ? 'ödendi' : dueLabel(i.date)}</span>
-                        </span>
-                        <span className="num text-[15px]">•• {i.card.last4}</span>
-                      </HoldButton>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
+            <ul className="grid gap-1.5">{items.map(row)}</ul>
         </div>
       </div>
     </div>
