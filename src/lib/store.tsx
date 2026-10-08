@@ -2,7 +2,7 @@ import { format, parseISO } from 'date-fns'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { bankColor } from './banks'
-import { DbError, diffState, hasChanges, loadAll, pushChanges, type ListChanges } from './db'
+import { diffState, hasChanges, loadAll, pushChanges, type ListChanges } from './db'
 import { DEMO_ID } from './demo'
 import { findPayment, type PeriodKind } from './dates'
 import { hasLogo, matchService, normalize } from './services'
@@ -280,7 +280,7 @@ function createSync(opts: {
   let base = opts.base
   // İlk okuma bitmeden hiçbir şey gönderilmez: veritabanı bilinmeden yazmak başkasının değişikliğinin üstüne yazabilir
   let loaded = false
-  // Sunucunun reddettiği yazmanın durumu. Doluyken önce okuma yapılır; gönderim, reddedilen yazma ekrandan çıkana kadar durur
+  // Sunucunun bazı satırları reddettiği gönderimin durumu. Doluyken önce okuma yapılır; reddedilenler ekrandan çıkar
   let rejectedFrom: State | null = null
   // Ağ hatası mesajı zaten gösterildi mi; bağlantı gelip bir işlem tutunca sıfırlanır
   let alerted = false
@@ -331,7 +331,7 @@ function createSync(opts: {
   }
 
   /** Veritabanını okur. Gönderilmemiş değişiklikler yeni veriye uygulanır; ekrandan kaybolmazlar.
-   *  Sunucunun reddettiği yazma (rejectedFrom) bu farkın dışında kalır: onu sunucu zaten kabul etmedi. */
+   *  Gönderilmiş değişiklikler (base ya da rejectedFrom) bu farkın dışında kalır: kabul edilenler veritabanında, reddedilenler ekrandan çıkar. */
   async function reconcile(): Promise<boolean> {
     if (!userId || stopped) return false
     let data: State
@@ -356,25 +356,26 @@ function createSync(opts: {
     return true
   }
 
-  /** Bekleyen farkı veritabanına yazar. Başarılıysa onaylanmış durum ilerler. */
+  /** Bekleyen farkı veritabanına yazar. Reddedilen satırlar ekrandan çıkar; başarılıysa onaylanmış durum ilerler. */
   async function push() {
     if (!userId || stopped) return
     const target = latest
+    let refused: boolean
     try {
-      await pushChanges(userId, base, target)
-    } catch (e) {
-      if (e instanceof DbError && e.rejected) {
-        // Sunucu değişikliği kabul etmedi: o yazma ekrandan çıkar, bu sırada yapılan yeni değişiklikler kalır
-        toast.error('Değişiklik kaydedilemedi.')
-        rejectedFrom = target
-        await reconcile()
-      } else {
-        // Bağlantı sorunu: değişiklik ekranda ve cihazda kalır, bağlantı gelince yeniden denenir
-        failed('Değişiklik kaydedilemedi. İnternet bağlantısını kontrol edin.')
-      }
+      refused = await pushChanges(userId, base, target)
+    } catch {
+      // Bağlantı sorunu: değişiklik ekranda ve cihazda kalır, bağlantı gelince yeniden denenir
+      failed('Değişiklik kaydedilemedi. İnternet bağlantısını kontrol edin.')
       return
     }
     if (stopped) return
+    if (refused) {
+      // Sunucu bazı satırları kabul etmedi: yalnız onlar çıkar; kabul edilenler veritabanından gelir, yeni değişiklikler kalır
+      toast.error('Değişiklik kaydedilemedi.')
+      rejectedFrom = target
+      await reconcile()
+      return
+    }
     alerted = false
     base = target
     persist(userId, latest, base)

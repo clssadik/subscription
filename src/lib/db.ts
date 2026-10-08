@@ -175,28 +175,46 @@ export function hasChanges(changes: StateChanges) {
   return Object.values(changes).some((l) => l.upserts.length > 0 || l.deletes.length > 0)
 }
 
+/** Toplu yazma sunucuda reddedilirse satırlar tek tek denenir: bir çakışan satır yüzünden öteki satırlar kaybolmaz.
+ *  Döner: reddedilen satır sayısı. Bağlantı ya da geçici bir hata dışarı çıkar. */
+async function sendRows<T>(rows: T[], send: (batch: T[]) => PromiseLike<Res<unknown>>): Promise<number> {
+  if (rows.length === 0) return 0
+  try {
+    check(await send(rows))
+    return 0
+  } catch (e) {
+    if (!(e instanceof DbError) || !e.rejected) throw e
+    if (rows.length === 1) return 1
+  }
+  let refused = 0
+  for (const row of rows) refused += await sendRows([row], send)
+  return refused
+}
+
 /** Önceki ve yeni durum arasındaki farkı veritabanına yazar. Satırlar açıkça bu kullanıcıya yazılır
- *  (oturum başka bir hesaba geçmişse yazma reddedilir, başkasının hesabına karışmaz). */
-export async function pushChanges(userId: string, before: State, after: State) {
+ *  (oturum başka bir hesaba geçmişse yazma reddedilir, başkasının hesabına karışmaz).
+ *  Sunucunun reddettiği satır varsa true döner; öteki satırlar yine kaydedilir. Bağlantı sorununda hata fırlatır. */
+export async function pushChanges(userId: string, before: State, after: State): Promise<boolean> {
   const d = diffState(before, after)
   const mine = { user_id: userId }
+  let refused = 0
 
   // Sıra önemli: abonelik bir karta, ödeme bir aboneliğe bağlı olabilir.
   // Önce silinenler (en bağımlıdan başlayarak), sonra eklenenler (en bağımsızdan başlayarak).
-  if (d.payments.deletes.length) check(await supabase.from('payments').delete().eq('user_id', userId).in('id', d.payments.deletes))
-  if (d.subscriptions.deletes.length) check(await supabase.from('subscriptions').delete().eq('user_id', userId).in('id', d.subscriptions.deletes))
-  if (d.cards.deletes.length) check(await supabase.from('cards').delete().eq('user_id', userId).in('id', d.cards.deletes))
-  if (d.missingLogos.deletes.length)
-    check(await supabase.from('missing_logos').delete().eq('user_id', userId).in('name', d.missingLogos.deletes))
+  refused += await sendRows(d.payments.deletes, (ids) => supabase.from('payments').delete().eq('user_id', userId).in('id', ids))
+  refused += await sendRows(d.subscriptions.deletes, (ids) => supabase.from('subscriptions').delete().eq('user_id', userId).in('id', ids))
+  refused += await sendRows(d.cards.deletes, (ids) => supabase.from('cards').delete().eq('user_id', userId).in('id', ids))
+  refused += await sendRows(d.missingLogos.deletes, (names) => supabase.from('missing_logos').delete().eq('user_id', userId).in('name', names))
 
-  if (d.cards.upserts.length) check(await supabase.from('cards').upsert(d.cards.upserts.map((c) => ({ ...cardToRow(c), ...mine }))))
-  if (d.subscriptions.upserts.length)
-    check(await supabase.from('subscriptions').upsert(d.subscriptions.upserts.map((s) => ({ ...subToRow(s), ...mine }))))
-  if (d.payments.upserts.length) check(await supabase.from('payments').upsert(d.payments.upserts.map((p) => ({ ...paymentToRow(p), ...mine }))))
-  if (d.missingLogos.upserts.length)
-    check(
-      await supabase
-        .from('missing_logos')
-        .upsert(d.missingLogos.upserts.map((m) => ({ name: m.name, first_seen: m.firstSeen, ...mine })), { onConflict: 'user_id,name', ignoreDuplicates: true }),
-    )
+  refused += await sendRows(d.cards.upserts, (batch) => supabase.from('cards').upsert(batch.map((c) => ({ ...cardToRow(c), ...mine }))))
+  refused += await sendRows(d.subscriptions.upserts, (batch) =>
+    supabase.from('subscriptions').upsert(batch.map((s) => ({ ...subToRow(s), ...mine }))),
+  )
+  refused += await sendRows(d.payments.upserts, (batch) => supabase.from('payments').upsert(batch.map((p) => ({ ...paymentToRow(p), ...mine }))))
+  refused += await sendRows(d.missingLogos.upserts, (batch) =>
+    supabase
+      .from('missing_logos')
+      .upsert(batch.map((m) => ({ name: m.name, first_seen: m.firstSeen, ...mine })), { onConflict: 'user_id,name', ignoreDuplicates: true }),
+  )
+  return refused > 0
 }
