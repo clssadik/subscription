@@ -111,9 +111,10 @@ export function CardDetail({ id, nav, onBack }: { id: string; nav: Nav; onBack: 
 
       {/* Ödenmiş ekstre notu (geri alınabilir); ekstre adı kesim ayı. Ekstre zaten ödendiyse düğme çıkmaz: basınca işareti kaldırırdı */}
       {note && <PaidNote month={statementOfDue(note)} onUndo={() => undoPaid(note)} />}
+      {/* Koyu temada düğme beyazdır: işaret orada mavi olur, sarı beyaz üstünde okunmaz */}
       {cycle && !cycle.paid && canMarkPaid(cycle.due) && (
         <button onClick={() => markPaid(cycle)} className="pressable mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-ink font-semibold text-page">
-          <CheckCircle2Icon className="size-[18px] text-bh-yellow" />
+          <CheckCircle2Icon className="size-[18px] text-bh-yellow dark:text-bh-blue" />
           {formatDate(cycle.statement, 'LLLL')} ekstresi ödendi
         </button>
       )}
