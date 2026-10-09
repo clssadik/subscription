@@ -62,6 +62,9 @@ export interface CardCycle {
 }
 
 /** [start, end] aralığına son ödemesi düşen bütün dönemler. Bir ayda 0, 1 ya da 2 son ödeme olabilir. */
+/** Kart uygulamaya eklenmeden önceki son ödemeler sayılmaz: o dönemler ödenmemiş görünmesin. */
+const tracked = (card: DueCard, due: Date) => !card.addedAt || toKey(due) >= card.addedAt
+
 function cardCyclesBetween(card: DueCard, start: Date, end: Date): CardCycle[] {
   const out: CardCycle[] = []
   // Kesimden 10+ gün sonra ödeme gelir: iki ay öncesinden başlamak yeter
@@ -156,7 +159,7 @@ export function statementOfDue(due: Date) {
 /** Son ödemesi geçmiş ama ödendi işaretlenmemiş dönemler, en eskisi başta. En fazla son iki aya bakar. */
 export function overdueCardCycles(card: DueCard, payments: Payment[] = [], from: Date = new Date()): CardCycle[] {
   const today = startOfDay(from)
-  return cardCyclesBetween(card, addMonths(today, -2), addDays(today, -1)).filter((c) => !isPaid(payments, card.id, c.due, 'card'))
+  return cardCyclesBetween(card, addMonths(today, -2), addDays(today, -1)).filter((c) => tracked(card, c.due) && !isPaid(payments, card.id, c.due, 'card'))
 }
 
 /** Son ödeme bu takvim ayında mı */
@@ -204,7 +207,9 @@ export function monthItems(
       })),
     ),
     ...cards.filter(hasDue).flatMap((c) =>
-      cardCyclesBetween(c, start, end).map(({ due: date }) => ({
+      cardCyclesBetween(c, start, end)
+        .filter(({ due }) => tracked(c, due))
+        .map(({ due: date }) => ({
         kind: 'card' as const,
         date,
         paid: isPaid(payments, c.id, date, 'card'),

@@ -19,6 +19,8 @@ export interface CreditCard {
   /** Kartın rengi, "#RRGGBB" */
   color: string
   network: CardNetwork | null
+  /** Uygulamaya eklendiği gün, "yyyy-MM-dd". Bundan önceki son ödemeler gösterilmez (ödenmemiş sayılmasın). Eski kayıtlarda yok. */
+  addedAt?: string
 }
 
 export interface Subscription {

@@ -87,6 +87,14 @@ function periodKey(kind: PeriodKind, day: Day) {
   return toKey(day).slice(0, kind === 'yearly' ? 4 : 7)
 }
 
+/** Bir anın İstanbul'daki günü */
+function istanbulDay(t: Date): Day {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(t).map((x) => [x.type, x.value]),
+  )
+  return dayOf(Number(p.year), Number(p.month), Number(p.day))
+}
+
 /** İstanbul'da şu an: gün, dakika (gece yarısından beri), haftanın günü (1 = pazartesi) */
 function nowInIstanbul() {
   const f = new Intl.DateTimeFormat('en-CA', {
@@ -121,7 +129,7 @@ const clip = (s: string, max: number) => ([...s].length > max ? [...s].slice(0, 
 // ---------- Veri ----------
 
 type SubRow = { id: string; user_id: string; name: string; card_id: string | null; on_bill: boolean | null; cycle: 'monthly' | 'yearly'; renewal_date: string }
-type CardRow = { id: string; user_id: string; bank_name: string; last4: string; kind: 'credit' | 'debit'; statement_day: number | null }
+type CardRow = { id: string; user_id: string; bank_name: string; last4: string; kind: 'credit' | 'debit'; statement_day: number | null; created_at: string }
 /** Bir ödeme: vade günü ve abonelikte türü (eski kayıtlarda yok) */
 type PaidRow = { day: Day; cycle: 'monthly' | 'yearly' | null }
 type Notify = {
@@ -250,7 +258,10 @@ function messagesFor(notify: Notify, subs: SubRow[], cards: CardRow[], paid: Map
 
   for (const card of cards) {
     if (card.kind !== 'credit' || card.statement_day == null) continue
+    // Kart eklenmeden önceki son ödemeler sayılmaz (src/lib/dates.ts → tracked)
+    const added = istanbulDay(new Date(card.created_at))
     for (const { statement, due } of cardCyclesBetween(card, today - 1, today + 40)) {
+      if (due < added) continue
       const diff = due - today
       if (notify.statement && statement === today) out.push({ key: `stmt:${card.id}:${toKey(statement)}`, ...text.statement(card, due) })
       if (isPaid(card.id, due, 'card')) continue
@@ -360,7 +371,7 @@ async function runReminders() {
     readAll((a, b) => db.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth').order('id').range(a, b)),
     readAll((a, b) => db.from('user_settings').select('user_id, notify').order('user_id').range(a, b)),
     readAll((a, b) => db.from('subscriptions').select('id, user_id, name, card_id, on_bill, cycle, renewal_date').order('id').range(a, b)),
-    readAll((a, b) => db.from('cards').select('id, user_id, bank_name, last4, kind, statement_day').order('id').range(a, b)),
+    readAll((a, b) => db.from('cards').select('id, user_id, bank_name, last4, kind, statement_day, created_at').order('id').range(a, b)),
     // Dönem eşleşmesi için geriye dönük: yıllık bir ödeme aydan eski olabilir, bu yüzden bir önceki yılın başından çekilir
     readAll((a, b) =>
       db.from('payments').select('user_id, ref_id, due_date, cycle').gte('due_date', toKey(dayOf(parts(now.today).y - 1, 1, 1))).order('id').range(a, b),

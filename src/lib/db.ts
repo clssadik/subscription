@@ -1,3 +1,4 @@
+import { toKey } from './dates'
 import { supabase } from './supabase'
 import type { State } from './store'
 import type { CreditCard, MissingLogo, Payment, Subscription } from './types'
@@ -17,6 +18,7 @@ const cardFromRow = (r: Row): CreditCard => ({
   limit: Number(r.credit_limit),
   color: r.color as string,
   network: (r.network as CreditCard['network']) ?? null,
+  addedAt: r.created_at ? toKey(new Date(r.created_at as string)) : undefined,
 })
 const cardToRow = (c: CreditCard): Row => ({
   id: c.id,

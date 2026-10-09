@@ -6,6 +6,7 @@ import { haptic } from '@/lib/haptics'
 import { play } from '@/lib/sound'
 import { DaySelect, Field, FieldGroup, inputClass, PrimaryButton, Segmented, selectClass } from '@/components/FormBits'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer'
+import { toKey } from '@/lib/dates'
 import { BANKS, bankColor, bankName as fullBankName, cardColor } from '@/lib/banks'
 import { isValidAmount, parseAmount } from '@/lib/format'
 import { SERVICES, getService, matchService, normalize } from '@/lib/services'
@@ -426,6 +427,7 @@ function buildCard(c: NewCard, id: string, existing?: CreditCard): CreditCard {
     limit: existing?.limit ?? 0,
     color: colorFor(c.bankName, existing),
     network: existing?.network ?? null,
+    addedAt: existing ? existing.addedAt : toKey(new Date()),
   }
 }
 
