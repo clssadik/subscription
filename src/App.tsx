@@ -13,7 +13,8 @@ import { shouldShowInstallGate, skipInstallGate } from '@/lib/install'
 import { initials, useSettings } from '@/lib/settings'
 import { StoreProvider, useStore } from '@/lib/store'
 import { transition, type Motion } from '@/lib/transition'
-import { scrollToTop } from '@/lib/useScrollMemory'
+import { resumeView, saveResume } from '@/lib/resume'
+import { scrollPositions, scrollToTop } from '@/lib/useScrollMemory'
 import { useSwipeBack } from '@/lib/useSwipeBack'
 import { cn } from '@/lib/utils'
 import { AccountScreen, AccountSubPage, type AccountPage } from '@/screens/AccountScreen'
@@ -51,6 +52,14 @@ const todayKey = () => toKey(new Date())
 const msUntilMidnight = () => {
   const now = new Date()
   return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime()
+}
+
+// Sayfa açık bir detayla yenilenince tarayıcıda kalan eski kayıt sıfırlanır (yoksa geri tuşu boş bir adım atardı).
+// Sayfa yüklenirken bir kez: kalınan yerden açılışta (src/lib/resume.ts) sonradan eklenen kayıtlar silinmesin.
+try {
+  if ((history.state as { monthwise?: number } | null)?.monthwise) history.replaceState(null, '')
+} catch {
+  // geçmiş kullanılamıyorsa atlanır
 }
 
 export default function App() {
@@ -94,16 +103,49 @@ export default function App() {
   )
 }
 
+/** iPhone uygulamayı arka planda kapattıysa bırakılan ekran (src/lib/resume.ts); yoksa Anasayfa */
+function initialView(userId: string) {
+  const v = resumeView(userId)
+  const tab = v && TAB_ORDER.includes(v.tab as Tab) ? (v.tab as Tab) : 'home'
+  return {
+    tab,
+    detailId: v?.detailId ?? null,
+    cardId: v?.cardId ?? null,
+    accountPage: tab === 'account' ? ((v?.accountPage as AccountPage | null) ?? null) : null,
+  }
+}
+
 function Main({ user }: { user: User }) {
   const { ready, state } = useStore()
   const { settings } = useSettings(user.id)
-  const [tab, setTab] = useState<Tab>('home')
-  const [detailId, setDetailId] = useState<string | null>(null)
+  const [start] = useState(() => initialView(user.id))
+  const [tab, setTab] = useState<Tab>(start.tab)
+  const [detailId, setDetailId] = useState<string | null>(start.detailId)
   // Kart detayı hangi sekmeden açıldıysa onun üstünde açılır; geri basınca o sekmeye dönülür
-  const [cardId, setCardId] = useState<string | null>(null)
+  const [cardId, setCardId] = useState<string | null>(start.cardId)
   // Hesap'ın açık alt sayfası (Profil, Bildirimler…): detay sayfası gibi açılır
-  const [accountPage, setAccountPage] = useState<AccountPage | null>(null)
+  const [accountPage, setAccountPage] = useState<AccountPage | null>(start.accountPage)
   const [sheet, setSheet] = useState<SheetTarget>(null)
+
+  // Açık ekran telefona yazılır: iPhone uygulamayı arka planda kapatsa da geri dönünce aynı yerden açılır.
+  // Arka plana geçerken bir kez daha yazılır (kaydırma yerleri ve süre güncel olsun).
+  const view = { tab, detailId, cardId, accountPage }
+  const latestView = useRef(view)
+  useEffect(() => {
+    latestView.current = view
+    saveResume(user.id, view, scrollPositions())
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- view her çizimde yeni nesne; alanları değişince yazılır
+  }, [user.id, tab, detailId, cardId, accountPage])
+  useEffect(() => {
+    const save = () => saveResume(user.id, latestView.current, scrollPositions())
+    const onHide = () => document.visibilityState === 'hidden' && save()
+    document.addEventListener('visibilitychange', onHide)
+    window.addEventListener('pagehide', save)
+    return () => {
+      document.removeEventListener('visibilitychange', onHide)
+      window.removeEventListener('pagehide', save)
+    }
+  }, [user.id])
 
   // Gün değişince (gece yarısı ya da uygulama ertesi gün öne gelince) ekranlar yeni tarihle çizilsin. Ekranlar tarihi her çizimde
   // hesaplar; bu değer değişince Ana bileşen de yeniden çizilir. Değer kullanılmaz, değişmesi yeterli.
@@ -231,14 +273,6 @@ function Main({ user }: { user: User }) {
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
-  }, [])
-  // Sayfa açık bir detayla yenilenince tarayıcıda kalan eski kayıt sıfırlanır (yoksa geri tuşu boş bir adım atardı)
-  useEffect(() => {
-    try {
-      if ((history.state as { monthwise?: number } | null)?.monthwise) history.replaceState(null, '')
-    } catch {
-      // geçmiş kullanılamıyorsa atlanır
-    }
   }, [])
 
   // Açık detayın aboneliği ya da kartı silinince (düzenle → sil) önceki sayfaya dönülür: yoksa sayfa boş kalıyordu

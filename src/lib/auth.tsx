@@ -56,12 +56,13 @@ export function useUser() {
   )
 
   useEffect(() => {
-    // Ekranda hangi hesap olduğu: değişince ya da çıkılınca önceki hesabın kaydırma yerleri silinir
-    let shownId: string | null = null
+    // Ekranda hangi hesap olduğu: değişince ya da çıkılınca önceki hesabın kaydırma yerleri silinir.
+    // İlk okumada silinmez (undefined): kalınan yerden açılış (src/lib/resume.ts) o yerleri kullanır
+    let shownId: string | null | undefined
     const apply = (next: User | null) => {
       if ((next?.id ?? null) !== shownId) {
+        if (shownId !== undefined) clearScrollMemory()
         shownId = next?.id ?? null
-        clearScrollMemory()
       }
       if (!next) return setUser(null)
       const run = () => transition('fade', () => setUser(next))

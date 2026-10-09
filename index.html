@@ -82,7 +82,14 @@
   <body>
     <div id="splash" aria-hidden="true"><img src="/logo-mark.png" alt="" /><span lang="en">Monthwise</span></div>
     <!-- Açılış ekranının çizildiği an: src/main.tsx tam 2 sn sonra kaldırır -->
-    <script>window.splashAt = performance.now()</script>
+    <script>
+      window.splashAt = performance.now()
+      // iPhone uygulamayı arka planda kapatıp geri açtıysa (kalınan yerden devam, src/lib/resume.ts) açılış ekranı gösterilmez
+      try {
+        var resume = JSON.parse(localStorage.getItem('monthwise:resume') || 'null')
+        if (resume && Date.now() - resume.at < 30 * 60 * 1000) document.getElementById('splash').remove()
+      } catch (e) {}
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

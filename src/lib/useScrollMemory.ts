@@ -1,11 +1,17 @@
 import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react'
+import { clearResume, resumeScroll } from './resume'
 
-// Her sekmenin kaydırma yeri (uygulama açık kaldıkça). Sekmeye ya da detaydan listeye geri dönünce kalınan yerden devam edilir.
-const saved = new Map<string, number>()
+// Her sekmenin kaydırma yeri. Sekmeye ya da detaydan listeye geri dönünce kalınan yerden devam edilir.
+// iPhone uygulamayı arka planda kapattıysa yerler telefondan geri gelir (src/lib/resume.ts).
+const saved = new Map<string, number>(Object.entries(resumeScroll()))
 
-/** Hesap değişince ya da çıkılınca: önceki hesabın kaydırma yerleri yeni hesapta kullanılmaz */
+/** Şu anki kaydırma yerleri (telefona yazmak için) */
+export const scrollPositions = () => Object.fromEntries(saved)
+
+/** Hesap değişince ya da çıkılınca: önceki hesabın kaydırma yerleri ve bırakılan ekranı yeni hesapta kullanılmaz */
 export function clearScrollMemory() {
   saved.clear()
+  clearResume()
 }
 
 /** Açık sekmeye tekrar basınca o sekmenin listesi en başa kayar (iPhone'daki gibi) */
