@@ -1,5 +1,6 @@
 // Sayfayı kendiliğinden yenilemek (yeni sürüm, tema değişimi) açık bir taslağı silmesin. Yazı alanı odaktaysa ya da bir
 // panel (ekleme formu, şartlar) açıksa yenileme beklenir; odak çıkınca, panel kapanınca ya da uygulama öne gelince yapılır.
+// Yeni sürüm uygulama kullanılırken hiç yenilenmez: arka plandan dönünce yenilenir (reloadOnReturn).
 
 const inField = (t: EventTarget | null) => t instanceof HTMLElement && !!t.closest('input, textarea, [contenteditable="true"]')
 
@@ -27,8 +28,20 @@ export function reloadWhenIdle() {
   watcher.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state'] })
 }
 
+let onReturn = false
+
+/** Uygulama arka plandan öne gelince yeniler (yeni sürüm). Kullanırken, ör. kart kaydedip panel kapanınca, sayfa birden yenilenmesin.
+ *  Dönünce kalınan ekrandan açılır (src/lib/resume.ts). */
+export function reloadOnReturn() {
+  onReturn = true
+}
+
 // Odak bir alandan çıkınca bir an sonra bakılır (odak taşınırken yenilenmesin)
 document.addEventListener('focusout', () => setTimeout(reloadIfIdle))
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') reloadIfIdle()
+  if (document.visibilityState !== 'visible') return
+  if (onReturn) {
+    onReturn = false
+    reloadWhenIdle()
+  } else reloadIfIdle()
 })

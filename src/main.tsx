@@ -5,7 +5,7 @@ import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { hideCaretWhileScrolling, keepPageInPlace } from '@/lib/keyboard'
-import { reloadWhenIdle } from '@/lib/reload'
+import { reloadOnReturn } from '@/lib/reload'
 import { guardDocumentScroll } from '@/lib/transition'
 
 createRoot(document.getElementById('root')!).render(
@@ -49,12 +49,12 @@ for (const type of ['copy', 'cut', 'contextmenu'] as const) {
   })
 }
 
-// Servis çalışanı (vite.config.ts: autoUpdate). Yeni sürüm gelince sayfa kendiliğinden yenilenir; yazı yazılırken ya da
-// açık bir panelde taslak silinmesin diye yenileme, taslak bitince yapılır (src/lib/reload.ts).
+// Servis çalışanı (vite.config.ts: autoUpdate). Yeni sürüm gelince sayfa kullanılırken yenilenmez: uygulama arka plandan
+// dönünce, taslak yoksa, kalınan ekrandan yenilenir (src/lib/reload.ts, src/lib/resume.ts).
 registerSW({
   immediate: true,
   onNeedReload() {
-    reloadWhenIdle()
+    reloadOnReturn()
   },
   onRegisteredSW(_url, registration) {
     // Uygulama günlerce açık kalabiliyor; öne gelince yeni sürüm var mı diye bakılır
