@@ -186,9 +186,11 @@ export function monthlyCost(sub: Subscription) {
 
 export type MonthItem =
   | { kind: 'subscription'; date: Date; paid: boolean; subscription: Subscription }
-  | { kind: 'card'; date: Date; paid: boolean; card: DueCard }
+  /** date: listedeki tarih (son ödeme; cut ise kesim). due: dönemin son ödemesi, "ödendi" işareti buna yazılır.
+   *  cut: bu ay kesilen ama son ödemesi gelecek aya kalan ekstre */
+  | { kind: 'card'; date: Date; due: Date; cut: boolean; paid: boolean; card: DueCard }
 
-/** Bir aydaki bütün ödemeler (abonelik yenilemeleri + kart son ödemeleri), tarih sırasıyla. */
+/** Bir aydaki bütün ödemeler (abonelik yenilemeleri + kart son ödemeleri + bu ay kesilip gelecek ay ödenecek ekstreler), tarih sırasıyla. */
 export function monthItems(
   cards: CreditCard[],
   subscriptions: Subscription[],
@@ -206,16 +208,15 @@ export function monthItems(
         subscription: s,
       })),
     ),
-    ...cards.filter(hasDue).flatMap((c) =>
-      cardCyclesBetween(c, start, end)
+    ...cards.filter(hasDue).flatMap((c) => [
+      ...cardCyclesBetween(c, start, end)
         .filter(({ due }) => tracked(c, due))
-        .map(({ due: date }) => ({
-        kind: 'card' as const,
-        date,
-        paid: isPaid(payments, c.id, date, 'card'),
-        card: c,
-      })),
-    ),
+        .map(({ due }) => ({ kind: 'card' as const, date: due, due, cut: false, paid: isPaid(payments, c.id, due, 'card'), card: c })),
+      // Kesimi bu ayda, son ödemesi gelecek ayda olan ekstre (ör. kesim 25'i → son ödeme ertesi ayın 4'ü): kesim gününde listelenir
+      ...cardCyclesBetween(c, addDays(end, 1), addDays(end, 11))
+        .filter(({ statement }) => statement <= end)
+        .map(({ statement, due }) => ({ kind: 'card' as const, date: statement, due, cut: true, paid: isPaid(payments, c.id, due, 'card'), card: c })),
+    ]),
   ]
   return items.sort((a, b) => a.date.getTime() - b.date.getTime())
 }
@@ -233,7 +234,7 @@ export function overdueItems(cards: CreditCard[], subscriptions: Subscription[],
     ...cards.filter(hasDue).flatMap((c) =>
       overdueCardCycles(c, payments, today)
         .filter(({ due }) => due < thisMonth)
-        .map(({ due: date }) => ({ kind: 'card' as const, date, paid: false, card: c })),
+        .map(({ due }) => ({ kind: 'card' as const, date: due, due, cut: false, paid: false, card: c })),
     ),
   ]
   return items.sort((a, b) => a.date.getTime() - b.date.getTime())

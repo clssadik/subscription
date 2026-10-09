@@ -102,7 +102,7 @@ export function HomeScreen({ nav }: { nav: Nav }) {
 
   function toggle(i: MonthItem) {
     haptic()
-    const dueDate = formatDate(i.date, 'yyyy-MM-dd')
+    const dueDate = formatDate(i.kind === 'card' ? i.due : i.date, 'yyyy-MM-dd')
     // Yön açıkça verilir (true: ödendi, false: kaldırıldı). "Geri al" ters yönü gönderir; sonradan elle değişmiş bir işareti yeniden çevirmez.
     const mark = (paid: boolean) =>
       i.kind === 'subscription'
@@ -130,9 +130,11 @@ export function HomeScreen({ nav }: { nav: Nav }) {
       <li key={key} className="flex items-center gap-3 rounded-[18px] bg-surface py-2 pr-3 pl-1.5 transition-transform duration-100 has-[button:active]:scale-[0.98]">
         <button
           onClick={() => toggle(i)}
+          // Kesilmemiş ekstre henüz ödenemez
+          disabled={i.kind === 'card' && i.cut && daysUntil(i.date) > 0}
           aria-label={i.paid ? 'Ödenmedi olarak işaretle' : 'Ödendi olarak işaretle'}
           aria-pressed={i.paid}
-          className="flex size-11 shrink-0 items-center justify-center"
+          className="flex size-11 shrink-0 items-center justify-center disabled:opacity-40"
         >
           <span className={cn('flex size-6 items-center justify-center rounded-full border-[1.5px] transition-colors', i.paid ? 'check-pop border-bh-green bg-bh-green text-white' : 'border-subtle/50')}>
             {i.paid && <CheckIcon className="size-4" strokeWidth={2.5} />}
@@ -152,7 +154,9 @@ export function HomeScreen({ nav }: { nav: Nav }) {
             <BankMark bankName={i.card.bankName} color={i.card.color} size={30} />
             <span className="min-w-0 flex-1">
               <span className="block truncate font-medium">{i.card.bankName}</span>
-              <span className="block text-[11px] text-subtle">{formatDate(i.date, 'd MMM')} · son ödeme · {i.paid ? 'ödendi' : dueLabel(i.date)}</span>
+              <span className="block text-[11px] text-subtle">{i.cut
+                  ? `${formatDate(i.date, 'd MMM')} · kesim · son ödeme ${formatDate(i.due, 'd MMM')}${i.paid ? ' · ödendi' : ''}`
+                  : `${formatDate(i.date, 'd MMM')} · son ödeme · ${i.paid ? 'ödendi' : dueLabel(i.date)}`}</span>
             </span>
             <span className="num text-[15px]">•• {i.card.last4}</span>
           </HoldButton>
